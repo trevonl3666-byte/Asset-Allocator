@@ -193,11 +193,12 @@
     border:0;border-radius:0;
     background:transparent;cursor:pointer;
     -webkit-tap-highlight-color:transparent;vertical-align:middle;
-    box-shadow:none
+    box-shadow:none;position:relative;z-index:20;
+    pointer-events:auto;touch-action:manipulation
   }
   .assetHeadSortBtn:hover,.mobileSortIconBtn:hover{opacity:.92}
   .assetHeadSortBtn:active,.mobileSortIconBtn:active{transform:scale(.98)}
-  .assetHeadSortBtn img,.mobileSortIconBtn img{display:block;width:20px;height:20px;object-fit:contain}
+  .assetHeadSortBtn img,.mobileSortIconBtn img{display:block;width:20px;height:20px;object-fit:contain;pointer-events:none}
 
 
 
@@ -315,23 +316,19 @@
   }
   .assetSortItem:active{cursor:grabbing}
   .assetSortItem:focus-visible{outline:2px solid #4b86c5;outline-offset:2px}
-  .assetSortItem.sortPlaceholder{visibility:hidden}
-  .assetSortGhost{
+  .assetSortItem.assetSortDragging{
     position:fixed!important;z-index:2147483250!important;margin:0!important;
     pointer-events:none!important;cursor:grabbing!important;
-    visibility:visible!important;opacity:1!important;
     border-color:#50789f!important;background:#121c27!important;
     box-shadow:0 18px 42px rgba(0,0,0,.48),0 4px 12px rgba(0,0,0,.30)!important;
-    transform-origin:center center;
-    transition:transform 180ms cubic-bezier(.2,.82,.24,1),box-shadow 155ms ease,opacity 155ms ease;
-    will-change:transform;box-sizing:border-box!important;max-width:none!important
+    transition:none!important;will-change:top;box-sizing:border-box!important
   }
-  .assetSortGhost .assetSortName{font-weight:800}
+  .assetSortPlaceholderSlot{
+    flex:0 0 auto;width:100%;min-height:50px;box-sizing:border-box;
+    border:1px dashed #45627f;border-radius:11px;background:rgba(80,120,159,.08)
+  }
   .assetSortName{min-width:0;font-weight:750}
-  @media (prefers-reduced-motion:reduce){
-    .assetSortItem{transition:none!important}
-    .assetSortGhost{transition:none!important}
-  }
+  @media (prefers-reduced-motion:reduce){.assetSortItem{transition:none!important}}
 
   /* 桌面端安全对齐：只调整布局，不改变字体字号、字重或文字行高 */
   @media (min-width:761px){
@@ -404,6 +401,7 @@
 
     .mobileSortBar{
       display:flex;align-items:center;justify-content:space-between;gap:8px;
+      position:relative;z-index:10;
       margin:0 0 0;padding:13px 12px;
       border:1px solid var(--line);border-bottom:0;border-radius:14px 14px 0 0;
       background:#141b24;color:#dce9f8;font-size:13px;font-weight:700
@@ -748,7 +746,7 @@
     <div>
       <div class="toggle">目标比例独立输入：修改某一资产时不会自动更改其他资产；总比例可暂时不等于 100%。</div>
       <div class="formula">
-        默认结构：VOO 60%；QQQ 10%；SGOL 黄金 10%；510300 6%；03032 4%；512890 7%；SCHD 3%。<br>
+        默认结构：VOO 60%；QQQ 10%；SGOL 黄金 10%；159361 中证A500 6%；03032 4%；512890 7%；SCHD 3%。<br>
         比例输入采用独立模式：调高或调低任意资产，只改变当前资产；系统不再自动削减或补足其他资产。<br>
         总比例不等于 100% 时，合计位置会以提示状态显示，你可以继续手动调整。<br>
         配置差额 = 实际人民币 − 目标人民币；配置差额% = 配置差额 ÷ 目标人民币。<br>
@@ -789,7 +787,7 @@
       <div id="assetSortTitle" class="assetSortTitle">调整资产顺序</div>
       <button id="assetSortDoneBtn" class="assetSortDone" type="button">完成</button>
     </div>
-    <div class="assetSortHint">按住资产上下拖动；其它资产会自动让位，松手后立即同步。</div>
+    <div class="assetSortHint">按住资产上下拖动；拖到任意位置会实时调整顺序，松手即确定。</div>
     <div id="assetSortList" class="assetSortList"></div>
   </section>
 </div>
@@ -843,6 +841,7 @@ const etfCatalog = [
   {key:"INDA", name:"INDA", desc:"印度股票", ccy:"USD", group:"股票 · 全球/地区", purpose:"印度股票ETF，用于获得印度大型企业与经济增长敞口，需承担估值、市场和汇率等风险。"},
 
   {key:"510300", name:"510300", desc:"沪深300", ccy:"CNY", group:"股票 · 中国", purpose:"华泰柏瑞沪深300ETF。跟踪沪深300，覆盖A股大型金融、消费、工业、科技、医药等，可作为中国A股大盘核心。文档中的多只沪深300ETF在候选库中只保留这一只。"},
+  {key:"159361", name:"159361", desc:"中证A500", ccy:"CNY", group:"股票 · 中国", purpose:"易方达中证A500ETF，深交所场内交易，跟踪中证A500指数。覆盖A股各行业具有代表性的500只证券，强调较广行业覆盖；适合作为中国A股宽基配置工具。"},
   {key:"512890", name:"512890", desc:"红利低波", ccy:"CNY", group:"股票 · 中国", purpose:"华泰柏瑞中证红利低波动ETF。偏向较高股息和较低历史波动的A股成熟价值公司，阶段性可能集中于银行、金融与传统行业。"},
   {key:"03032", name:"03032", desc:"恒生科技", ccy:"HKD", group:"股票 · 中国", purpose:"恒生科技指数ETF，提供香港上市科技、新经济与互联网平台等股票敞口；行业集中度和波动通常高于中国大盘宽基。"},
 
@@ -876,7 +875,7 @@ const defaults = [
   {id:"voo", productKey:"VOO", pct:60},
   {id:"qqq", productKey:"QQQ", pct:10},
   {id:"gold", productKey:"SGOL", pct:10},
-  {id:"csi300", productKey:"510300", pct:6},
+  {id:"a500", productKey:"159361", pct:6},
   {id:"hstech", productKey:"03032", pct:4},
   {id:"dividendCN", productKey:"512890", pct:7},
   {id:"schd", productKey:"SCHD", pct:3}
@@ -1712,7 +1711,7 @@ function buildAssetSortList(){
   const list=el("assetSortList");
   if(!list) return;
   list.innerHTML="";
-  state.rows.forEach((r,index)=>{
+  state.rows.forEach(r=>{
     const item=document.createElement("div");
     item.className="assetSortItem";
     item.dataset.id=r.id;
@@ -1739,12 +1738,26 @@ function syncAssetSortStateFromList(){
 }
 
 function clearAssetSortVisuals(){
-  document.querySelectorAll("#assetSortList .sortPlaceholder").forEach(x=>{
-    x.classList.remove("sortPlaceholder");
-    x.style.transform="";
-    x.style.transition="";
+  const s=assetSortSession;
+  if(s){
+    try{
+      if(s.placeholder?.isConnected && s.item){
+        s.placeholder.parentNode.insertBefore(s.item,s.placeholder);
+        s.placeholder.remove();
+      }
+      if(s.item){
+        s.item.classList.remove("assetSortDragging");
+        s.item.style.left="";s.item.style.top="";s.item.style.width="";s.item.style.height="";
+      }
+    }catch(_){}
+    try{s.abort?.abort();}catch(_){}
+  }
+  assetSortSession=null;
+  document.querySelectorAll("#assetSortList .assetSortPlaceholderSlot").forEach(x=>x.remove());
+  document.querySelectorAll(".assetSortDragging").forEach(x=>{
+    x.classList.remove("assetSortDragging");
+    x.style.left="";x.style.top="";x.style.width="";x.style.height="";
   });
-  document.querySelectorAll(".assetSortGhost").forEach(x=>x.remove());
 }
 
 function moveAssetSortItem(id,delta){
@@ -1763,187 +1776,119 @@ function moveAssetSortItem(id,delta){
   });
 }
 
-function assetSortRects(list,exclude){
-  const map=new Map();
-  list.querySelectorAll(".assetSortItem").forEach(node=>{
-    if(node!==exclude) map.set(node,node.getBoundingClientRect().top);
-  });
-  return map;
-}
-
-function animateAssetSortFlip(list,before,exclude){
-  const nodes=[...list.querySelectorAll(".assetSortItem")].filter(node=>node!==exclude);
-  const moving=[];
-  nodes.forEach(node=>{
-    const oldTop=before.get(node);
-    if(oldTop===undefined) return;
-    const newTop=node.getBoundingClientRect().top;
-    const dy=oldTop-newTop;
-    if(Math.abs(dy)<.5) return;
-    node.style.transition="none";
-    node.style.transform=`translate3d(0,${dy}px,0)`;
-    moving.push(node);
-  });
-  if(!moving.length) return;
-  // 强制提交第一帧后再滑向新位置，形成参考视频里“其它卡片让位”的感觉。
-  moving[0].getBoundingClientRect();
-  requestAnimationFrame(()=>{
-    moving.forEach(node=>{
-      node.style.transition="transform 220ms cubic-bezier(.2,.82,.24,1)";
-      node.style.transform="translate3d(0,0,0)";
-    });
-  });
-}
-
-function makeAssetSortGhost(item,rect){
-  const ghost=item.cloneNode(true);
-  ghost.className="assetSortItem assetSortGhost";
-  ghost.removeAttribute("tabindex");
-  ghost.removeAttribute("role");
-  ghost.removeAttribute("aria-label");
-  ghost.style.left=`${rect.left}px`;
-  ghost.style.top=`${rect.top}px`;
-  ghost.style.width=`${rect.width}px`;
-  ghost.style.height=`${rect.height}px`;
-  document.body.appendChild(ghost);
-  return ghost;
-}
-
-function reorderAssetSortPlaceholder(session,clientY){
-  const list=el("assetSortList");
-  if(!list) return;
-  const dragged=session.item;
-  const others=[...list.querySelectorAll(".assetSortItem")].filter(x=>x!==dragged);
-  if(!others.length) return;
-
-  let insertBefore=null;
-  for(const row of others){
-    const rect=row.getBoundingClientRect();
-    if(clientY < rect.top + rect.height/2){
-      insertBefore=row;
-      break;
-    }
+function assetSortInsertPlaceholder(session,centerY){
+  const list=session.list;
+  const placeholder=session.placeholder;
+  const rows=[...list.querySelectorAll(".assetSortItem")];
+  let before=null;
+  for(const row of rows){
+    const r=row.getBoundingClientRect();
+    if(centerY < r.top+r.height/2){before=row;break;}
   }
-
-  const alreadyCorrect=insertBefore
-    ? dragged.nextElementSibling===insertBefore
-    : dragged===list.lastElementChild;
-  if(alreadyCorrect) return;
-
-  const before=assetSortRects(list,dragged);
-  if(insertBefore) list.insertBefore(dragged,insertBefore);
-  else list.appendChild(dragged);
-  animateAssetSortFlip(list,before,dragged);
+  if(before){
+    if(placeholder.nextElementSibling!==before) list.insertBefore(placeholder,before);
+  }else if(placeholder!==list.lastElementChild){
+    list.appendChild(placeholder);
+  }
 }
 
-function settleAssetSortGhost(session,done){
-  const ghost=session.ghost;
-  const item=session.item;
-  if(!ghost || !item){done();return;}
-  const target=item.getBoundingClientRect();
-  const targetDx=0; // Y 轴锁定：回位时禁止任何横向位移。
-  const targetDy=target.top-session.origin.top;
-  const reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if(reduced){done();return;}
-  // 这里始终按“初始位置 -> 目标位置”的绝对位移收束，避免松手后因当前拖拽位移/滚动偏移叠加，
-  // 造成卡片飞出弹窗甚至留在外面的情况。
-  ghost.style.transition="transform 180ms cubic-bezier(.2,.82,.24,1),box-shadow 155ms ease,opacity 155ms ease";
-  ghost.style.boxShadow="0 5px 14px rgba(0,0,0,.30)";
+function assetSortFinish(session){
+  if(!session || assetSortSession!==session) return;
+  assetSortSession=null;
+  try{session.abort?.abort();}catch(_){}
+  const {list,item,placeholder,id}=session;
+  try{
+    if(placeholder?.isConnected) list.insertBefore(item,placeholder);
+    placeholder?.remove();
+  }catch(_){}
+  item.classList.remove("assetSortDragging");
+  item.style.left="";
+  item.style.top="";
+  item.style.width="";
+  item.style.height="";
+  syncAssetSortStateFromList();
+  buildAssetSortList();
   requestAnimationFrame(()=>{
-    ghost.style.transform=`translate3d(${targetDx}px,${targetDy}px,0) scale(1)`;
+    const target=el("assetSortList")?.querySelector(`.assetSortItem[data-id="${id}"]`);
+    if(target) try{target.focus({preventScroll:true});}catch(_){target.focus();}
   });
-  let finished=false;
-  const finish=()=>{if(finished)return;finished=true;done();};
-  ghost.addEventListener("transitionend",finish,{once:true});
-  setTimeout(finish,230);
+}
+
+function startAssetSortDrag(item,ev){
+  if(assetSortSession) return;
+  const list=el("assetSortList");
+  const dialog=el("assetSortModal")?.querySelector(".assetSortDialog");
+  if(!list || !dialog) return;
+
+  ev.preventDefault();
+  const rect=item.getBoundingClientRect();
+  const placeholder=document.createElement("div");
+  placeholder.className="assetSortPlaceholderSlot";
+  placeholder.style.height=`${rect.height}px`;
+  list.insertBefore(placeholder,item);
+
+  const abort=new AbortController();
+  const session={
+    pointerId:ev.pointerId,
+    id:item.dataset.id,
+    item,list,dialog,placeholder,abort,
+    grabOffsetY:ev.clientY-rect.top,
+    height:rect.height,
+    left:rect.left,
+    width:rect.width
+  };
+  assetSortSession=session;
+
+  // 只移动原卡片本身；原位置只保留一个占位槽，不再创建任何 ghost/副本。
+  item.classList.add("assetSortDragging");
+  item.style.left=`${rect.left}px`;
+  item.style.top=`${rect.top}px`;
+  item.style.width=`${rect.width}px`;
+  item.style.height=`${rect.height}px`;
+  document.body.appendChild(item);
+
+  const move=e=>{
+    if(assetSortSession!==session || e.pointerId!==session.pointerId) return;
+    e.preventDefault();
+    const drect=dialog.getBoundingClientRect();
+    const minTop=drect.top+8;
+    const maxTop=Math.max(minTop,drect.bottom-session.height-8);
+    const top=Math.max(minTop,Math.min(maxTop,e.clientY-session.grabOffsetY));
+    item.style.top=`${top}px`;
+    // X 坐标完全固定，不读取 clientX。
+    item.style.left=`${session.left}px`;
+    assetSortInsertPlaceholder(session,top+session.height/2);
+
+    const edge=58;
+    if(e.clientY<drect.top+edge) dialog.scrollBy({top:-12,behavior:"auto"});
+    else if(e.clientY>drect.bottom-edge) dialog.scrollBy({top:12,behavior:"auto"});
+  };
+  const end=e=>{
+    if(assetSortSession!==session || (e.pointerId!==undefined && e.pointerId!==session.pointerId)) return;
+    assetSortFinish(session);
+  };
+
+  document.addEventListener("pointermove",move,{passive:false,signal:abort.signal});
+  document.addEventListener("pointerup",end,{signal:abort.signal});
+  document.addEventListener("pointercancel",end,{signal:abort.signal});
 }
 
 function bindAssetSortItems(){
   const list=el("assetSortList");
   if(!list) return;
-
   list.querySelectorAll(".assetSortItem").forEach(item=>{
     item.addEventListener("keydown",ev=>{
       if(ev.target!==item) return;
       if(ev.key==="ArrowUp"){
-        ev.preventDefault();
-        moveAssetSortItem(item.dataset.id,-1);
+        ev.preventDefault();moveAssetSortItem(item.dataset.id,-1);
       }else if(ev.key==="ArrowDown"){
-        ev.preventDefault();
-        moveAssetSortItem(item.dataset.id,1);
+        ev.preventDefault();moveAssetSortItem(item.dataset.id,1);
       }
     });
-
     item.addEventListener("pointerdown",ev=>{
       if(ev.pointerType==="mouse" && ev.button!==0) return;
-      ev.preventDefault();
-      const rect=item.getBoundingClientRect();
-      try{item.setPointerCapture(ev.pointerId);}catch(_){}
-      const ghost=makeAssetSortGhost(item,rect);
-      item.classList.add("sortPlaceholder");
-      assetSortSession={
-        pointerId:ev.pointerId,
-        id:item.dataset.id,
-        item,
-        ghost,
-        origin:{left:rect.left,top:rect.top},
-        startX:ev.clientX,
-        startY:ev.clientY,
-        lastX:ev.clientX,
-        lastY:ev.clientY,
-        currentDx:0,
-        currentDy:0
-      };
-      // 轻微放大并抬起，接近参考视频的“拿起卡片”手感。
-      requestAnimationFrame(()=>{
-        if(assetSortSession?.ghost===ghost){
-          ghost.style.transform="translate3d(0,0,0) scale(1.025)";
-        }
-      });
+      startAssetSortDrag(item,ev);
     });
-
-    item.addEventListener("pointermove",ev=>{
-      const session=assetSortSession;
-      if(!session || session.pointerId!==ev.pointerId) return;
-      ev.preventDefault();
-      session.lastX=ev.clientX;
-      session.lastY=ev.clientY;
-
-      const dy=ev.clientY-session.startY;
-      // 硬约束：排序只能沿 Y 轴移动。无论指针横向移动多少，X 坐标始终锁定。
-      session.currentDx=0;
-      session.currentDy=dy;
-      session.ghost.style.transform=`translate3d(0,${dy}px,0) scale(1.025)`;
-      reorderAssetSortPlaceholder(session,ev.clientY);
-
-      // 靠近弹窗上下边缘时平滑辅助滚动，方便跨多项拖动。
-      const dialog=el("assetSortModal")?.querySelector(".assetSortDialog");
-      if(dialog){
-        const rect=dialog.getBoundingClientRect();
-        const edge=64;
-        if(ev.clientY<rect.top+edge) dialog.scrollBy({top:-10,behavior:"auto"});
-        else if(ev.clientY>rect.bottom-edge) dialog.scrollBy({top:10,behavior:"auto"});
-      }
-    });
-
-    const finish=ev=>{
-      const session=assetSortSession;
-      if(!session || session.pointerId!==ev.pointerId) return;
-      try{item.releasePointerCapture(ev.pointerId);}catch(_){}
-      assetSortSession=null;
-      settleAssetSortGhost(session,()=>{
-        session.item.classList.remove("sortPlaceholder");
-        if(session.ghost?.isConnected) session.ghost.remove();
-        syncAssetSortStateFromList();
-        buildAssetSortList();
-        requestAnimationFrame(()=>{
-          const target=el("assetSortList")?.querySelector(`.assetSortItem[data-id="${session.id}"]`);
-          if(target) try{target.focus({preventScroll:true});}catch(_){target.focus();}
-        });
-      });
-    };
-    item.addEventListener("pointerup",finish);
-    item.addEventListener("pointercancel",finish);
   });
 }
 
@@ -2387,6 +2332,8 @@ function normalizeState(s){
     const payCcy=r.payCcy||"CNY";
     const actual=Number(r.actualRmb)||0;
     let productKey=r.productKey||d.productKey||null;
+
+    if(productKey==="022459") productKey="159361";
     // 兼容旧版本保存的产品代码。
     if(productKey==="03153") productKey="EWJ";
     if(productKey==="QQQM") productKey="QQQ";
@@ -2429,12 +2376,12 @@ function normalizeState(s){
   return s;
 }
 function save(){
-  try{ localStorage.setItem("investmentAllocatorV20",JSON.stringify(state)); }catch(e){}
+  try{ localStorage.setItem("investmentAllocatorV22",JSON.stringify(state)); }catch(e){}
 }
 function load(){
   try{
     const keys=[
-      "investmentAllocatorV20","investmentAllocatorV19","investmentAllocatorV18","investmentAllocatorV17","investmentAllocatorV16","investmentAllocatorV15","investmentAllocatorV14","investmentAllocatorV13","investmentAllocatorV12","investmentAllocatorV11","investmentAllocatorV10","investmentAllocatorV9","investmentAllocatorV8","investmentAllocatorV7",
+      "investmentAllocatorV22","investmentAllocatorV21","investmentAllocatorV20","investmentAllocatorV19","investmentAllocatorV18","investmentAllocatorV17","investmentAllocatorV16","investmentAllocatorV15","investmentAllocatorV14","investmentAllocatorV13","investmentAllocatorV12","investmentAllocatorV11","investmentAllocatorV10","investmentAllocatorV9","investmentAllocatorV8","investmentAllocatorV7",
       "investmentAllocatorV6","investmentAllocatorV5","investmentAllocatorV4",
       "investmentAllocatorV3","investmentAllocatorV2"
     ];
@@ -2445,6 +2392,8 @@ function load(){
       if(s){
         const sig=s.rows.map(r=>r.productKey).join(",");
         const legacyDefaultSigs=new Set([
+          "VOO,QQQ,SGOL,022459,03032,512890,SCHD",
+          "VOO,QQQ,SGOL,510300,03032,512890,SCHD",
           "VOO,QQQ,510300,03032,SGOV,IEF,SGOL",
           "VOO,QQQM,510300,03032,SGOV,IEF,GOLD_EXISTING"
         ]);
@@ -2521,8 +2470,8 @@ el("swapUsdHkdBtn").onclick=()=>{
 el("resetBtn").onclick=reset;
 el("clearBtn").onclick=clearAll;
 
-if(el("openAssetSortBtn")) el("openAssetSortBtn").onclick=openAssetSortModal;
-if(el("openAssetSortBtnDesktop")) el("openAssetSortBtnDesktop").onclick=openAssetSortModal;
+if(el("openAssetSortBtn")) el("openAssetSortBtn").addEventListener("click",ev=>{ev.preventDefault();ev.stopPropagation();openAssetSortModal();});
+if(el("openAssetSortBtnDesktop")) el("openAssetSortBtnDesktop").addEventListener("click",ev=>{ev.preventDefault();ev.stopPropagation();openAssetSortModal();});
 if(el("assetSortDoneBtn")) el("assetSortDoneBtn").onclick=closeAssetSortModal;
 document.querySelectorAll("[data-sort-close='1']").forEach(x=>x.addEventListener("click",closeAssetSortModal));
 if(el("assetPickerCloseBtn")) el("assetPickerCloseBtn").onclick=closeAssetPicker;
