@@ -132,6 +132,16 @@
   .inlineHelp{display:flex;align-items:center;gap:7px;margin-top:7px;color:var(--muted);font-size:11px}
   .rateGrid{display:grid;grid-template-columns:110px 110px;gap:8px}
   .rateGrid .field{height:39px;font-size:13px}
+  .rateModeActions{display:grid;grid-template-columns:1fr;gap:6px;margin:0 0 8px}
+  .rateModeBtn{
+    width:100%;min-height:30px;padding:5px 7px;border:1px solid #334151;border-radius:8px;
+    background:#101720;color:#b7c7da;font-size:11px;line-height:1.25;cursor:pointer;
+    white-space:normal;text-align:center
+  }
+  .rateModeBtn:hover{border-color:#4d6075}
+  .rateModeBtn.active{background:#153c62;border-color:#2d78b7;color:#fff}
+  .rateModeBtn:focus-visible{outline:2px solid #4b86c5;outline-offset:2px}
+  .rateModeFixed{margin:0 0 8px;color:var(--muted);font-size:11px;line-height:1.4}
   .metric{font-size:13px;line-height:1.55;white-space:nowrap}
   .metric b{font-size:14px}
   .muted{color:var(--muted)}
@@ -470,6 +480,8 @@
     .rateGrid{grid-template-columns:1fr;gap:10px;min-width:0}
     .rateGrid>div{min-width:0}
     .rateGrid .field{height:48px;font-size:16px}
+    .rateModeActions{gap:7px;margin-bottom:10px}
+    .rateModeBtn{min-height:42px;padding:7px 10px;font-size:12px}
     .metric{
       min-width:0;font-size:13px;white-space:normal;
       word-break:normal;overflow-wrap:anywhere
@@ -643,7 +655,7 @@
     <div class="topInfoSlot">
       <button id="fxInfoBtn" class="fxInfoBtn" type="button" aria-label="查看汇率说明" aria-expanded="false" title="汇率说明">i</button>
       <div id="fxInfoPopover" class="fxInfoPopover" role="dialog" aria-label="汇率说明" hidden>
-        交易汇率统一按常见报价显示为「1 单位外币 = X 人民币」。交易区左侧“支付金额”也可选择 RMB / HKD / USD；底部合计仍统一折算成人民币。例如 ¥4,767 换得 $707，则 1 USD = 4,767 ÷ 707 = 6.742574 CNY。为避免方向混淆，每行同时显示反向汇率；例如 1 CNY = 0.148311 USD。参考汇率完全可选，只有需要比较换汇成本时才填写。顶部 USD ↔ HKD 交叉参考汇率可用右侧双向箭头切换输入方向：既可输入“1 USD = ? HKD”，也可输入“1 HKD = ? USD”；系统内部会自动统一换算。手机端为避免栏位互相挤压，交易汇率显示 4 位小数；桌面端仍显示 6 位小数，底层计算精度不变。
+        交易汇率始终按当前这一行真实的“支付币种 → 换汇后币种”显示：例如 HKD 支付、USD 到账时，显示为「1 USD = X HKD」，而不是误写成 USD/CNY；CNY 支付、USD 到账时才显示「1 USD = X CNY」。每行同时显示反向汇率。顶部 USD/CNY、HKD/CNY 与 USD↔HKD 只作为对应货币对的参考来源；点击“使用当前的汇率”时，会把当前这一行的汇率同步回正确的顶部货币对。底部合计仍统一折算成人民币，但交易汇率文字保持原始货币对，不混用 CNY。手机端汇率显示 4 位小数，桌面端显示 6 位小数，底层计算精度不变。
       </div>
     </div>
   </div>
@@ -713,8 +725,8 @@
     <div class="card"><div class="k">实际交易总额（CNY）</div><div class="v" id="cardActual">¥100,000.00</div><div class="s">使用各行“实际人民币”求和。</div></div>
     <div class="card"><div class="k">目标配置差额</div><div class="v" id="cardAlloc">¥0.00</div><div class="s">实际总额 − 目标本金；各行也会单独显示差额。</div></div>
     <div class="card"><div class="k">换汇成本差额（CNY，可选）</div><div class="v" id="cardFx">—</div><div class="s">仅统计已填写参考汇率的交易；未填参考汇率不会参与计算。</div></div>
-    <div class="card"><div class="k">USD 加权平均交易汇率</div><div class="v" id="cardUsd">—</div><div class="s" id="cardUsdSub">填写 USD 实际外币金额后计算。</div></div>
-    <div class="card"><div class="k">HKD 加权平均交易汇率</div><div class="v" id="cardHkd">—</div><div class="s" id="cardHkdSub">填写 HKD 实际外币金额后计算。</div></div>
+    <div class="card"><div class="k">USD 相关交易汇率</div><div class="v" id="cardUsd">—</div><div class="s" id="cardUsdSub">填写 USD 实际外币金额后计算。</div></div>
+    <div class="card"><div class="k">HKD 相关交易汇率</div><div class="v" id="cardHkd">—</div><div class="s" id="cardHkdSub">填写 HKD 实际外币金额后计算。</div></div>
   </div>
 
   <div class="panel footerPanel">
@@ -725,8 +737,8 @@
         比例输入采用独立模式：调高或调低任意资产，只改变当前资产；系统不再自动削减或补足其他资产。<br>
         总比例不等于 100% 时，合计位置会以提示状态显示，你可以继续手动调整。<br>
         配置差额 = 实际人民币 − 目标人民币；配置差额% = 配置差额 ÷ 目标人民币。<br>
-        交易汇率 = 实际人民币 ÷ 实际外币，统一显示为「1 外币 = X CNY」；同时附带反向汇率「1 CNY = X 外币」。<br>
-        参考汇率为可选项；填写后：汇率差 = 交易汇率 − 参考汇率；换汇成本差 = 实际人民币 − 实际外币 × 参考汇率。正数代表相对参考汇率多付人民币，负数代表少付。
+        交易汇率 = 支付金额 ÷ 换汇后金额，并按当前货币对显示为「1 换汇后币种 = X 支付币种」；例如 HKD → USD 显示「1 USD = X HKD」。同时附带反向汇率。<br>
+        参考汇率为可选项；填写后按同一货币对比较。换汇成本差先在支付币种中计算，再统一折算为 CNY 汇总，避免把 HKD、USD 与 CNY 混为一谈。
       </div>
     </div>
     <div>
@@ -866,7 +878,8 @@ let state = {
   usdHkdRate:"",
   usdHkdDirection:"USD_HKD",
   autoGold:false,
-  rows: defaults.map(x=>({...x, actualRmb:null, payAmount:null, payCcy:"CNY", fxAmount:null, rmbManual:false, fxManual:false, rowRate:null, unitPrice:null, priceCcy:x.ccy, autoFromFx:false, approxRates:{}}))
+  pairRateVersion:1,
+  rows: defaults.map(x=>({...x, actualRmb:null, payAmount:null, payCcy:"CNY", fxAmount:null, rmbManual:false, fxManual:false, rowRate:null, rowRateMode:x.ccy==="CNY"?"fixed":"top", unitPrice:null, priceCcy:x.ccy, autoFromFx:false, approxRates:{}}))
 };
 
 const money = n => "¥" + (Number(n)||0).toLocaleString("zh-CN",{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -1103,13 +1116,9 @@ function updatePrincipalCurrencyUi(){
 }
 
 function rateInfoFor(row, ccy, allowApprox=true){
+  // 这里只负责“某币种折算成人民币”的基准汇率。
+  // 行内 rowRate 已改为“支付币种 ↔ 换汇后币种”的交易对汇率，绝不能再混入这里。
   if(ccy==="CNY") return {rate:1, source:"fixed"};
-
-  // 本行参考汇率只用于本行“换汇后币种”。
-  if(ccy===row.ccy && row.rowRate !== null && row.rowRate !== ""){
-    const n=Number(row.rowRate)||0;
-    if(n>0) return {rate:n, source:"row"};
-  }
 
   if(ccy==="USD"){
     const top=Number(state.usdRate)||0;
@@ -1131,10 +1140,44 @@ function rateInfoFor(row, ccy, allowApprox=true){
   ensureApproxRates(row);
   return {rate:Number(row.approxRates[ccy])||0, source:"rough"};
 }
+function topPairRate(payCcy, receiveCcy){
+  const pay=payCcy||"CNY", recv=receiveCcy||"CNY";
+  if(pay===recv) return {rate:1, source:"fixed"};
+  const usd=Number(state.usdRate)||0;      // 1 USD = ? CNY
+  const hkd=Number(state.hkdRate)||0;      // 1 HKD = ? CNY
+  const cross=Number(state.usdHkdRate)||0; // 1 USD = ? HKD
+  if(pay==="CNY" && recv==="USD" && usd>0) return {rate:usd,source:"top"};
+  if(pay==="USD" && recv==="CNY" && usd>0) return {rate:1/usd,source:"top"};
+  if(pay==="CNY" && recv==="HKD" && hkd>0) return {rate:hkd,source:"top"};
+  if(pay==="HKD" && recv==="CNY" && hkd>0) return {rate:1/hkd,source:"top"};
+  if(pay==="HKD" && recv==="USD" && cross>0) return {rate:cross,source:"top"};
+  if(pay==="USD" && recv==="HKD" && cross>0) return {rate:1/cross,source:"top"};
+  return {rate:0,source:"none"};
+}
 function refRateFor(row){
-  // 配置的“参考汇率 / 换汇差额”仍只使用用户提供的准确/参考数据；
-  // 没填时不拿粗略汇率参与换汇差额。
-  return rateInfoFor(row,row.ccy,false).rate;
+  const pay=row.payCcy||"CNY", recv=row.ccy||"CNY";
+  if(pay===recv) return 1;
+  const mode=row.rowRateMode || (row.rowRate!==null && row.rowRate!=="" ? "current" : "top");
+  if(mode==="current"){
+    const n=Number(row.rowRate)||0;
+    if(n>0) return n;
+  }
+  return topPairRate(pay,recv).rate;
+}
+function pairKey(a,b){
+  return [a||"CNY",b||"CNY"].sort().join("|");
+}
+function setTopPairRate(payCcy, receiveCcy, quotedRate){
+  const pay=payCcy||"CNY", recv=receiveCcy||"CNY", q=Number(quotedRate)||0;
+  if(!(q>0) || pay===recv) return false;
+  if(pay==="CNY" && recv==="USD") state.usdRate=q;
+  else if(pay==="USD" && recv==="CNY") state.usdRate=1/q;
+  else if(pay==="CNY" && recv==="HKD") state.hkdRate=q;
+  else if(pay==="HKD" && recv==="CNY") state.hkdRate=1/q;
+  else if(pay==="HKD" && recv==="USD") state.usdHkdRate=q;
+  else if(pay==="USD" && recv==="HKD") state.usdHkdRate=1/q;
+  else return false;
+  return true;
 }
 function convertCurrency(row, amount, fromCcy, toCcy, allowApprox=true){
   const n=Number(amount)||0;
@@ -1152,9 +1195,15 @@ function updateRmbEquivalent(row){
 function syncPaymentFromFx(row){
   const fx=Number(row.fxAmount)||0;
   const payCcy=row.payCcy||"CNY";
-  const converted=convertCurrency(row,fx,row.ccy,payCcy,true);
-  if(converted===null) return;
-  row.payAmount=converted;
+  const recvCcy=row.ccy||"CNY";
+  const pairRate=refRateFor(row);
+  if(fx>0 && pairRate>0){
+    row.payAmount=fx*pairRate;
+  }else{
+    const converted=convertCurrency(row,fx,recvCcy,payCcy,true);
+    if(converted===null) return;
+    row.payAmount=converted;
+  }
   row.rmbManual=true;
   updateRmbEquivalent(row);
 }
@@ -1243,8 +1292,9 @@ function ensureAutoValues(r){
   r.payCcy=r.payCcy||"CNY";
   if(target===null) return;
 
-  if(r.ccy==="CNY"){
-    r.rowRate=1;
+  if((r.payCcy||"CNY")===r.ccy){
+    r.rowRate=null;
+    r.rowRateMode="fixed";
   }
 
   // 单股价格/换汇金额已开启联动时，始终只刷新当前这一行。
@@ -1280,12 +1330,18 @@ function render(){
     const payAmount=Number(r.payAmount)||0, payCcy=r.payCcy||"CNY";
     const allocPct=(targetReady && target) ? allocDiff/target*100 : 0;
     const rate=refRateFor(r), fx=Number(r.fxAmount)||0;
-    // 主汇率统一按“1 外币 = X CNY”显示，同时计算反向汇率。
-    const implied=(r.ccy!=="CNY" && fx>0 && actual>0) ? actual/fx : (r.ccy==="CNY"?1:0);
-    const reverse=(r.ccy!=="CNY" && fx>0 && actual>0) ? fx/actual : (r.ccy==="CNY"?1:0);
-    const rateDiff=(r.ccy!=="CNY" && fx>0 && actual>0 && rate>0) ? implied-rate : 0;
-    const fxPct=(r.ccy!=="CNY" && fx>0 && actual>0 && rate>0) ? (implied/rate-1)*100 : 0;
-    const fxDiff=(r.ccy!=="CNY" && fx>0 && rate>0) ? actual-(fx*rate) : 0;
+    const receiveCcy=r.ccy||"CNY";
+    const pairSame=payCcy===receiveCcy;
+    // 交易汇率严格按“1 换汇后币种 = X 支付币种”计算。
+    const implied=(fx>0 && payAmount>0) ? payAmount/fx : (pairSame?1:0);
+    const reverse=(fx>0 && payAmount>0) ? fx/payAmount : (pairSame?1:0);
+    const rateDiff=(!pairSame && fx>0 && payAmount>0 && rate>0) ? implied-rate : 0;
+    const fxPct=(!pairSame && fx>0 && payAmount>0 && rate>0) ? (implied/rate-1)*100 : 0;
+    const payToCny=rateInfoFor(r,payCcy,true).rate||0;
+    const fxDiff=(!pairSame && fx>0 && rate>0 && payToCny>0) ? (payAmount-(fx*rate))*payToCny : 0;
+    const rowRateMode = pairSame ? "fixed" : (r.rowRateMode || (r.rowRate!==null && r.rowRate!=="" ? "current" : "top"));
+    const activeRowRate = pairSame ? 1 : topPairRate(payCcy,receiveCcy).rate;
+    const rowRateDisplay = rowRateMode==="current" ? (r.rowRate??"") : (activeRowRate>0 ? String(Number(activeRowRate.toPrecision(10))) : "");
     const goldDisabled = "";
     const fxDisabled = r.ccy==="CNY" ? "disabled" : "";
     const row = document.createElement("tr");
@@ -1356,7 +1412,7 @@ function render(){
         <div class="inlineHelp">
           <span>支付金额（可选 RMB / HKD / USD）</span><span>→</span><span>换汇后金额（可输入 单价×股数）</span>
           <button class="mini followBtn" data-id="${r.id}">支付金额跟随目标</button>
-          ${r.ccy!=="CNY"?`<button class="mini fxCalcBtn" data-id="${r.id}">按参考汇率</button>`:""}
+          ${!pairSame?`<button class="mini fxCalcBtn" data-id="${r.id}">按参考汇率</button>`:""}
           ${autoRateNote(r)?`<span class="warn">${autoRateNote(r)}</span>`:""}
         </div>
       </td>
@@ -1364,27 +1420,35 @@ function render(){
         <div class="mobileFieldHead">交易汇率 / 参考汇率（可选）</div>
         <div class="rateGrid">
           <div>
-            <label>参考：1 ${r.ccy} = ? CNY（可选）</label>
-            <input class="field rowRateInput calcInput" data-id="${r.id}" type="text" inputmode="decimal" value="${r.ccy==="CNY"?"1":(r.rowRate??"")}" placeholder="${r.ccy==="USD"?"跟随顶部 USD":r.ccy==="HKD"?"跟随顶部 HKD":"1"}" ${r.ccy==="CNY"?"disabled":""}/>
+            <label>${pairSame?"同币种固定汇率":rowRateMode==="current"?`当前汇率：1 ${receiveCcy} = ? ${payCcy}`:`顶部参考：1 ${receiveCcy} = ? ${payCcy}`}</label>
+            <input class="field rowRateInput calcInput" data-id="${r.id}" type="text" inputmode="decimal"
+              value="${rowRateDisplay}"
+              placeholder="${pairSame?"1":rowRateMode==="current"?"输入当前汇率":`顶部 ${receiveCcy}/${payCcy} 未填写`}"
+              ${pairSame || rowRateMode!=="current"?"disabled":""}/>
           </div>
           <div>
             <label>计算交易汇率</label>
+            ${!pairSame
+              ? `<div class="rateModeActions">
+                   <button type="button" class="rateModeBtn useCurrentRateBtn ${rowRateMode==="current"?"active":""}" data-id="${r.id}" title="使用本资产当前货币对汇率，并同步更新顶部对应货币对">使用当前的汇率</button>
+                 </div>`
+              : `<div class="rateModeFixed">支付币种与换汇后币种相同，无需换汇</div>`}
             <div class="metric">
-              ${r.ccy==="CNY"
-                ? `<b class="desktopRateOnly">1.000000</b><b class="mobileRateOnly">1.0000</b>`
+              ${pairSame
+                ? `<b class="desktopRateOnly">1 ${receiveCcy} = 1.000000 ${payCcy}</b><b class="mobileRateOnly">1 ${receiveCcy} = 1.0000 ${payCcy}</b>`
                 : implied
-                  ? `<b class="desktopRateOnly">1 ${r.ccy} = ${num(implied,6)} CNY</b>
+                  ? `<b class="desktopRateOnly">1 ${receiveCcy} = ${num(implied,6)} ${payCcy}</b>
                      <span class="mobileRateOnly rateEquation">
-                       <span class="rateLead">1 ${r.ccy} =</span>
-                       <span class="rateValue">${num(implied,4)} CNY</span>
+                       <span class="rateLead">1 ${receiveCcy} =</span>
+                       <span class="rateValue">${num(implied,4)} ${payCcy}</span>
                      </span>`
                   : "—"}
             </div>
-            ${r.ccy!=="CNY" && reverse
-              ? `<div class="desc desktopRateOnly">反向：1 CNY = ${num(reverse,6)} ${r.ccy}</div>
+            ${!pairSame && reverse
+              ? `<div class="desc desktopRateOnly">反向：1 ${payCcy} = ${num(reverse,6)} ${receiveCcy}</div>
                  <div class="reverseRateMobile mobileRateOnly">
-                   <span>反向 1 CNY =</span>
-                   <span>${num(reverse,4)} ${r.ccy}</span>
+                   <span>反向 1 ${payCcy} =</span>
+                   <span>${num(reverse,4)} ${receiveCcy}</span>
                  </div>`
               : ""}
           </div>
@@ -1408,7 +1472,7 @@ function render(){
       </td>
       <td>
         <div class="mobileFieldHead">换汇差额（可选）</div>
-        ${r.ccy==="CNY"
+        ${pairSame
           ? '<div class="metric muted">无需换汇</div>'
           : `<div class="metric ${fx>0&&rate>0?diffClass(fxDiff):"muted"}"><b>${(fx>0&&rate>0)?money(fxDiff):"—"}</b></div>
              <div class="metric muted">${(fx>0&&rate>0)
@@ -1901,6 +1965,8 @@ function bindRowEvents(){
     const newCcy=e.target.value;
     const currentRmb=Number(r.actualRmb)||0;
     r.payCcy=newCcy;
+    r.rowRate=null;
+    r.rowRateMode=(newCcy===r.ccy)?"fixed":"top";
 
     if(r.autoFromFx && Number(r.fxAmount)>0){
       syncPaymentFromFx(r);
@@ -1927,7 +1993,8 @@ function bindRowEvents(){
   document.querySelectorAll(".ccyInput").forEach(x=>x.onchange=e=>{
     const r=state.rows.find(r=>r.id===e.target.dataset.id);
     r.ccy=e.target.value;
-    r.rowRate=r.ccy==="CNY"?1:null;
+    r.rowRate=null;
+    r.rowRateMode=(r.payCcy||"CNY")===r.ccy?"fixed":"top";
     r.fxManual=false;
     if(r.unitPrice && r.priceCcy===r.ccy){
       r.fxAmount=Number(r.unitPrice)||0;
@@ -1945,7 +2012,59 @@ function bindRowEvents(){
     rerenderKeepTyping(e, raw=>{
       const r=state.rows.find(r=>r.id===e.target.dataset.id);
       r.rowRate=String(raw).trim()===""?null:n;
+      if((r.payCcy||"CNY")!==r.ccy) r.rowRateMode="current";
       if(r.autoFromFx) syncPaymentFromFx(r);
+    });
+  });
+
+  document.querySelectorAll(".useCurrentRateBtn").forEach(x=>x.onclick=e=>{
+    const r=state.rows.find(r=>r.id===e.currentTarget.dataset.id);
+    if(!r) return;
+    const payCcy=r.payCcy||"CNY", receiveCcy=r.ccy||"CNY";
+    if(payCcy===receiveCcy) return;
+
+    const pay=Number(r.payAmount)||0;
+    const fx=Number(r.fxAmount)||0;
+    const implied=(fx>0 && pay>0)?pay/fx:0;
+    const savedCurrent=Number(r.rowRate)||0;
+    const topRate=topPairRate(payCcy,receiveCcy).rate;
+    const latestRate=savedCurrent>0?savedCurrent:(topRate>0?topRate:implied);
+
+    if(latestRate>0){
+      // 将当前行报价同步到正确的顶部货币对，而不是一律写进 USD/CNY 或 HKD/CNY。
+      setTopPairRate(payCcy,receiveCcy,latestRate);
+      const key=pairKey(payCcy,receiveCcy);
+
+      state.rows.forEach(peer=>{
+        const peerPay=peer.payCcy||"CNY", peerRecv=peer.ccy||"CNY";
+        if(peerPay===peerRecv || pairKey(peerPay,peerRecv)!==key) return;
+        const oriented=topPairRate(peerPay,peerRecv).rate;
+        const mode=peer.rowRateMode || (peer.rowRate!==null && peer.rowRate!=="" ? "current" : "top");
+        if(mode==="current" && oriented>0) peer.rowRate=oriented;
+        const peerPayAmount=Number(peer.payAmount)||0;
+        if(peerPayAmount>0 && oriented>0){
+          peer.fxAmount=peerPayAmount/oriented;
+          peer.fxManual=false;
+          peer.autoFromFx=false;
+        }
+      });
+
+      r.rowRate=latestRate;
+      r.rowRateMode="current";
+
+      if(el("usdRate")) el("usdRate").value=state.usdRate??"";
+      if(el("hkdRate")) el("hkdRate").value=state.hkdRate??"";
+      updateUsdHkdControl();
+      updatePrincipalCurrencyUi();
+    }else{
+      r.rowRate=null;
+      r.rowRateMode="current";
+    }
+
+    render();
+    requestAnimationFrame(()=>{
+      const input=document.querySelector(`.rowRateInput[data-id="${r.id}"]`);
+      if(input && !input.disabled){ try{input.focus(); input.select();}catch(_){} }
     });
   });
 
@@ -1963,11 +2082,8 @@ function bindRowEvents(){
         r.fxManual=true;
         r.autoFromFx=true;
 
-        if(r.priceCcy==="CNY"){
-          r.rowRate=1;
-        }else if(r.rowRate===1){
-          r.rowRate=null;
-        }
+        r.rowRate=null;
+        r.rowRateMode=(r.payCcy||"CNY")===r.ccy?"fixed":"top";
 
         // 单股金额 = 当前行换汇后金额时，前面的支付金额按汇率自动联动。
         // 未填写准确参考汇率时，仅使用本资产独立的粗略估算汇率。
@@ -1983,11 +2099,8 @@ function bindRowEvents(){
     r.priceCcy=e.target.value;
     r.ccy=e.target.value;
     const n=Number(r.unitPrice)||0;
-    if(r.ccy==="CNY"){
-      r.rowRate=1;
-    }else if(r.rowRate===1){
-      r.rowRate=null;
-    }
+    r.rowRate=null;
+    r.rowRateMode=(r.payCcy||"CNY")===r.ccy?"fixed":"top";
     if(n>0){
       r.fxAmount=n;
       r.fxManual=true;
@@ -2011,7 +2124,7 @@ function bindRowEvents(){
     const r=state.rows.find(r=>r.id===e.target.dataset.id);
     const rate=refRateFor(r);
     if(rate>0){
-      r.fxAmount=(Number(r.actualRmb)||0)/rate;
+      r.fxAmount=(Number(r.payAmount)||0)/rate;
       r.fxManual=false;
       r.autoFromFx=false;
       render();
@@ -2040,25 +2153,27 @@ function updateTotals(){
   const totalTarget=principalCny===null?null:rows.reduce((s,r)=>s+(targetOf(r)||0),0);
   const totalActual=rows.reduce((s,r)=>s+(Number(r.actualRmb)||0),0);
   let totalFxDiff=0, fxDiffCount=0;
-  const fxAgg={
-    USD:{rmb:0,fx:0,refRmb:0,refFx:0},
-    HKD:{rmb:0,fx:0,refRmb:0,refFx:0}
-  };
+  const pairAgg={};
+
   rows.forEach(r=>{
-    if(!fxAgg[r.ccy]) return;
-    const fx=Number(r.fxAmount)||0, actual=Number(r.actualRmb)||0, rate=refRateFor(r);
-    if(fx>0 && actual>0){
-      fxAgg[r.ccy].rmb+=actual;
-      fxAgg[r.ccy].fx+=fx;
-    }
-    if(fx>0 && actual>0 && rate>0){
-      const d=actual-(fx*rate);
-      totalFxDiff+=d;
-      fxDiffCount++;
-      fxAgg[r.ccy].refRmb+=fx*rate;
-      fxAgg[r.ccy].refFx+=fx;
+    const payCcy=r.payCcy||"CNY", recvCcy=r.ccy||"CNY";
+    const pay=Number(r.payAmount)||0, fx=Number(r.fxAmount)||0, rate=refRateFor(r);
+    if(payCcy===recvCcy || !(pay>0) || !(fx>0)) return;
+    const key=`${payCcy}->${recvCcy}`;
+    if(!pairAgg[key]) pairAgg[key]={payCcy,recvCcy,pay:0,fx:0,refPay:0,refFx:0};
+    pairAgg[key].pay+=pay;
+    pairAgg[key].fx+=fx;
+    if(rate>0){
+      pairAgg[key].refPay+=fx*rate;
+      pairAgg[key].refFx+=fx;
+      const payToCny=rateInfoFor(r,payCcy,true).rate||0;
+      if(payToCny>0){
+        totalFxDiff+=(pay-fx*rate)*payToCny;
+        fxDiffCount++;
+      }
     }
   });
+
   const allocDiff=principalCny===null?null:totalActual-principalCny;
   el("sumRatio").textContent=totalPct.toFixed(2)+"%";
   el("sumRatio").className=Math.abs(totalPct-100)<0.005?"good":"warn";
@@ -2068,40 +2183,44 @@ function updateTotals(){
   el("sumAllocDiff").className=allocDiff===null?"muted":diffClass(allocDiff);
   el("sumFxDiff").textContent=fxDiffCount?money(totalFxDiff):"—";
   el("sumFxDiff").className=fxDiffCount?diffClass(totalFxDiff):"muted";
-  const rateText=[];
-  ["USD","HKD"].forEach(c=>{
-    const a=fxAgg[c];
-    if(a.fx>0 && a.rmb>0){
-      const actualAvg=a.rmb/a.fx;
-      const refAvg=a.refFx>0?a.refRmb/a.refFx:0;
-      rateText.push(`1 ${c} = ${num(actualAvg,6)} CNY${refAvg?` / 参考 ${num(refAvg,6)}`:""}`);
-    }
+
+  const pairEntries=Object.values(pairAgg);
+  const rateText=pairEntries.map(a=>{
+    const actualAvg=a.pay/a.fx;
+    const refAvg=a.refFx>0?a.refPay/a.refFx:0;
+    return `1 ${a.recvCcy} = ${num(actualAvg,6)} ${a.payCcy}${refAvg?` / 参考 ${num(refAvg,6)}`:""}`;
   });
-  el("sumRates").textContent=rateText.length?rateText.join("；"):"填写实际外币后自动计算交易汇率";
+  el("sumRates").textContent=rateText.length?rateText.join("；"):"填写支付金额与换汇后金额后自动计算交易汇率";
+
   el("cardActual").textContent=money(totalActual);
   if(el("mobileActual")) el("mobileActual").textContent=money(totalActual);
   el("cardAlloc").textContent=allocDiff===null?"—":money(allocDiff);
   el("cardAlloc").className="v "+(allocDiff===null?"":diffClass(allocDiff));
   el("cardFx").textContent=fxDiffCount?money(totalFxDiff):"—";
   el("cardFx").className="v "+(fxDiffCount?diffClass(totalFxDiff):"");
-  ["USD","HKD"].forEach(c=>{
-    const a=fxAgg[c], id=c==="USD"?"Usd":"Hkd";
-    if(a.fx>0 && a.rmb>0){
-      const actualAvg=a.rmb/a.fx;
-      const reverseAvg=a.fx/a.rmb;
-      const refAvg=a.refFx>0?a.refRmb/a.refFx:0;
-      el("card"+id).textContent=num(actualAvg,6);
-      el("card"+id+"Sub").textContent=refAvg
-        ? `1 ${c} = ${num(actualAvg,6)} CNY；反向 ${num(reverseAvg,6)}；参考加权平均 ${num(refAvg,6)}`
-        : `1 ${c} = ${num(actualAvg,6)} CNY；反向：1 CNY = ${num(reverseAvg,6)} ${c}`;
-    }else{
+
+  function setCurrencyCard(currency,id){
+    const related=pairEntries.filter(a=>a.recvCcy===currency || a.payCcy===currency);
+    if(!related.length){
       el("card"+id).textContent="—";
-      el("card"+id+"Sub").textContent=`填写实际人民币 + ${c} 实际金额后计算。`;
+      el("card"+id+"Sub").textContent=`填写包含 ${currency} 的交易后计算。`;
+      return;
     }
-  });
+    if(related.length===1){
+      const a=related[0], avg=a.pay/a.fx, ref=a.refFx>0?a.refPay/a.refFx:0;
+      el("card"+id).textContent=num(avg,6);
+      el("card"+id+"Sub").textContent=`1 ${a.recvCcy} = ${num(avg,6)} ${a.payCcy}`+(ref?`；参考 ${num(ref,6)} ${a.payCcy}`:"");
+    }else{
+      el("card"+id).textContent=`${related.length} 组`;
+      el("card"+id+"Sub").textContent=related.map(a=>`1 ${a.recvCcy} = ${num(a.pay/a.fx,4)} ${a.payCcy}`).join("；");
+    }
+  }
+  setCurrencyCard("USD","Usd");
+  setCurrencyCard("HKD","Hkd");
 }
 function normalizeState(s){
   if(!s || !Array.isArray(s.rows)) return null;
+  const needsPairRateMigration=s.pairRateVersion!==1;
   const byId=Object.fromEntries(defaults.map(d=>[d.id,d]));
   s.rows=s.rows.map(r=>{
     const d=byId[r.id]||{};
@@ -2121,6 +2240,16 @@ function normalizeState(s){
       // 已保存的交易币种仍保留；产品默认币种用于缺失值和单股币种。
       if(!base.ccy) base.ccy=product.ccy;
     }
+    if(needsPairRateMigration){
+      // 旧版 rowRate 表示“资产币种/CNY”，新版表示“换汇后币种/支付币种”；旧值不能沿用。
+      base.rowRate=null;
+      base.rowRateMode=((payCcy||"CNY")===base.ccy)?"fixed":"top";
+    }else if((payCcy||"CNY")===base.ccy){
+      base.rowRate=null;
+      base.rowRateMode="fixed";
+    }else if(!["top","current"].includes(base.rowRateMode)){
+      base.rowRateMode=(base.rowRate!==null && base.rowRate!=="")?"current":"top";
+    }
     return {
       ...base,
       unitPrice:r.unitPrice??null,
@@ -2133,18 +2262,19 @@ function normalizeState(s){
   });
   // V14 起比例改为独立输入，旧版本的自动平衡开关不再生效。
   s.autoGold=false;
+  s.pairRateVersion=1;
   if(!["CNY","USD","HKD"].includes(s.principalCcy)) s.principalCcy="CNY";
   if(s.usdHkdRate===undefined || s.usdHkdRate===null) s.usdHkdRate="";
   if(!["USD_HKD","HKD_USD"].includes(s.usdHkdDirection)) s.usdHkdDirection="USD_HKD";
   return s;
 }
 function save(){
-  try{ localStorage.setItem("investmentAllocatorV18",JSON.stringify(state)); }catch(e){}
+  try{ localStorage.setItem("investmentAllocatorV20",JSON.stringify(state)); }catch(e){}
 }
 function load(){
   try{
     const keys=[
-      "investmentAllocatorV18","investmentAllocatorV17","investmentAllocatorV16","investmentAllocatorV15","investmentAllocatorV14","investmentAllocatorV13","investmentAllocatorV12","investmentAllocatorV11","investmentAllocatorV10","investmentAllocatorV9","investmentAllocatorV8","investmentAllocatorV7",
+      "investmentAllocatorV20","investmentAllocatorV19","investmentAllocatorV18","investmentAllocatorV17","investmentAllocatorV16","investmentAllocatorV15","investmentAllocatorV14","investmentAllocatorV13","investmentAllocatorV12","investmentAllocatorV11","investmentAllocatorV10","investmentAllocatorV9","investmentAllocatorV8","investmentAllocatorV7",
       "investmentAllocatorV6","investmentAllocatorV5","investmentAllocatorV4",
       "investmentAllocatorV3","investmentAllocatorV2"
     ];
@@ -2175,6 +2305,7 @@ function makeRows({clear=false}={}){
     rmbManual:false,
     fxManual:false,
     rowRate:null,
+    rowRateMode:x.ccy==="CNY"?"fixed":"top",
     unitPrice:null,
     priceCcy:x.ccy,
     autoFromFx:false,
@@ -2182,7 +2313,7 @@ function makeRows({clear=false}={}){
   }));
 }
 function reset(){
-  state={principal:100000,principalCcy:"CNY",usdRate:"",hkdRate:"",usdHkdRate:"",usdHkdDirection:"USD_HKD",autoGold:false,rows:makeRows()};
+  state={principal:100000,principalCcy:"CNY",usdRate:"",hkdRate:"",usdHkdRate:"",usdHkdDirection:"USD_HKD",autoGold:false,pairRateVersion:1,rows:makeRows()};
   el("principal").value=state.principal;
   el("principalCcy").value=state.principalCcy;
   el("usdRate").value="";
@@ -2191,7 +2322,7 @@ function reset(){
   render();
 }
 function clearAll(){
-  state={principal:0,principalCcy:"CNY",usdRate:"",hkdRate:"",usdHkdRate:"",usdHkdDirection:"USD_HKD",autoGold:false,rows:makeRows({clear:true})};
+  state={principal:0,principalCcy:"CNY",usdRate:"",hkdRate:"",usdHkdRate:"",usdHkdDirection:"USD_HKD",autoGold:false,pairRateVersion:1,rows:makeRows({clear:true})};
   el("principal").value="";
   el("principalCcy").value=state.principalCcy;
   el("usdRate").value="";
@@ -2330,9 +2461,10 @@ if(el("mobileTopBtn")){
 
 el("fillFxBtn").onclick=()=>{
   state.rows.forEach(r=>{
-    if(r.ccy==="CNY") return;
+    const payCcy=r.payCcy||"CNY", recvCcy=r.ccy||"CNY";
+    if(payCcy===recvCcy) return;
     const rate=refRateFor(r);
-    if(rate>0){r.fxAmount=(Number(r.actualRmb)||0)/rate;r.fxManual=false;}
+    if(rate>0){r.fxAmount=(Number(r.payAmount)||0)/rate;r.fxManual=false;}
   });
   render();
 };
