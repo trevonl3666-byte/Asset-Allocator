@@ -97,8 +97,9 @@
   }
   .dragHandle:active{cursor:grabbing}
   .dragHandle:focus-visible{outline:2px solid #4b86c5;outline-offset:2px}
-  tbody tr.reorderDragging{opacity:.58}
-  tbody tr.reorderDragging td{background:#111b26}
+  tbody tr[data-row-id]{transition:transform 200ms cubic-bezier(.2,.82,.24,1)}
+  tbody tr.reorderDragging{opacity:.94;position:relative;z-index:3}
+  tbody tr.reorderDragging td{background:#111b26;box-shadow:0 12px 26px rgba(0,0,0,.24)}
   tbody tr.reorderTarget td{box-shadow:inset 0 2px 0 #4b86c5}
   tbody tr.reorderTargetAfter td{box-shadow:inset 0 -2px 0 #4b86c5}
   .desc{margin-top:5px;color:var(--muted);font-size:12px}
@@ -184,16 +185,19 @@
 
 
 
-  .assetHeadInline{display:inline-flex;align-items:center;gap:10px}
+  .assetHeadInline{display:inline-flex;align-items:center;gap:8px}
   .assetHeadLabel{display:inline-flex;align-items:center;gap:6px}
   .assetHeadSortBtn,.mobileSortIconBtn{
-    width:42px;height:42px;padding:8px;
+    width:28px;height:28px;padding:4px;
     display:inline-flex;align-items:center;justify-content:center;
-    border:1px solid #334151;border-radius:10px;
-    background:#151e28;cursor:pointer;
-    -webkit-tap-highlight-color:transparent;vertical-align:middle
+    border:0;border-radius:0;
+    background:transparent;cursor:pointer;
+    -webkit-tap-highlight-color:transparent;vertical-align:middle;
+    box-shadow:none
   }
-  .assetHeadSortBtn img,.mobileSortIconBtn img{display:block;width:25px;height:25px;object-fit:contain}
+  .assetHeadSortBtn:hover,.mobileSortIconBtn:hover{opacity:.92}
+  .assetHeadSortBtn:active,.mobileSortIconBtn:active{transform:scale(.98)}
+  .assetHeadSortBtn img,.mobileSortIconBtn img{display:block;width:20px;height:20px;object-fit:contain}
 
 
 
@@ -296,7 +300,7 @@
     background:#17202b;color:var(--text);cursor:pointer
   }
   .assetSortHint{margin:0 0 10px;color:var(--muted);font-size:12px}
-  .assetSortList{display:flex;flex-direction:column;gap:8px}
+  .assetSortList{display:flex;flex-direction:column;gap:8px;position:relative}
   .assetSortItem{
     position:relative;
     display:flex;align-items:center;justify-content:space-between;gap:10px;
@@ -304,19 +308,30 @@
     border:1px solid #2f3a47;border-radius:11px;
     background:#0d131a;color:var(--text);
     cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;
-    text-align:left
+    text-align:left;box-sizing:border-box;
+    transform:translate3d(0,0,0);
+    transition:transform 220ms cubic-bezier(.2,.82,.24,1),border-color 140ms ease,background 140ms ease,box-shadow 140ms ease;
+    will-change:transform
   }
   .assetSortItem:active{cursor:grabbing}
   .assetSortItem:focus-visible{outline:2px solid #4b86c5;outline-offset:2px}
-  .assetSortItem.sortDragging{opacity:.58;border-color:#52779c}
-  .assetSortItem.sortTargetBefore::before,
-  .assetSortItem.sortTargetAfter::after{
-    content:"";position:absolute;left:6px;right:6px;height:2px;
-    border-radius:999px;background:#58a6ff
+  .assetSortItem.sortPlaceholder{visibility:hidden}
+  .assetSortGhost{
+    position:fixed!important;z-index:2147483250!important;margin:0!important;
+    pointer-events:none!important;cursor:grabbing!important;
+    visibility:visible!important;opacity:1!important;
+    border-color:#50789f!important;background:#121c27!important;
+    box-shadow:0 18px 42px rgba(0,0,0,.48),0 4px 12px rgba(0,0,0,.30)!important;
+    transform-origin:center center;
+    transition:none!important;
+    will-change:transform
   }
-  .assetSortItem.sortTargetBefore::before{top:-5px}
-  .assetSortItem.sortTargetAfter::after{bottom:-5px}
+  .assetSortGhost .assetSortName{font-weight:800}
   .assetSortName{min-width:0;font-weight:750}
+  @media (prefers-reduced-motion:reduce){
+    .assetSortItem{transition:none!important}
+    .assetSortGhost{transition:none!important}
+  }
 
   /* 桌面端安全对齐：只调整布局，不改变字体字号、字重或文字行高 */
   @media (min-width:761px){
@@ -388,7 +403,7 @@
     .mobileOnly{display:block}
 
     .mobileSortBar{
-      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      display:flex;align-items:center;justify-content:space-between;gap:8px;
       margin:0 0 0;padding:13px 12px;
       border:1px solid var(--line);border-bottom:0;border-radius:14px 14px 0 0;
       background:#141b24;color:#dce9f8;font-size:13px;font-weight:700
@@ -774,7 +789,7 @@
       <div id="assetSortTitle" class="assetSortTitle">调整资产顺序</div>
       <button id="assetSortDoneBtn" class="assetSortDone" type="button">完成</button>
     </div>
-    <div class="assetSortHint">按住资产名称上下拖动；松手后主页面会立即同步。</div>
+    <div class="assetSortHint">按住资产上下拖动；其它资产会自动让位，松手后立即同步。</div>
     <div id="assetSortList" class="assetSortList"></div>
   </section>
 </div>
@@ -1571,6 +1586,34 @@ function moveRowByKeyboard(id,delta){
   });
 }
 
+function rowReorderRects(tbody,exclude){
+  const map=new Map();
+  tbody.querySelectorAll("tr[data-row-id]").forEach(row=>{
+    if(row!==exclude) map.set(row,row.getBoundingClientRect().top);
+  });
+  return map;
+}
+function animateRowReorderFlip(tbody,before,exclude){
+  const moved=[];
+  tbody.querySelectorAll("tr[data-row-id]").forEach(row=>{
+    if(row===exclude) return;
+    const oldTop=before.get(row);
+    if(oldTop===undefined) return;
+    const newTop=row.getBoundingClientRect().top;
+    const dy=oldTop-newTop;
+    if(Math.abs(dy)<.5) return;
+    row.style.transition="none";
+    row.style.transform=`translate3d(0,${dy}px,0)`;
+    moved.push(row);
+  });
+  if(!moved.length) return;
+  moved[0].getBoundingClientRect();
+  requestAnimationFrame(()=>moved.forEach(row=>{
+    row.style.transition="transform 200ms cubic-bezier(.2,.82,.24,1)";
+    row.style.transform="translate3d(0,0,0)";
+  }));
+}
+
 function bindRowReorder(){
   document.querySelectorAll(".dragHandle").forEach(handle=>{
     if(handle.dataset.reorderBound==="1") return;
@@ -1632,13 +1675,17 @@ function bindRowReorder(){
       if(insertBefore){
         insertBefore.classList.add("reorderTarget");
         if(dragged.nextElementSibling!==insertBefore){
+          const before=rowReorderRects(tbody,dragged);
           tbody.insertBefore(dragged,insertBefore);
+          animateRowReorderFlip(tbody,before,dragged);
         }
       }else{
         const last=otherRows[otherRows.length-1];
         if(last) last.classList.add("reorderTargetAfter");
         if(dragged!==tbody.lastElementChild){
+          const before=rowReorderRects(tbody,dragged);
           tbody.appendChild(dragged);
+          animateRowReorderFlip(tbody,before,dragged);
         }
       }
 
@@ -1691,9 +1738,12 @@ function syncAssetSortStateFromList(){
 }
 
 function clearAssetSortVisuals(){
-  document.querySelectorAll("#assetSortList .sortDragging,#assetSortList .sortTargetBefore,#assetSortList .sortTargetAfter").forEach(x=>{
-    x.classList.remove("sortDragging","sortTargetBefore","sortTargetAfter");
+  document.querySelectorAll("#assetSortList .sortPlaceholder").forEach(x=>{
+    x.classList.remove("sortPlaceholder");
+    x.style.transform="";
+    x.style.transition="";
   });
+  document.querySelectorAll(".assetSortGhost").forEach(x=>x.remove());
 }
 
 function moveAssetSortItem(id,delta){
@@ -1710,6 +1760,97 @@ function moveAssetSortItem(id,delta){
     const target=el("assetSortList")?.querySelector(`.assetSortItem[data-id="${id}"]`);
     if(target) try{target.focus({preventScroll:true});}catch(_){target.focus();}
   });
+}
+
+function assetSortRects(list,exclude){
+  const map=new Map();
+  list.querySelectorAll(".assetSortItem").forEach(node=>{
+    if(node!==exclude) map.set(node,node.getBoundingClientRect().top);
+  });
+  return map;
+}
+
+function animateAssetSortFlip(list,before,exclude){
+  const nodes=[...list.querySelectorAll(".assetSortItem")].filter(node=>node!==exclude);
+  const moving=[];
+  nodes.forEach(node=>{
+    const oldTop=before.get(node);
+    if(oldTop===undefined) return;
+    const newTop=node.getBoundingClientRect().top;
+    const dy=oldTop-newTop;
+    if(Math.abs(dy)<.5) return;
+    node.style.transition="none";
+    node.style.transform=`translate3d(0,${dy}px,0)`;
+    moving.push(node);
+  });
+  if(!moving.length) return;
+  // 强制提交第一帧后再滑向新位置，形成参考视频里“其它卡片让位”的感觉。
+  moving[0].getBoundingClientRect();
+  requestAnimationFrame(()=>{
+    moving.forEach(node=>{
+      node.style.transition="transform 220ms cubic-bezier(.2,.82,.24,1)";
+      node.style.transform="translate3d(0,0,0)";
+    });
+  });
+}
+
+function makeAssetSortGhost(item,rect){
+  const ghost=item.cloneNode(true);
+  ghost.className="assetSortItem assetSortGhost";
+  ghost.removeAttribute("tabindex");
+  ghost.removeAttribute("role");
+  ghost.removeAttribute("aria-label");
+  ghost.style.left=`${rect.left}px`;
+  ghost.style.top=`${rect.top}px`;
+  ghost.style.width=`${rect.width}px`;
+  ghost.style.height=`${rect.height}px`;
+  document.body.appendChild(ghost);
+  return ghost;
+}
+
+function reorderAssetSortPlaceholder(session,clientY){
+  const list=el("assetSortList");
+  if(!list) return;
+  const dragged=session.item;
+  const others=[...list.querySelectorAll(".assetSortItem")].filter(x=>x!==dragged);
+  if(!others.length) return;
+
+  let insertBefore=null;
+  for(const row of others){
+    const rect=row.getBoundingClientRect();
+    if(clientY < rect.top + rect.height/2){
+      insertBefore=row;
+      break;
+    }
+  }
+
+  const alreadyCorrect=insertBefore
+    ? dragged.nextElementSibling===insertBefore
+    : dragged===list.lastElementChild;
+  if(alreadyCorrect) return;
+
+  const before=assetSortRects(list,dragged);
+  if(insertBefore) list.insertBefore(dragged,insertBefore);
+  else list.appendChild(dragged);
+  animateAssetSortFlip(list,before,dragged);
+}
+
+function settleAssetSortGhost(session,done){
+  const ghost=session.ghost;
+  const item=session.item;
+  if(!ghost || !item){done();return;}
+  const target=item.getBoundingClientRect();
+  const dx=target.left-session.origin.left;
+  const dy=target.top-session.origin.top;
+  const reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if(reduced){done();return;}
+  ghost.style.transition="transform 155ms cubic-bezier(.2,.82,.24,1),box-shadow 155ms ease,opacity 155ms ease";
+  ghost.style.boxShadow="0 5px 14px rgba(0,0,0,.30)";
+  ghost.style.transform=`translate3d(${dx}px,${dy}px,0) scale(1)`;
+  let finished=false;
+  const finish=()=>{if(finished)return;finished=true;done();};
+  ghost.addEventListener("transitionend",finish,{once:true});
+  setTimeout(finish,190);
 }
 
 function bindAssetSortItems(){
@@ -1731,55 +1872,66 @@ function bindAssetSortItems(){
     item.addEventListener("pointerdown",ev=>{
       if(ev.pointerType==="mouse" && ev.button!==0) return;
       ev.preventDefault();
+      const rect=item.getBoundingClientRect();
       try{item.setPointerCapture(ev.pointerId);}catch(_){}
+      const ghost=makeAssetSortGhost(item,rect);
+      item.classList.add("sortPlaceholder");
       assetSortSession={
         pointerId:ev.pointerId,
         id:item.dataset.id,
         item,
-        clientY:ev.clientY
+        ghost,
+        origin:{left:rect.left,top:rect.top},
+        startX:ev.clientX,
+        startY:ev.clientY,
+        lastX:ev.clientX,
+        lastY:ev.clientY
       };
-      item.classList.add("sortDragging");
+      // 轻微放大并抬起，接近参考视频的“拿起卡片”手感。
+      requestAnimationFrame(()=>{
+        if(assetSortSession?.ghost===ghost){
+          ghost.style.transform="translate3d(0,0,0) scale(1.025)";
+        }
+      });
     });
 
     item.addEventListener("pointermove",ev=>{
-      if(!assetSortSession || assetSortSession.pointerId!==ev.pointerId) return;
+      const session=assetSortSession;
+      if(!session || session.pointerId!==ev.pointerId) return;
       ev.preventDefault();
-      assetSortSession.clientY=ev.clientY;
-      const dragged=assetSortSession.item;
-      const other=[...list.querySelectorAll(".assetSortItem")].filter(x=>x!==dragged);
-      let insertBefore=null;
-      for(const row of other){
-        const rect=row.getBoundingClientRect();
-        if(ev.clientY < rect.top + rect.height/2){
-          insertBefore=row;
-          break;
-        }
-      }
+      session.lastX=ev.clientX;
+      session.lastY=ev.clientY;
 
-      other.forEach(x=>x.classList.remove("sortTargetBefore","sortTargetAfter"));
-      if(insertBefore){
-        insertBefore.classList.add("sortTargetBefore");
-        if(dragged.nextElementSibling!==insertBefore){
-          list.insertBefore(dragged,insertBefore);
-        }
-      }else{
-        const last=other[other.length-1];
-        if(last) last.classList.add("sortTargetAfter");
-        if(dragged!==list.lastElementChild) list.appendChild(dragged);
+      const dy=ev.clientY-session.startY;
+      // 列表排序以纵向移动为主，横向只给一点点跟手反馈，避免卡片左右乱飘。
+      const dx=Math.max(-10,Math.min(10,(ev.clientX-session.startX)*.12));
+      session.ghost.style.transform=`translate3d(${dx}px,${dy}px,0) scale(1.025)`;
+      reorderAssetSortPlaceholder(session,ev.clientY);
+
+      // 靠近弹窗上下边缘时平滑辅助滚动，方便跨多项拖动。
+      const dialog=el("assetSortModal")?.querySelector(".assetSortDialog");
+      if(dialog){
+        const rect=dialog.getBoundingClientRect();
+        const edge=64;
+        if(ev.clientY<rect.top+edge) dialog.scrollBy({top:-10,behavior:"auto"});
+        else if(ev.clientY>rect.bottom-edge) dialog.scrollBy({top:10,behavior:"auto"});
       }
     });
 
     const finish=ev=>{
-      if(!assetSortSession || assetSortSession.pointerId!==ev.pointerId) return;
+      const session=assetSortSession;
+      if(!session || session.pointerId!==ev.pointerId) return;
       try{item.releasePointerCapture(ev.pointerId);}catch(_){}
-      syncAssetSortStateFromList();
-      clearAssetSortVisuals();
-      const keepId=assetSortSession.id;
       assetSortSession=null;
-      buildAssetSortList();
-      requestAnimationFrame(()=>{
-        const target=el("assetSortList")?.querySelector(`.assetSortItem[data-id="${keepId}"]`);
-        if(target) try{target.focus({preventScroll:true});}catch(_){target.focus();}
+      settleAssetSortGhost(session,()=>{
+        session.item.classList.remove("sortPlaceholder");
+        if(session.ghost?.isConnected) session.ghost.remove();
+        syncAssetSortStateFromList();
+        buildAssetSortList();
+        requestAnimationFrame(()=>{
+          const target=el("assetSortList")?.querySelector(`.assetSortItem[data-id="${session.id}"]`);
+          if(target) try{target.focus({preventScroll:true});}catch(_){target.focus();}
+        });
       });
     };
     item.addEventListener("pointerup",finish);
