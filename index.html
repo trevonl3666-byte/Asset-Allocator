@@ -300,7 +300,7 @@
     background:#17202b;color:var(--text);cursor:pointer
   }
   .assetSortHint{margin:0 0 10px;color:var(--muted);font-size:12px}
-  .assetSortList{display:flex;flex-direction:column;gap:8px;position:relative}
+  .assetSortList{display:flex;flex-direction:column;gap:8px;position:relative;overflow-x:hidden}
   .assetSortItem{
     position:relative;
     display:flex;align-items:center;justify-content:space-between;gap:10px;
@@ -323,8 +323,8 @@
     border-color:#50789f!important;background:#121c27!important;
     box-shadow:0 18px 42px rgba(0,0,0,.48),0 4px 12px rgba(0,0,0,.30)!important;
     transform-origin:center center;
-    transition:none!important;
-    will-change:transform
+    transition:transform 180ms cubic-bezier(.2,.82,.24,1),box-shadow 155ms ease,opacity 155ms ease;
+    will-change:transform;box-sizing:border-box!important;max-width:none!important
   }
   .assetSortGhost .assetSortName{font-weight:800}
   .assetSortName{min-width:0;font-weight:750}
@@ -1717,6 +1717,7 @@ function buildAssetSortList(){
     item.className="assetSortItem";
     item.dataset.id=r.id;
     item.tabIndex=0;
+    item.draggable=false;
     item.setAttribute("role","button");
     item.setAttribute("aria-label",`拖动 ${r.name} 调整顺序`);
     item.innerHTML=`<span class="assetSortName">${r.name}</span>`;
@@ -1840,17 +1841,21 @@ function settleAssetSortGhost(session,done){
   const item=session.item;
   if(!ghost || !item){done();return;}
   const target=item.getBoundingClientRect();
-  const dx=target.left-session.origin.left;
-  const dy=target.top-session.origin.top;
+  const targetDx=0; // Y 轴锁定：回位时禁止任何横向位移。
+  const targetDy=target.top-session.origin.top;
   const reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   if(reduced){done();return;}
-  ghost.style.transition="transform 155ms cubic-bezier(.2,.82,.24,1),box-shadow 155ms ease,opacity 155ms ease";
+  // 这里始终按“初始位置 -> 目标位置”的绝对位移收束，避免松手后因当前拖拽位移/滚动偏移叠加，
+  // 造成卡片飞出弹窗甚至留在外面的情况。
+  ghost.style.transition="transform 180ms cubic-bezier(.2,.82,.24,1),box-shadow 155ms ease,opacity 155ms ease";
   ghost.style.boxShadow="0 5px 14px rgba(0,0,0,.30)";
-  ghost.style.transform=`translate3d(${dx}px,${dy}px,0) scale(1)`;
+  requestAnimationFrame(()=>{
+    ghost.style.transform=`translate3d(${targetDx}px,${targetDy}px,0) scale(1)`;
+  });
   let finished=false;
   const finish=()=>{if(finished)return;finished=true;done();};
   ghost.addEventListener("transitionend",finish,{once:true});
-  setTimeout(finish,190);
+  setTimeout(finish,230);
 }
 
 function bindAssetSortItems(){
@@ -1885,7 +1890,9 @@ function bindAssetSortItems(){
         startX:ev.clientX,
         startY:ev.clientY,
         lastX:ev.clientX,
-        lastY:ev.clientY
+        lastY:ev.clientY,
+        currentDx:0,
+        currentDy:0
       };
       // 轻微放大并抬起，接近参考视频的“拿起卡片”手感。
       requestAnimationFrame(()=>{
@@ -1903,9 +1910,10 @@ function bindAssetSortItems(){
       session.lastY=ev.clientY;
 
       const dy=ev.clientY-session.startY;
-      // 列表排序以纵向移动为主，横向只给一点点跟手反馈，避免卡片左右乱飘。
-      const dx=Math.max(-10,Math.min(10,(ev.clientX-session.startX)*.12));
-      session.ghost.style.transform=`translate3d(${dx}px,${dy}px,0) scale(1.025)`;
+      // 硬约束：排序只能沿 Y 轴移动。无论指针横向移动多少，X 坐标始终锁定。
+      session.currentDx=0;
+      session.currentDy=dy;
+      session.ghost.style.transform=`translate3d(0,${dy}px,0) scale(1.025)`;
       reorderAssetSortPlaceholder(session,ev.clientY);
 
       // 靠近弹窗上下边缘时平滑辅助滚动，方便跨多项拖动。
