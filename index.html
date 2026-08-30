@@ -51,8 +51,12 @@
     color:#a9bdd3;font-size:13px;line-height:1.7;box-shadow:0 14px 38px rgba(0,0,0,.32)
   }
   .fxInfoPopover[hidden]{display:none}
+  .topFieldCell{
+    display:grid;grid-template-rows:30px 46px 21px;row-gap:7px;min-width:0
+  }
+  .topFieldCell .field{height:46px}
   .topLabelRow{
-    display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 7px
+    min-height:30px;display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0
   }
   .topLabelRow label{margin:0;min-width:0}
   .principalCcySelect{
@@ -70,7 +74,7 @@
   .swapRateBtn:hover{border-color:#4d6075}
   .swapRateBtn:focus-visible{outline:2px solid #4b86c5;outline-offset:2px}
   .swapRateBtn svg{width:17px;height:17px;display:block;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-  .topFieldHint{min-height:16px;margin-top:5px;color:var(--muted);font-size:11px;line-height:1.35}
+  .topFieldHint{min-height:21px;margin:0;color:var(--muted);font-size:11px;line-height:1.35;padding-top:5px}
   .topFieldHint.warn{color:var(--warn)}
   .mini{height:30px;padding:0 9px;font-size:12px;background:#101720;color:#b7c7da}
   .ghost:hover,.mini:hover{border-color:#4d6075}
@@ -596,7 +600,7 @@
   <div class="sub">按本金和目标比例自动生成配置；实际人民币、换汇金额与参考汇率可手动修改，差额与合计实时刷新。</div>
 
   <div class="panel top">
-    <div>
+    <div class="topFieldCell">
       <div class="topLabelRow">
         <label for="principal">可投资本金</label>
         <select id="principalCcy" class="principalCcySelect" aria-label="选择可投资本金币种" title="本金币种">
@@ -608,17 +612,19 @@
       <input id="principal" class="field calcInput" type="text" inputmode="decimal" autocomplete="off" value="100000" />
       <div id="principalCnyHint" class="topFieldHint" aria-live="polite"></div>
     </div>
-    <div id="referenceRates">
-      <label>USD 参考汇率（可选）</label>
+    <div id="referenceRates" class="topFieldCell">
+      <div class="topLabelRow"><label for="usdRate">USD 参考汇率</label></div>
       <input id="usdRate" class="field calcInput" type="text" inputmode="decimal" placeholder="1 USD = ? CNY" autocomplete="off" />
+      <div class="topFieldHint" aria-hidden="true"></div>
     </div>
-    <div>
-      <label>HKD 参考汇率（可选）</label>
+    <div class="topFieldCell">
+      <div class="topLabelRow"><label for="hkdRate">HKD 参考汇率</label></div>
       <input id="hkdRate" class="field calcInput" type="text" inputmode="decimal" placeholder="1 HKD = ? CNY" autocomplete="off" />
+      <div class="topFieldHint" aria-hidden="true"></div>
     </div>
-    <div>
+    <div class="topFieldCell">
       <div class="topLabelRow">
-        <label for="usdHkdRate">USD ↔ HKD 参考汇率（可选）</label>
+        <label for="usdHkdRate">USD ↔ HKD 参考汇率</label>
         <button id="swapUsdHkdBtn" class="swapRateBtn" type="button"
           aria-label="切换 USD 与 HKD 汇率方向" title="切换汇率方向">
           <svg viewBox="0 0 20 20" aria-hidden="true">
@@ -628,6 +634,7 @@
         </button>
       </div>
       <input id="usdHkdRate" class="field calcInput" type="text" inputmode="decimal" placeholder="1 USD = ? HKD" autocomplete="off" />
+      <div class="topFieldHint" aria-hidden="true"></div>
     </div>
     <div class="topActions">
       <button id="resetBtn" class="ghost" type="button">恢复默认配置</button>
