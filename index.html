@@ -1,0 +1,2202 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0b0f14" />
+<meta name="application-name" content="Asset Allocator" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="Asset Allocator" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="format-detection" content="telephone=no" />
+<link rel="manifest" href="./manifest.json" />
+<link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png" />
+<title>Asset Allocator</title>
+<style>
+  :root{
+    --bg:#0b0f14; --panel:#11171f; --panel2:#0d1218; --line:#28313d;
+    --text:#edf4ff; --muted:#8ea0b5; --accent:#58a6ff; --good:#68d391;
+    --warn:#f6c85f; --bad:#ff7b72; --input:#0a0f15;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+  .wrap{max-width:1500px;margin:0 auto;padding:28px 24px 54px}
+  h1{margin:0 0 8px;font-size:34px;line-height:1.2;letter-spacing:-.5px}
+  .sub{color:#9bb0c8;font-size:16px;margin-bottom:22px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .top{padding:18px;display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:14px;align-items:end;margin-bottom:18px}
+  label{font-size:13px;color:var(--muted);display:block;margin:0 0 7px}
+  input,select,button{font:inherit}
+  .field,.select{width:100%;height:46px;background:var(--input);border:1px solid var(--line);border-radius:9px;color:var(--text);padding:0 13px;outline:none}
+  .field:focus,.select:focus{border-color:#4b86c5;box-shadow:0 0 0 3px rgba(88,166,255,.08)}
+  .primary,.ghost,.mini{border:1px solid var(--line);border-radius:9px;background:#17202b;color:var(--text);cursor:pointer}
+  .primary{height:46px;padding:0 16px;background:#1769aa;border-color:#267fca;font-weight:700;white-space:nowrap}
+  .ghost{height:46px;padding:0 14px;white-space:nowrap}
+  .dangerGhost{color:#ffaaa5;border-color:#5b3337;background:#21171a}
+  .dangerGhost:hover{border-color:#9b4e52;background:#2a191d}
+  .topActions{display:flex;gap:8px;align-items:center}
+  .mini{height:30px;padding:0 9px;font-size:12px;background:#101720;color:#b7c7da}
+  .ghost:hover,.mini:hover{border-color:#4d6075}
+  .quick{display:flex;gap:7px;flex-wrap:wrap}
+  .quick button.active{background:#153c62;border-color:#2d78b7;color:#fff}
+  .notice{margin:0 0 16px;padding:12px 14px;border:1px solid #274461;background:#0f1b27;border-radius:10px;color:#a9c5df;font-size:13px}
+  .tableWrap{overflow:auto;border-radius:14px}
+  table{width:100%;border-collapse:collapse;min-width:1280px}
+  th{position:sticky;top:0;z-index:1;background:#141b24;color:#dce9f8;text-align:left;font-size:13px;padding:13px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+  td{padding:13px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  tr:last-child td{border-bottom:0}
+  .assetRow{display:flex;align-items:center;gap:8px}
+  .asset{font-size:17px;font-weight:750}
+  .assetName{min-width:0}
+  .dragHandle{
+    flex:0 0 28px;width:28px;height:28px;padding:0;border:1px solid #324050;background:#111923;
+    color:#dbe8f6;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;
+    display:inline-flex;align-items:center;justify-content:center;border-radius:999px;
+    vertical-align:top;font-size:12px;font-weight:800;line-height:1
+  }
+  .dragHandle:active{cursor:grabbing}
+  .dragHandle:focus-visible{outline:2px solid #4b86c5;outline-offset:2px}
+  tbody tr.reorderDragging{opacity:.58}
+  tbody tr.reorderDragging td{background:#111b26}
+  tbody tr.reorderTarget td{box-shadow:inset 0 2px 0 #4b86c5}
+  tbody tr.reorderTargetAfter td{box-shadow:inset 0 -2px 0 #4b86c5}
+  .desc{margin-top:5px;color:var(--muted);font-size:12px}
+  .hintWrap{position:relative;display:inline-flex;align-items:center}
+  .hintIcon{
+    width:18px;height:18px;border-radius:999px;border:1px solid #36506c;
+    display:inline-flex;align-items:center;justify-content:center;
+    font-size:12px;line-height:1;color:#c6d8eb;background:#101824;cursor:help;
+    user-select:none
+  }
+  .hintBubble{
+    position:absolute;left:24px;top:50%;transform:translateY(-50%);
+    min-width:180px;max-width:260px;padding:8px 10px;border-radius:8px;
+    background:#0f1823;border:1px solid #33506f;color:#e9f2fd;font-size:12px;
+    line-height:1.5;box-shadow:0 10px 26px rgba(0,0,0,.35);display:none;z-index:20
+  }
+  .hintWrap:hover .hintBubble{display:block}
+  .hintWrap:focus-within .hintBubble{display:block}
+  .hintWrap.open .hintBubble{display:block}
+  .thLabel{display:inline-flex;align-items:center;gap:8px}
+  .thLabel .hintWrap{vertical-align:middle}
+  .thLabel .hintBubble{
+    left:0;top:calc(100% + 10px);transform:none;min-width:260px;max-width:340px
+  }
+  .ratioBox{display:flex;align-items:center;gap:7px}
+  .ratio{width:78px;text-align:right}
+  .money{font-size:17px;font-weight:800;white-space:nowrap}
+  .blue{color:var(--accent)}
+  .tradeGrid{display:grid;grid-template-columns:minmax(130px,1fr) 78px minmax(130px,1fr) 78px;gap:8px;margin-top:8px}
+  .tradeGrid .field,.tradeGrid .select{height:39px;font-size:13px}
+  .inlineHelp{display:flex;align-items:center;gap:7px;margin-top:7px;color:var(--muted);font-size:11px}
+  .rateGrid{display:grid;grid-template-columns:110px 110px;gap:8px}
+  .rateGrid .field{height:39px;font-size:13px}
+  .metric{font-size:13px;line-height:1.55;white-space:nowrap}
+  .metric b{font-size:14px}
+  .muted{color:var(--muted)}
+  .good{color:var(--good)} .bad{color:var(--bad)} .warn{color:var(--warn)}
+  .summary{margin-top:18px;display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px}
+  .card .k{color:var(--muted);font-size:12px;margin-bottom:7px}
+  .card .v{font-weight:850;font-size:20px;line-height:1.35}
+  .card .s{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.5}
+  .footerPanel{margin-top:14px;padding:16px 18px;display:grid;grid-template-columns:1.4fr 1fr;gap:20px}
+  .formula{font-size:12px;color:#9fb2c7;line-height:1.8}
+  .toggle{display:flex;align-items:center;gap:8px;color:#bfd0e2;font-size:13px}
+  .toggle input{accent-color:#4a98df}
+  .sumrow td{background:#0f151d;font-weight:750}
+
+  .mobileOnly{display:none}
+  .mobileFieldHead{display:none}
+  .mobileDock{display:none}
+  .mobileNoticeToggle{
+    width:100%;height:44px;margin:0 0 10px;border:1px solid var(--line);
+    border-radius:10px;background:#111a24;color:#c9daec;font-weight:700
+  }
+  .assetCellTop{display:block}
+  .assetInfo{min-width:0}
+  .unitPriceInline{
+    display:inline-flex;align-items:center;gap:6px;margin-left:6px;vertical-align:middle
+  }
+  .unitPriceInline .unitLabel{
+    color:var(--muted);font-size:11px;font-weight:650;white-space:nowrap
+  }
+  .unitPriceInline .field{
+    width:94px;height:34px;padding:0 8px;font-size:13px
+  }
+  .unitPriceInline .select{
+    width:68px;height:34px;padding:0 7px;font-size:12px
+  }
+  .calcBar{display:none}
+  .mobileRateOnly,.mobileCompactOnly{display:none}
+  .desktopRateOnly,.desktopCompactOnly{display:inline}
+
+
+
+  .assetHeadInline{display:inline-flex;align-items:center;gap:10px}
+  .assetHeadLabel{display:inline-flex;align-items:center;gap:6px}
+  .assetHeadSortBtn,.mobileSortIconBtn{
+    width:42px;height:42px;padding:8px;
+    display:inline-flex;align-items:center;justify-content:center;
+    border:1px solid #334151;border-radius:10px;
+    background:#151e28;cursor:pointer;
+    -webkit-tap-highlight-color:transparent;vertical-align:middle
+  }
+  .assetHeadSortBtn img,.mobileSortIconBtn img{display:block;width:25px;height:25px;object-fit:contain}
+
+
+
+  /* ETF 替换按钮与候选资产弹窗：只增加交互，不改变原有字体参数 */
+  .assetSelectBtn{
+    flex:0 0 26px;width:26px;height:26px;padding:0;
+    display:inline-flex;align-items:center;justify-content:center;
+    border:1px solid #33465a;border-radius:8px;
+    background:#121b25;color:#dce9f8;cursor:pointer;
+    -webkit-tap-highlight-color:transparent
+  }
+  .assetSelectBtn:hover{border-color:#4d6b88;background:#162331}
+  .assetSelectBtn:focus-visible{outline:2px solid #4b86c5;outline-offset:2px}
+  .assetSelectBtn svg{width:14px;height:14px;display:block;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+  .assetPickerModal{display:none}
+  .assetPickerModal[aria-hidden="false"]{display:block}
+  .assetPickerBackdrop{
+    position:fixed;inset:0;z-index:2147483250;background:rgba(0,0,0,.62)
+  }
+  .assetPickerDialog{
+    position:fixed;z-index:2147483251;left:50%;top:50%;transform:translate(-50%,-50%);
+    width:min(560px,calc(100vw - 28px));max-height:calc(100vh - 48px);
+    display:flex;flex-direction:column;overflow:hidden;
+    border:1px solid #34404d;border-radius:16px;background:#11171f;color:var(--text);
+    box-shadow:0 18px 60px rgba(0,0,0,.62)
+  }
+  .assetPickerHead{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:14px 14px 10px
+  }
+  .assetPickerTitle{font-weight:800;min-width:0}
+  .assetPickerClose{
+    flex:0 0 auto;width:38px;height:38px;padding:0;border:1px solid #3a4959;border-radius:9px;
+    background:#17202b;color:var(--text);cursor:pointer;font-size:22px;line-height:1
+  }
+  .assetPickerTools{padding:0 14px 10px}
+  .assetPickerSearch{
+    width:100%;height:42px;padding:0 12px;border:1px solid var(--line);border-radius:9px;
+    background:var(--input);color:var(--text);outline:none
+  }
+  .assetPickerSearch:focus{border-color:#4b86c5;box-shadow:0 0 0 3px rgba(88,166,255,.08)}
+  .assetPickerHint{padding:0 14px 10px;color:var(--muted);font-size:12px;line-height:1.55}
+  .assetPickerList{
+    min-height:0;overflow:auto;padding:0 10px 12px;overscroll-behavior:contain
+  }
+  .assetChoiceGroup{margin:6px 4px 7px;color:#8fa4b9;font-size:11px;font-weight:750}
+  .assetChoice{
+    display:grid;grid-template-columns:minmax(0,1fr) 38px;gap:6px;align-items:stretch;
+    margin:0 0 7px;border:1px solid #2d3946;border-radius:11px;background:#0d131a;overflow:hidden
+  }
+  .assetChoice.current{border-color:#3d6d98;background:#101b27}
+  .assetChoiceSelect{
+    min-width:0;padding:10px 11px;border:0;background:transparent;color:var(--text);
+    text-align:left;cursor:pointer
+  }
+  .assetChoiceSelect:hover{background:rgba(88,166,255,.055)}
+  .assetChoiceSelect:focus-visible{outline:2px solid #4b86c5;outline-offset:-2px}
+  .assetChoiceTicker{font-weight:820;word-break:break-word}
+  .assetChoiceMeta{margin-top:3px;color:var(--muted);font-size:11px;line-height:1.45}
+  .assetChoiceInfo{
+    align-self:center;justify-self:center;width:28px;height:28px;padding:0;border:1px solid #36506c;
+    border-radius:999px;background:#101824;color:#c6d8eb;cursor:pointer;font-size:12px;font-weight:700;line-height:1
+  }
+  .assetChoiceInfo:focus-visible{outline:2px solid #4b86c5;outline-offset:2px}
+  .assetChoiceDetail{
+    grid-column:1/-1;display:none;padding:0 11px 10px;color:#b8c9da;font-size:12px;line-height:1.6
+  }
+  .assetChoice.detailOpen .assetChoiceDetail{display:block}
+  .assetChoiceEmpty{padding:24px 12px;text-align:center;color:var(--muted);font-size:13px}
+  body.assetPickerOpen{overflow:hidden}
+
+
+  /* 手机资产排序弹窗：不修改主页面现有字体/行高，只增加独立排序界面 */
+  .mobileSortBar,.assetSortModal{display:none}
+  .assetSortModal[aria-hidden="false"]{display:block}
+  .assetSortBackdrop{
+    position:fixed;inset:0;z-index:2147483200;
+    background:rgba(0,0,0,.58)
+  }
+  .assetSortDialog{
+    position:fixed;z-index:2147483201;
+    left:50%;top:50%;transform:translate(-50%,-50%);
+    width:min(360px,calc(100vw - 28px));
+    max-height:calc(100vh - 64px);
+    padding:14px;
+    border:1px solid #34404d;border-radius:16px;
+    background:#11171f;color:var(--text);
+    box-shadow:0 18px 60px rgba(0,0,0,.58);
+    overflow:auto;
+    overscroll-behavior:contain
+  }
+  .assetSortHead{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    margin-bottom:4px
+  }
+  .assetSortTitle{font-weight:800}
+  .assetSortDone{
+    height:38px;padding:0 13px;border:1px solid #3a4959;border-radius:9px;
+    background:#17202b;color:var(--text);cursor:pointer
+  }
+  .assetSortHint{margin:0 0 10px;color:var(--muted);font-size:12px}
+  .assetSortList{display:flex;flex-direction:column;gap:8px}
+  .assetSortItem{
+    position:relative;
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    width:100%;min-height:50px;padding:0 12px;
+    border:1px solid #2f3a47;border-radius:11px;
+    background:#0d131a;color:var(--text);
+    cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;
+    text-align:left
+  }
+  .assetSortItem:active{cursor:grabbing}
+  .assetSortItem:focus-visible{outline:2px solid #4b86c5;outline-offset:2px}
+  .assetSortItem.sortDragging{opacity:.58;border-color:#52779c}
+  .assetSortItem.sortTargetBefore::before,
+  .assetSortItem.sortTargetAfter::after{
+    content:"";position:absolute;left:6px;right:6px;height:2px;
+    border-radius:999px;background:#58a6ff
+  }
+  .assetSortItem.sortTargetBefore::before{top:-5px}
+  .assetSortItem.sortTargetAfter::after{bottom:-5px}
+  .assetSortName{min-width:0;font-weight:750}
+
+  /* 桌面端安全对齐：只调整布局，不改变字体字号、字重或文字行高 */
+  @media (min-width:761px){
+    /* 给各功能列留足空间，避免文字和控件互相挤压/叠加 */
+    table{min-width:1770px}
+    th:nth-child(1),tbody td:nth-child(1),tfoot td:nth-child(1){width:440px;min-width:440px}
+    th:nth-child(2),tbody td:nth-child(2),tfoot td:nth-child(2){width:145px;min-width:145px}
+    th:nth-child(3),tbody td:nth-child(3),tfoot td:nth-child(3){width:165px;min-width:165px}
+    th:nth-child(4),tbody td:nth-child(4),tfoot td:nth-child(4){width:500px;min-width:500px}
+    th:nth-child(5),tbody td:nth-child(5),tfoot td:nth-child(5){width:250px;min-width:250px}
+    th:nth-child(6),tbody td:nth-child(6),tfoot td:nth-child(6){width:145px;min-width:145px}
+    th:nth-child(7),tbody td:nth-child(7),tfoot td:nth-child(7){width:165px;min-width:165px}
+
+    /* 资产栏：固定三个布局槽位，但文字本身沿用原来的字体规则 */
+    .assetRow{
+      display:grid;
+      grid-template-columns:162px 20px minmax(230px,1fr);
+      column-gap:8px;
+      align-items:start;
+      width:100%;
+    }
+    .asset{min-width:0;display:grid;grid-template-columns:28px minmax(0,1fr) 26px;align-items:start;gap:6px}
+    .assetName{min-width:0}
+    .assetRow>.hintWrap{
+      width:20px;
+      min-width:20px;
+      justify-content:center;
+    }
+    .unitPriceInline{
+      display:grid;
+      grid-template-columns:max-content 96px 72px;
+      gap:7px;
+      align-items:center;
+      margin-left:0;
+      min-width:0;
+    }
+    .unitPriceInline .field{width:96px}
+    .unitPriceInline .select{width:72px}
+
+    /* 交易控件从单元格顶部开始；不修改内部字体 */
+    .tradeGrid{margin-top:0}
+
+    /* 参考汇率标签可能一行或两行，只预留统一空间，不强制文字行高 */
+    .rateGrid{align-items:start}
+    .rateGrid label{min-height:34px}
+  }
+
+  @media (max-width:760px){
+    html{scroll-behavior:smooth}
+    body{
+      padding-bottom:calc(78px + env(safe-area-inset-bottom));
+      overflow-x:hidden
+    }
+    .wrap{padding:16px 10px 28px}
+    h1{font-size:24px;line-height:1.25;margin-bottom:7px}
+    .sub{font-size:13px;line-height:1.55;margin-bottom:14px}
+
+    /* 手机端顶部控制：单列、44px+ 触控区域 */
+    .top{
+      grid-template-columns:1fr;
+      gap:12px;padding:14px;margin-bottom:12px;border-radius:13px
+    }
+    .field,.select,.primary,.ghost{height:48px;font-size:16px}
+    .quick{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+    .quick .mini{height:44px;padding:0;font-size:14px}
+    .ghost{width:100%}
+    .topActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
+    .topActions .ghost{min-width:0;padding:0 8px;font-size:14px}
+    .mobileOnly{display:block}
+
+    .mobileSortBar{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      margin:0 0 0;padding:13px 12px;
+      border:1px solid var(--line);border-bottom:0;border-radius:14px 14px 0 0;
+      background:#141b24;color:#dce9f8;font-size:13px;font-weight:700
+    }
+    .mobileSortBar .muted{font-weight:400}
+
+    /* 手机上主卡片不再直接拖动，避免与页面滚动手势冲突 */
+    .dragHandle{display:inline-flex;cursor:default;touch-action:auto}
+    .assetSortDialog{width:min(360px,calc(100vw - 24px));max-height:calc(100vh - 48px)}
+    body.assetSortOpen{overflow:hidden}
+
+    .mobileSortBar + .panel.tableWrap{border-top-left-radius:0;border-top-right-radius:0}
+
+    /* 汇率说明在手机默认收起，点按钮再展开 */
+    .mobileNoticeToggle{display:block}
+    .notice{display:none;margin-bottom:12px;font-size:12px;line-height:1.65}
+    .notice.mobileShow{display:block}
+
+    /* 桌面表格 -> 手机资产卡片，不需要横向滚动 */
+    .tableWrap{
+      overflow:visible;background:transparent;border:0;border-radius:0
+    }
+    table,tbody{display:block;width:100%;min-width:0}
+    thead,tfoot{display:none}
+    tbody tr{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+      width:100%;margin:0 0 12px;
+      border:1px solid var(--line);border-radius:15px;
+      background:var(--panel);overflow:hidden
+    }
+    tbody td{
+      display:block;min-width:0;padding:12px;
+      border:0;border-bottom:1px solid rgba(40,49,61,.8)
+    }
+    tbody tr{
+      grid-template-columns:minmax(0,3fr) minmax(0,2fr);
+    }
+    tbody td:nth-child(1),
+    tbody td:nth-child(4){grid-column:1/-1}
+    tbody td:nth-child(2){grid-column:1}
+    tbody td:nth-child(3){grid-column:2}
+    tbody td:nth-child(5){grid-column:1}
+    tbody td:nth-child(6){grid-column:2}
+    tbody td:nth-child(7){grid-column:1/-1}
+    tbody td:nth-child(7){border-bottom:0}
+    tbody td:nth-child(2),
+    tbody td:nth-child(5){border-right:1px solid rgba(40,49,61,.8)}
+
+    .assetCellTop{display:block}
+    .assetInfo{min-width:0}
+    .assetRow{gap:8px;flex-wrap:wrap}
+    .asset{font-size:19px;display:grid;grid-template-columns:28px minmax(0,1fr) 26px;align-items:start;gap:6px;min-width:0}
+    .dragHandle{flex-basis:28px;width:28px;height:28px;font-size:12px}
+    .desc{font-size:12px}
+    .unitPriceInline{
+      display:inline-flex;align-items:center;gap:5px;margin-left:2px;flex-wrap:nowrap
+    }
+    .unitPriceInline .unitLabel{font-size:10px}
+    .unitPriceInline .field{
+      width:90px;height:40px;min-width:0;padding:0 8px;font-size:14px
+    }
+    .unitPriceInline .select{
+      width:68px;height:40px;min-width:0;padding:0 7px;font-size:13px
+    }
+    .mobileFieldHead{
+      display:flex;align-items:center;gap:7px;
+      min-height:22px;margin:0 0 8px;
+      color:#91a7be;font-size:12px;font-weight:700
+    }
+    .ratioBox{width:100%}
+    .ratio{width:100%;text-align:left}
+    .money{font-size:18px;white-space:normal;word-break:break-word}
+
+    /* 交易输入：人民币 + 币种同一行，外币金额下一行 */
+    .tradeGrid{
+      grid-template-columns:minmax(0,1fr) 88px;
+      gap:8px;margin-top:0
+    }
+    .tradeGrid .field,.tradeGrid .select{height:48px;font-size:16px}
+    .tradeGrid .actualInput{grid-column:1}
+    .tradeGrid .payCcyInput{grid-column:2}
+    .tradeGrid .fxInput{grid-column:1}
+    .tradeGrid .ccyInput{grid-column:2}
+    .inlineHelp{
+      flex-wrap:wrap;gap:7px;margin-top:9px;font-size:11px;line-height:1.5
+    }
+    .inlineHelp .mini{height:38px;padding:0 11px;font-size:12px}
+
+    .rateGrid{grid-template-columns:1fr;gap:10px;min-width:0}
+    .rateGrid>div{min-width:0}
+    .rateGrid .field{height:48px;font-size:16px}
+    .metric{
+      min-width:0;font-size:13px;white-space:normal;
+      word-break:normal;overflow-wrap:anywhere
+    }
+    .metric b{font-size:15px}
+    .desktopRateOnly,.desktopCompactOnly{display:none!important}
+    .mobileRateOnly,.mobileCompactOnly{display:inline}
+    .rateEquation{
+      display:flex;flex-direction:column;align-items:flex-start;
+      gap:2px;line-height:1.25;max-width:100%
+    }
+    .rateEquation .rateLead{
+      color:#dce9f8;font-size:12px;font-weight:700;white-space:nowrap
+    }
+    .rateEquation .rateValue{
+      color:var(--text);font-size:15px;font-weight:850;white-space:nowrap
+    }
+    .reverseRateMobile{
+      display:flex;flex-direction:column;gap:1px;
+      font-size:11px;line-height:1.35;color:var(--muted)
+    }
+    tbody td{overflow:hidden}
+    tbody td .mobileFieldHead{min-width:0}
+    tbody td:nth-child(5),tbody td:nth-child(6),tbody td:nth-child(7){min-width:0}
+
+    /* 手机 tooltip 用点击弹出的底部浮层，避免 hover */
+    .hintIcon{
+      width:22px;height:22px;font-size:13px;cursor:pointer;
+      -webkit-tap-highlight-color:transparent
+    }
+    .hintBubble,
+    .thLabel .hintBubble{
+      position:fixed;left:12px;right:12px;bottom:calc(86px + env(safe-area-inset-bottom));
+      top:auto;transform:none;min-width:0;max-width:none;
+      padding:14px 15px;border-radius:13px;font-size:13px;line-height:1.65;
+      z-index:1000;box-shadow:0 16px 50px rgba(0,0,0,.55)
+    }
+
+    /* 汇总采用紧凑卡片 */
+    .summary{grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
+    .summary .card{padding:12px;border-radius:12px}
+    .summary .card:nth-child(3){grid-column:1/-1}
+    .card .v{font-size:17px}
+    .card .k{font-size:11px}
+    .card .s{font-size:10px}
+
+    .footerPanel{grid-template-columns:1fr;padding:14px;margin-top:12px}
+    .toggle{align-items:flex-start;font-size:13px;line-height:1.5}
+    .toggle input{width:20px;height:20px;flex:0 0 auto}
+    .formula{font-size:11px;line-height:1.75}
+
+    /* 固定底部操作条：始终能看到实际总额，并快速跳转 */
+    .calcBar{
+      position:fixed;
+      left:8px;
+      right:8px;
+      top:auto;
+      bottom:calc(72px + env(safe-area-inset-bottom)); /* 无 visualViewport 时的回退 */
+      z-index:2147483000;
+      display:none;
+      grid-template-columns:repeat(9,minmax(0,1fr));
+      gap:5px;padding:7px;
+      background:rgba(17,23,31,.98);
+      border:1px solid var(--line);border-radius:12px;
+      box-shadow:0 12px 36px rgba(0,0,0,.5);
+      backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+      transform:translateZ(0);
+      will-change:top,left,width
+    }
+    .calcBar.show{display:grid}
+    .calcBar button{
+      height:38px;min-width:0;padding:0;
+      border:1px solid #334151;border-radius:8px;
+      background:#182331;color:var(--text);
+      font-size:15px;font-weight:800
+    }
+    .calcBar button.eq{background:#1769aa;border-color:#267fca}
+    .calcBar button.clear{color:#ff9b96}
+    .mobileDock{
+      position:fixed;display:flex;align-items:center;gap:8px;
+      left:0;right:0;bottom:0;z-index:900;
+      padding:9px 10px calc(9px + env(safe-area-inset-bottom));
+      background:rgba(11,15,20,.96);border-top:1px solid var(--line);
+      backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)
+    }
+    .mobileDock .dockValue{min-width:0;flex:1}
+    .mobileDock .dockValue span{
+      display:block;color:var(--muted);font-size:10px;line-height:1.2
+    }
+    .mobileDock .dockValue b{
+      display:block;margin-top:2px;font-size:15px;white-space:nowrap;
+      overflow:hidden;text-overflow:ellipsis
+    }
+    .mobileDock button{
+      min-width:70px;height:42px;border:1px solid var(--line);
+      border-radius:10px;background:#15202c;color:var(--text);
+      font-weight:700;font-size:12px
+    }
+    body.keyboardOpen .mobileDock{display:none}
+
+  }
+
+  @media (max-width:390px){
+    .wrap{padding-left:8px;padding-right:8px}
+    tbody td{padding:10px}
+    .summary{grid-template-columns:1fr}
+    .summary .card:nth-child(3){grid-column:auto}
+    .mobileDock button{min-width:62px}
+    .unitPriceInline .field{width:82px}
+  }
+
+  @media (max-width:1100px){
+    .top{grid-template-columns:1fr 1fr}
+    .summary{grid-template-columns:1fr 1fr}
+    .footerPanel{grid-template-columns:1fr}
+  }
+  @media (max-width:360px){
+    .wrap{padding:20px 12px 40px}
+    h1{font-size:26px}
+    .top{grid-template-columns:1fr}
+    .summary{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>个人投资配置自动计算器</h1>
+  <div class="sub">按本金和目标比例自动生成配置；实际人民币、换汇金额与参考汇率可手动修改，差额与合计实时刷新。</div>
+
+  <div class="panel top">
+    <div>
+      <label>可投资本金（CNY）</label>
+      <input id="principal" class="field calcInput" type="text" inputmode="decimal" autocomplete="off" value="100000" />
+    </div>
+    <div id="referenceRates">
+      <label>USD 参考汇率（可选）</label>
+      <input id="usdRate" class="field calcInput" type="text" inputmode="decimal" placeholder="1 USD = ? CNY" autocomplete="off" />
+    </div>
+    <div>
+      <label>HKD 参考汇率（可选）</label>
+      <input id="hkdRate" class="field calcInput" type="text" inputmode="decimal" placeholder="1 HKD = ? CNY" autocomplete="off" />
+    </div>
+    <div>
+      <label>USD ↔ HKD 参考汇率（可选）</label>
+      <input id="usdHkdRate" class="field calcInput" type="text" inputmode="decimal" placeholder="1 USD = ? HKD" autocomplete="off" />
+    </div>
+    <div class="topActions">
+      <button id="resetBtn" class="ghost" type="button">恢复默认配置</button>
+      <button id="clearBtn" class="ghost dangerGhost" type="button">清零所有配置</button>
+    </div>
+  </div>
+
+  <button id="mobileNoticeToggle" class="mobileNoticeToggle mobileOnly" type="button">查看汇率说明</button>
+  <div class="notice" id="fxNotice">
+    交易汇率统一按常见报价显示为「1 单位外币 = X 人民币」。交易区左侧“支付金额”也可选择 RMB / HKD / USD；底部合计仍统一折算成人民币。例如 ¥4,767 换得 $707，则 1 USD = 4,767 ÷ 707 = 6.742574 CNY。为避免方向混淆，每行同时显示反向汇率；例如 1 CNY = 0.148311 USD。参考汇率完全可选，只有需要比较换汇成本时才填写。顶部还可单独填写 USD ↔ HKD 的交叉参考汇率，统一按“1 USD = ? HKD”记录。手机端为避免栏位互相挤压，交易汇率显示 4 位小数；桌面端仍显示 6 位小数，底层计算精度不变。
+  </div>
+
+
+  <div class="mobileSortBar mobileOnly" aria-label="资产排序工具">
+    <span class="assetHeadLabel"><span>资产</span><span class="muted">（拖动排序）</span></span>
+    <button id="openAssetSortBtn" class="mobileSortIconBtn" type="button" aria-label="打开资产拖动排序窗口" title="调整资产顺序">
+      <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADUAAABACAYAAAC6CT8CAAAEAklEQVR4nO2bz4scRRiGn296ksUYExIUQSOR1RBURERv3ryYk6AGvOkhf4ERRMWriKD+DUJICIiQi2jOQUH3oCAeorsbRTwmxs3uOsSZeT3U1zvdvT3T070/6IJ+YRimuubrfrq6vuquettoIEkGJJmikZmpSaz9iDvvjsvKe22JWxpo1o7NTJKOAK8Dp4DfgctmdivdXvcgMnHvBc4CT3rci2a2Jikxs1HduPPsuCfJJD0q6RfltSzptG+vdWYzcU9K+qkQ92dJj3u9pCpWE6jEvy/5Dm9Kuu3fkvRVQ6g07oVC3Fv+e0XSqV0HS693SQckXZd0V9KapHVJdyT9K+lPSUez9WvEPeQHP/B46/65LWkkaVXSaa/br4pbtxMmwJjtfdEAkc9cdXQPcLCkvA/cAU4CVyU9YWbDKrAmGWtaK9RKOgXNSi4p2AkC2FNVYDtKw/uoPrAOPEQAe3oWWCxQMAF7kAD2zDSwmKAggG0CDwDfSHq2DCw2KAjJaBO4nwD2nINtJalYoMaF3ynYMeBrSc+b2SgdI2OAGgOHCBkymyVTsOPAFUknAEnqtRlKwALwF/AZcJjtYH1gDXgYeNPvO1sNBd5KZvYO8C5wn5dlwXrACHgkW9B6STpuZh8DHwBHvPg/YEgASoDv0/qV91EtkPC+YmYfShoAnxTqXAEueaIYxQAFIDMb+3PVp5J+AF4jtNq3wOee/czMqu94W6axt9g14Fp2Q/YBNTYo0hYjfwOdm8uIDgqg6tE+iuxXVx1ULOqgYlEHFYs6qFjUQcWiDioWdVCxqIOKRR1ULOqgYlFuNkkTG83WdNOemDL2WDkonzsbZst8Knfv/UG7qD7kbDQHgTeAFwlrP1+Y2VWfPIymxfp+yZmkA8Bl4JXM9nOSPjKz973FdmIr2Df1gcTXTM8SgP5m0q8MeE/Sgpm9LQkiAMv2qRcIl1iPvHPlH+C8X6LnJZU5XlqlLNRvTGw6xTprwFuSDjNJJK0F6wEj71cXgOuEFe9hoV5CsNKcAxaBAW2G8jRuZnYTeBlYJaytFsF6wAYRpPceTNZ8zOxX4CXgBtPBWq+tg/TlxcTMlglgq4TlxyJY65U78xmwFQLYMhGCbbucMmCrRApW2kcyYDeAM8AK5X2slZra8UtabJ4+1jTNV/2vVtyZ2awEbFaLDQnjVxMNCA6WolIvUtm2qapM0QWwM4QWO8rERnOXYIxaMrMN9znMNZb5k0FiZhsEG86Cx8vG/c7M1r3e7o6RGf/4Y5KWlNeSgll+J2b7RW032/+oYO6vFbfuaxE9H6gXCDaaRcJA/aWZDbQ7r0W8SrBs/+FxN5vGrXMApWdsXoP9jLjTXmCpHbfRgajlrxr9D5VWzp3Vem1aAAAAAElFTkSuQmCC" alt="" aria-hidden="true" />
+    </button>
+  </div>
+
+  <div class="panel tableWrap">
+    <table>
+      <thead>
+        <tr>
+          <th><span class="assetHeadInline"><span class="assetHeadLabel"><span>资产</span><span class="muted" style="font-weight:400">（拖动排序）</span></span><button id="openAssetSortBtnDesktop" class="assetHeadSortBtn" type="button" aria-label="打开资产拖动排序窗口" title="调整资产顺序"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADUAAABACAYAAAC6CT8CAAAEAklEQVR4nO2bz4scRRiGn296ksUYExIUQSOR1RBURERv3ryYk6AGvOkhf4ERRMWriKD+DUJICIiQi2jOQUH3oCAeorsbRTwmxs3uOsSZeT3U1zvdvT3T070/6IJ+YRimuubrfrq6vuquettoIEkGJJmikZmpSaz9iDvvjsvKe22JWxpo1o7NTJKOAK8Dp4DfgctmdivdXvcgMnHvBc4CT3rci2a2Jikxs1HduPPsuCfJJD0q6RfltSzptG+vdWYzcU9K+qkQ92dJj3u9pCpWE6jEvy/5Dm9Kuu3fkvRVQ6g07oVC3Fv+e0XSqV0HS693SQckXZd0V9KapHVJdyT9K+lPSUez9WvEPeQHP/B46/65LWkkaVXSaa/br4pbtxMmwJjtfdEAkc9cdXQPcLCkvA/cAU4CVyU9YWbDKrAmGWtaK9RKOgXNSi4p2AkC2FNVYDtKw/uoPrAOPEQAe3oWWCxQMAF7kAD2zDSwmKAggG0CDwDfSHq2DCw2KAjJaBO4nwD2nINtJalYoMaF3ynYMeBrSc+b2SgdI2OAGgOHCBkymyVTsOPAFUknAEnqtRlKwALwF/AZcJjtYH1gDXgYeNPvO1sNBd5KZvYO8C5wn5dlwXrACHgkW9B6STpuZh8DHwBHvPg/YEgASoDv0/qV91EtkPC+YmYfShoAnxTqXAEueaIYxQAFIDMb+3PVp5J+AF4jtNq3wOee/czMqu94W6axt9g14Fp2Q/YBNTYo0hYjfwOdm8uIDgqg6tE+iuxXVx1ULOqgYlEHFYs6qFjUQcWiDioWdVCxqIOKRR1ULOqgYlFuNkkTG83WdNOemDL2WDkonzsbZst8Knfv/UG7qD7kbDQHgTeAFwlrP1+Y2VWfPIymxfp+yZmkA8Bl4JXM9nOSPjKz973FdmIr2Df1gcTXTM8SgP5m0q8MeE/Sgpm9LQkiAMv2qRcIl1iPvHPlH+C8X6LnJZU5XlqlLNRvTGw6xTprwFuSDjNJJK0F6wEj71cXgOuEFe9hoV5CsNKcAxaBAW2G8jRuZnYTeBlYJawtFsF6wAYRpPceTNZ8zOxX4CXgBtPBWq+tg/TlxcTMlglgq4TlxyJY65U78xmwFQLYMhGCbbucMmCrRApW2kcyYDeAM8AK5X2slZra8UtabJ4+1jTNV/2vVtyZ2awEbFaLDQnjVxMNCA6WolIvUtm2qapM0QWwM4QWO8rERnOXYIxaMrMN9znMNZb5k0FiZhsEG86Cx8vG/c7M1r3e7o6RGf/4Y5KWlNeSgll+J2b7RW032/+oYO6vFbfuaxE9H6gXCDaaRcJA/aWZDbQ7r0W8SrBs/+FxN5vGrXMApWdsXoP9jLjTXmCpHbfRgajlrxr9D5VWzp3Vem1aAAAAAElFTkSuQmCC" alt="" aria-hidden="true" /></button></span></th>
+          <th>
+            <span class="thLabel">
+              <span>目标比例</span>
+              <span class="hintWrap" tabindex="0" aria-label="查看自动平衡逻辑">
+                <span class="hintIcon">i</span>
+                <span class="hintBubble">
+                  各资产的目标比例现在独立输入。<br>
+                  修改任意单个资产时，只更新当前这一项，不会自动削减、补足或改写其他资产的比例。<br>
+                  因此总目标比例可以暂时高于或低于 100%；底部合计会显示当前总比例，便于你自行调整到需要的数值。
+                </span>
+              </span>
+            </span>
+          </th>
+          <th>目标金额（CNY）</th>
+          <th>实际交易与换汇</th>
+          <th>交易汇率 / 参考汇率（可选）</th>
+          <th>
+            <span class="thLabel">
+              <span>配置差额</span>
+              <span class="hintWrap" tabindex="0" aria-label="查看配置差额计算逻辑">
+                <span class="hintIcon">i</span>
+                <span class="hintBubble">
+                  配置差额 = 实际人民币金额 − 目标金额。<br>
+                  配置差额比例 = 配置差额 ÷ 目标金额 × 100%。<br>
+                  正数表示这笔资产实际投入高于目标（超配）；负数表示低于目标（低配）。<br>
+                  例：目标 ¥6,000，实际 ¥11,300，则配置差额 = ¥5,300，差额比例 = 5,300 ÷ 6,000 = +88.33%。
+                </span>
+              </span>
+            </span>
+          </th>
+          <th>换汇差额（可选）</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+      <tfoot>
+        <tr class="sumrow">
+          <td>人民币总计</td>
+          <td id="sumRatio">100%</td>
+          <td id="sumTarget">¥100,000.00</td>
+          <td id="sumActual">实际 ¥100,000.00</td>
+          <td id="sumRates">—</td>
+          <td id="sumAllocDiff">¥0.00</td>
+          <td id="sumFxDiff">¥0.00</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <div class="summary">
+    <div class="card"><div class="k">实际交易总额（CNY）</div><div class="v" id="cardActual">¥100,000.00</div><div class="s">使用各行“实际人民币”求和。</div></div>
+    <div class="card"><div class="k">目标配置差额</div><div class="v" id="cardAlloc">¥0.00</div><div class="s">实际总额 − 目标本金；各行也会单独显示差额。</div></div>
+    <div class="card"><div class="k">换汇成本差额（CNY，可选）</div><div class="v" id="cardFx">—</div><div class="s">仅统计已填写参考汇率的交易；未填参考汇率不会参与计算。</div></div>
+    <div class="card"><div class="k">USD 加权平均交易汇率</div><div class="v" id="cardUsd">—</div><div class="s" id="cardUsdSub">填写 USD 实际外币金额后计算。</div></div>
+    <div class="card"><div class="k">HKD 加权平均交易汇率</div><div class="v" id="cardHkd">—</div><div class="s" id="cardHkdSub">填写 HKD 实际外币金额后计算。</div></div>
+  </div>
+
+  <div class="panel footerPanel">
+    <div>
+      <div class="toggle">目标比例独立输入：修改某一资产时不会自动更改其他资产；总比例可暂时不等于 100%。</div>
+      <div class="formula">
+        默认结构：VOO 60%；QQQM 10%；510300 沪深300 + 03032 恒生科技 合计 10%；美国国债 SGOV + IEF 合计 10%；黄金 10%。<br>
+        比例输入采用独立模式：调高或调低任意资产，只改变当前资产；系统不再自动削减或补足其他资产。<br>
+        总比例不等于 100% 时，合计位置会以提示状态显示，你可以继续手动调整。<br>
+        配置差额 = 实际人民币 − 目标人民币；配置差额% = 配置差额 ÷ 目标人民币。<br>
+        交易汇率 = 实际人民币 ÷ 实际外币，统一显示为「1 外币 = X CNY」；同时附带反向汇率「1 CNY = X 外币」。<br>
+        参考汇率为可选项；填写后：汇率差 = 交易汇率 − 参考汇率；换汇成本差 = 实际人民币 − 实际外币 × 参考汇率。正数代表相对参考汇率多付人民币，负数代表少付。
+      </div>
+    </div>
+    <div>
+      <button id="fillFxBtn" class="primary">按参考汇率重算所有外币金额</button>
+      <div class="formula" style="margin-top:10px">
+        此按钮只会在存在参考汇率时，用“实际人民币 ÷ 参考汇率”估算外币金额。它只是辅助功能；正常情况下直接填写实际支付金额与换汇后金额即可得到交易汇率。填写单股金额时只会联动当前资产；若未填写准确参考汇率，系统只用粗略估算值生成当前行的支付金额，并明确提示需要自行校准。手机端金额输入支持 +、−、×、÷，可用“单价×股数”直接算出交易金额。
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<div id="assetPickerModal" class="assetPickerModal" aria-hidden="true">
+  <div class="assetPickerBackdrop" data-asset-picker-close="1"></div>
+  <section class="assetPickerDialog" role="dialog" aria-modal="true" aria-labelledby="assetPickerTitle">
+    <div class="assetPickerHead">
+      <div id="assetPickerTitle" class="assetPickerTitle">替换资产</div>
+      <button id="assetPickerCloseBtn" class="assetPickerClose" type="button" aria-label="关闭">×</button>
+    </div>
+    <div class="assetPickerTools">
+      <input id="assetPickerSearch" class="assetPickerSearch" type="search" inputmode="search" autocomplete="off" placeholder="搜索 ETF 代码或类别" />
+    </div>
+    <div class="assetPickerHint">选择后只替换当前这一栏资产；目标比例和排序位置保持不变。点每项右侧的 i 可查看用途与风险说明。</div>
+    <div id="assetPickerList" class="assetPickerList"></div>
+  </section>
+</div>
+
+<div id="assetSortModal" class="assetSortModal" aria-hidden="true">
+  <div class="assetSortBackdrop" data-sort-close="1"></div>
+  <section class="assetSortDialog" role="dialog" aria-modal="true" aria-labelledby="assetSortTitle">
+    <div class="assetSortHead">
+      <div id="assetSortTitle" class="assetSortTitle">调整资产顺序</div>
+      <button id="assetSortDoneBtn" class="assetSortDone" type="button">完成</button>
+    </div>
+    <div class="assetSortHint">按住资产名称上下拖动；松手后主页面会立即同步。</div>
+    <div id="assetSortList" class="assetSortList"></div>
+  </section>
+</div>
+
+<div class="calcBar" id="calcBar" aria-label="计算输入工具">
+  <button type="button" data-calc="+">+</button>
+  <button type="button" data-calc="-">−</button>
+  <button type="button" data-calc="*">×</button>
+  <button type="button" data-calc="/">÷</button>
+  <button type="button" data-calc="(">(</button>
+  <button type="button" data-calc=")">)</button>
+  <button type="button" data-calc="back">⌫</button>
+  <button type="button" class="clear" data-calc="clear">C</button>
+  <button type="button" class="eq" data-calc="equals">=</button>
+</div>
+
+<div class="mobileDock" id="mobileDock">
+  <div class="dockValue">
+    <span>实际交易总额</span>
+    <b id="mobileActual">¥0.00</b>
+  </div>
+  <button id="mobileSummaryBtn" type="button">看汇总</button>
+  <button id="mobileTopBtn" type="button">回顶部</button>
+</div>
+
+<script>
+const etfCatalog = [
+  // 美国与全球股票：同一指数的明显重复产品只保留一个代表（如 S&P 500 只留 VOO，Nasdaq-100 只留 QQQ）。
+  {key:"VOO", name:"VOO", desc:"标普500", ccy:"USD", group:"股票 · 美国", purpose:"Vanguard S&P 500 ETF，跟踪标普500。覆盖美国大型综合企业，可作为美国大盘核心；与QQQM等成长ETF存在较多大型科技股重叠。"},
+  {key:"QQQ", name:"QQQ", desc:"纳斯达克100", ccy:"USD", group:"股票 · 美国", purpose:"Invesco QQQ Trust，跟踪纳斯达克100。大型科技与成长权重较高，更适合作为成长增强；与VOO存在较多美国大型科技股重叠。"},
+  {key:"SCHD", name:"SCHD", desc:"美国红利", ccy:"USD", group:"股票 · 美国", purpose:"Schwab U.S. Dividend Equity ETF。强调持续分红记录、股息、基本面质量与分红增长能力，偏成熟大盘价值与质量红利。"},
+  {key:"SPHD", name:"SPHD", desc:"高股息低波", ccy:"USD", group:"股票 · 美国", purpose:"Invesco S&P 500 High Dividend Low Volatility ETF。偏高股息与历史低波动股票，行业风格较集中，主要是防守与现金分配取向。"},
+  {key:"VTI", name:"VTI", desc:"美国全市场", ccy:"USD", group:"股票 · 美国", purpose:"美国全市场股票ETF，覆盖大中小盘。相较只持标普500，市场覆盖更广，但仍主要承担美国股票风险。"},
+  {key:"ITOT", name:"ITOT", desc:"美国全市场", ccy:"USD", group:"股票 · 美国", purpose:"美国全市场股票ETF，覆盖大型、中型与小型公司。与VTI、SCHB用途相近，但跟踪体系并非完全相同。"},
+  {key:"SCHB", name:"SCHB", desc:"美国宽基", ccy:"USD", group:"股票 · 美国", purpose:"Schwab U.S. Broad Market ETF，美国宽基全市场工具之一，覆盖美国多市值层级股票。"},
+  {key:"IJH", name:"IJH", desc:"美国中盘", ccy:"USD", group:"股票 · 美国", purpose:"美国中盘股票ETF，跟踪S&P MidCap 400，用于在大型股之外增加中型企业敞口。"},
+  {key:"IWM", name:"IWM", desc:"美国小盘", ccy:"USD", group:"股票 · 美国", purpose:"Russell 2000小盘股ETF。增加美国小型企业与经济周期敏感度，波动通常高于大盘宽基。"},
+  {key:"IJR", name:"IJR", desc:"美国小盘", ccy:"USD", group:"股票 · 美国", purpose:"S&P SmallCap 600小盘股ETF。用于增加美国小盘敞口，与大型股核心互补。"},
+  {key:"VNQ", name:"VNQ", desc:"美国房地产", ccy:"USD", group:"股票 · 房地产", purpose:"美国REIT宽基ETF，提供上市房地产、租金和地产经营相关敞口；同时受股票市场、利率与地产基本面影响。"},
+
+  {key:"VT", name:"VT", desc:"全球股票（富时全球）", ccy:"USD", group:"股票 · 全球/地区", purpose:"全球股票宽基ETF，对应文档中的FTSE Global All Cap（富时全球全市场）框架，覆盖发达与新兴市场并包含大中小盘；适合用一只基金获得较完整的全球股票敞口。"},
+  {key:"ACWI", name:"ACWI", desc:"全球股票（MSCI ACWI）", ccy:"USD", group:"股票 · 全球/地区", purpose:"跟踪MSCI ACWI体系的全球大中盘股票ETF，覆盖发达与新兴市场；全球权重按市场规模变化，并非各国平均配置。"},
+  {key:"VXUS", name:"VXUS", desc:"美国以外股票", ccy:"USD", group:"股票 · 全球/地区", purpose:"覆盖美国以外的发达与新兴市场股票，常与美国全市场ETF搭配以主动控制美国权重。"},
+  {key:"VEA", name:"VEA", desc:"发达市场（除美国）", ccy:"USD", group:"股票 · 全球/地区", purpose:"覆盖欧洲、日本、加拿大、澳大利亚等美国以外发达市场，不包含主要新兴市场。"},
+  {key:"VWO", name:"VWO", desc:"新兴市场", ccy:"USD", group:"股票 · 全球/地区", purpose:"新兴市场股票ETF，增加中国、印度、台湾、巴西等新兴经济体敞口，同时承担更高的政策、汇率与波动风险。"},
+  {key:"IEMG", name:"IEMG", desc:"新兴市场", ccy:"USD", group:"股票 · 全球/地区", purpose:"新兴市场宽基ETF之一，覆盖多个新兴经济体及不同市值层级，与VWO用途接近但指数体系不同。"},
+  {key:"VGK", name:"VGK", desc:"欧洲股票", ccy:"USD", group:"股票 · 全球/地区", purpose:"欧洲股票ETF，覆盖欧洲多个国家和行业，包括德国、法国等市场；适合获得欧洲整体股票敞口，而不是单一国家暴露。"},
+  {key:"EWG", name:"EWG", desc:"德国", ccy:"USD", group:"股票 · 全球/地区", purpose:"iShares MSCI Germany ETF，跟踪由德国股票构成的MSCI Germany Index，提供德国单一国家股票市场敞口。"},
+  {key:"EWQ", name:"EWQ", desc:"法国", ccy:"USD", group:"股票 · 全球/地区", purpose:"iShares MSCI France ETF，跟踪由法国股票构成的MSCI France Index，提供法国单一国家股票市场敞口。"},
+  {key:"EWJ", name:"EWJ", desc:"日经N225", ccy:"USD", group:"股票 · 全球/地区", purpose:"iShares MSCI Japan ETF（EWJ）。作为日本股票市场工具使用；页面中文标签按当前配置习惯标为“日经N225”。"},
+  {key:"INDA", name:"INDA", desc:"印度股票", ccy:"USD", group:"股票 · 全球/地区", purpose:"印度股票ETF，用于获得印度大型企业与经济增长敞口，需承担估值、市场和汇率等风险。"},
+
+  {key:"510300", name:"510300", desc:"沪深300", ccy:"CNY", group:"股票 · 中国", purpose:"华泰柏瑞沪深300ETF。跟踪沪深300，覆盖A股大型金融、消费、工业、科技、医药等，可作为中国A股大盘核心。文档中的多只沪深300ETF在候选库中只保留这一只。"},
+  {key:"512890", name:"512890", desc:"红利低波", ccy:"CNY", group:"股票 · 中国", purpose:"华泰柏瑞中证红利低波动ETF。偏向较高股息和较低历史波动的A股成熟价值公司，阶段性可能集中于银行、金融与传统行业。"},
+  {key:"03032", name:"03032", desc:"恒生科技", ccy:"HKD", group:"股票 · 中国", purpose:"恒生科技指数ETF，提供香港上市科技、新经济与互联网平台等股票敞口；行业集中度和波动通常高于中国大盘宽基。"},
+
+  {key:"SGOL", name:"SGOL", desc:"黄金", ccy:"USD", group:"黄金", purpose:"abrdn Physical Gold Shares ETF，主要通过实物黄金提供金价敞口。黄金不产生企业利润或票息，长期表现主要受实际利率、美元、通胀预期、避险需求等因素影响。"},
+
+  {key:"SGOV", name:"SGOV", desc:"超短美国国债", ccy:"USD", group:"债券 · 美国国债", purpose:"0—3个月美国国库券ETF，更接近美元现金管理与未来再平衡资金来源；短端利率下降后收益也会下降。"},
+  {key:"BIL", name:"BIL", desc:"超短美国国债", ccy:"USD", group:"债券 · 美国国债", purpose:"约1—3个月美国国库券ETF，与SGOV类似用于超短期美元现金管理，主要承担短端再投资收益率变化。"},
+  {key:"SHV", name:"SHV", desc:"超短美国国债", ccy:"USD", group:"债券 · 美国国债", purpose:"约0—1年美国国债ETF，处于现金管理与短债之间，利率敏感度略高于0—3个月产品。"},
+  {key:"SHY", name:"SHY", desc:"短期美国国债", ccy:"USD", group:"债券 · 美国国债", purpose:"约1—3年美国国债ETF，属于短期国债配置，会出现一定净值波动，不等同于现金。"},
+  {key:"IEI", name:"IEI", desc:"中短期美国国债", ccy:"USD", group:"债券 · 美国国债", purpose:"约3—7年美国国债ETF，提供中短期国债敞口；利率上升时价格可能下跌。"},
+  {key:"IEF", name:"IEF", desc:"中期美国国债", ccy:"USD", group:"债券 · 美国国债", purpose:"约7—10年美国国债ETF，提供中期利率弹性；久期较高于短债，利率上升时可能出现明显账面波动。"},
+  {key:"TLT", name:"TLT", desc:"长期美国国债", ccy:"USD", group:"债券 · 美国国债", purpose:"20年以上美国国债ETF，长久期使其对长期利率变化非常敏感；不适合作为现金替代或默认全部防守仓。"},
+  {key:"USFR", name:"USFR", desc:"浮息美国国债", ccy:"USD", group:"债券 · 美国国债", purpose:"美国浮息国债ETF，票息会较快跟随短期利率重设，可降低固定久期风险；利率下降时收入也会较快下降。"},
+  {key:"TFLO", name:"TFLO", desc:"浮息美国国债", ccy:"USD", group:"债券 · 美国国债", purpose:"美国浮息国债ETF，主要用于短久期和浮动票息敞口；与USFR用途接近但产品与指数结构不同。"},
+
+  {key:"BND", name:"BND", desc:"美国综合债券", ccy:"USD", group:"债券 · 综合/信用", purpose:"美国投资级综合债券宽基，覆盖国债、机构债、MBS和投资级公司债等，用于提供股票之外的票息与不同经济敏感度。"},
+  {key:"AGG", name:"AGG", desc:"美国综合债券", ccy:"USD", group:"债券 · 综合/信用", purpose:"美国投资级综合债券ETF，覆盖国债、MBS与高质量公司债等；并非不会下跌的现金工具。"},
+  {key:"BNDX", name:"BNDX", desc:"国际投资级债", ccy:"USD", group:"债券 · 综合/信用", purpose:"美国以外投资级债券ETF，用于降低只持美国债券的地域集中，同时需理解海外利率、信用与基金汇率对冲机制。"},
+  {key:"LQD", name:"LQD", desc:"投资级公司债", ccy:"USD", group:"债券 · 综合/信用", purpose:"投资级公司债ETF，在国债收益基础上增加信用利差补偿；企业信用恶化或利差扩大时价格可能下跌。"},
+  {key:"VCIT", name:"VCIT", desc:"中期投资级公司债", ccy:"USD", group:"债券 · 综合/信用", purpose:"中期投资级公司债ETF，承担企业信用与利率风险，收益包含信用利差补偿。"},
+  {key:"VCSH", name:"VCSH", desc:"短期投资级公司债", ccy:"USD", group:"债券 · 综合/信用", purpose:"短期投资级公司债ETF，久期通常低于中期公司债，但仍存在企业信用和利差风险。"},
+  {key:"HYG", name:"HYG", desc:"高收益公司债", ccy:"USD", group:"债券 · 综合/信用", purpose:"高收益债ETF，追求更高信用利差，同时经济衰退、信用恶化和违约风险显著高于投资级债。"},
+  {key:"JNK", name:"JNK", desc:"高收益公司债", ccy:"USD", group:"债券 · 综合/信用", purpose:"高收益公司债ETF，属于较低信用评级债券敞口；收益更高的同时承担更明显的信用周期与违约风险。"},
+  {key:"TIP", name:"TIP", desc:"抗通胀国债", ccy:"USD", group:"债券 · 抗通胀", purpose:"美国TIPS抗通胀国债ETF，用于增加通胀相关对冲敞口；实际利率上升时市场价格仍可能下跌。"},
+  {key:"VTIP", name:"VTIP", desc:"短期抗通胀国债", ccy:"USD", group:"债券 · 抗通胀", purpose:"短期限TIPS ETF，提供较短久期的美国通胀保值国债敞口，仍受实际利率与市场价格变化影响。"}
+];
+
+const etfByKey = Object.fromEntries(etfCatalog.map(x=>[x.key,x]));
+
+const defaults = [
+  {id:"voo", productKey:"VOO", pct:60},
+  {id:"qqq", productKey:"QQQ", pct:10},
+  {id:"gold", productKey:"SGOL", pct:10},
+  {id:"csi300", productKey:"510300", pct:6},
+  {id:"hstech", productKey:"03032", pct:4},
+  {id:"dividendCN", productKey:"512890", pct:7},
+  {id:"schd", productKey:"SCHD", pct:3}
+].map(x=>{
+  const p=etfByKey[x.productKey];
+  return p ? {...x,name:p.name,desc:p.desc,ccy:p.ccy,purpose:p.purpose} : x;
+});
+
+let state = {
+  principal:100000,
+  usdRate:"",
+  hkdRate:"",
+  usdHkdRate:"",
+  autoGold:false,
+  rows: defaults.map(x=>({...x, actualRmb:null, payAmount:null, payCcy:"CNY", fxAmount:null, rmbManual:false, fxManual:false, rowRate:null, unitPrice:null, priceCcy:x.ccy, autoFromFx:false, approxRates:{}}))
+};
+
+const money = n => "¥" + (Number(n)||0).toLocaleString("zh-CN",{minimumFractionDigits:2,maximumFractionDigits:2});
+const num = (n,d=4) => (Number(n)||0).toLocaleString("zh-CN",{minimumFractionDigits:d,maximumFractionDigits:d});
+const mobileMoney = n => {
+  const v=Number(n)||0;
+  const whole=Math.abs(v-Math.round(v))<0.000001;
+  return "¥" + v.toLocaleString("zh-CN",{
+    minimumFractionDigits:whole?0:2,
+    maximumFractionDigits:2
+  });
+};
+const el = id => document.getElementById(id);
+
+function toRoman(n){
+  const map=[
+    [1000,"M"],[900,"CM"],[500,"D"],[400,"CD"],[100,"C"],[90,"XC"],
+    [50,"L"],[40,"XL"],[10,"X"],[9,"IX"],[5,"V"],[4,"IV"],[1,"I"]
+  ];
+  let value=Math.max(1,Math.floor(Number(n)||1));
+  let out="";
+  for(const [v,s] of map){
+    while(value>=v){out+=s;value-=v;}
+  }
+  return out;
+}
+
+function plainNumber(raw){
+  const s=String(raw ?? "").trim();
+  if(s==="") return 0;
+  if(!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(s)) return null;
+  const n=Number(s);
+  return Number.isFinite(n)?n:null;
+}
+function evalArithmetic(raw){
+  let s=String(raw ?? "").trim()
+    .replace(/[×xX]/g,"*")
+    .replace(/÷/g,"/")
+    .replace(/，/g,",");
+  if(!s) return 0;
+  if(!/^[0-9+\-*/().\s]+$/.test(s)) return null;
+  try{
+    const value=Function('"use strict";return ('+s+')')();
+    return (typeof value==="number" && Number.isFinite(value))?value:null;
+  }catch(_){ return null; }
+}
+function displayNumber(n){
+  if(!Number.isFinite(Number(n))) return "";
+  return String(Math.round(Number(n)*100000000)/100000000);
+}
+let activeCalcInput=null;
+let restoringAnyFocus=false;
+let calcViewportRAF=0;
+
+function positionCalcBarAtKeyboardEdge(){
+  const bar=el("calcBar");
+  if(!bar || !bar.classList.contains("show")) return;
+
+  const vv=window.visualViewport;
+  const isMobile=window.matchMedia("(max-width:760px)").matches;
+  if(!isMobile) return;
+
+  if(vv){
+    // visualViewport.height 是“键盘上方仍可见”的视口高度。
+    // 将辅助栏的下边缘贴在该可见视口底边，也就是系统键盘顶部。
+    const margin=6;
+    const barH=bar.offsetHeight||52;
+    const top=Math.max(
+      vv.offsetTop + 2,
+      vv.offsetTop + vv.height - barH - margin
+    );
+
+    bar.style.top=`${Math.round(top)}px`;
+    bar.style.bottom="auto";
+    bar.style.left=`${Math.round(vv.offsetLeft + 8)}px`;
+    bar.style.right="auto";
+    bar.style.width=`${Math.max(220,Math.round(vv.width - 16))}px`;
+
+    // 视口明显变矮时基本可判定软键盘已打开。
+    const keyboardLikelyOpen =
+      window.innerHeight - vv.height > 120 ||
+      document.activeElement?.classList?.contains("calcInput");
+
+    document.body.classList.toggle("keyboardOpen",keyboardLikelyOpen);
+  }else{
+    // 不支持 visualViewport 的浏览器交给 fixed + bottom 回退。
+    bar.style.top="auto";
+    bar.style.bottom="calc(72px + env(safe-area-inset-bottom))";
+    bar.style.left="8px";
+    bar.style.right="8px";
+    bar.style.width="auto";
+    document.body.classList.add("keyboardOpen");
+  }
+}
+
+function scheduleCalcBarPosition(){
+  cancelAnimationFrame(calcViewportRAF);
+  calcViewportRAF=requestAnimationFrame(positionCalcBarAtKeyboardEdge);
+}
+
+function showCalcBarForInput(input){
+  activeCalcInput=input;
+  const bar=el("calcBar");
+  if(!bar || !window.matchMedia("(max-width:760px)").matches) return;
+  bar.classList.add("show");
+  scheduleCalcBarPosition();
+  // iOS 键盘动画期间 visualViewport 会连续变化，多补几帧保证始终贴边。
+  setTimeout(scheduleCalcBarPosition,50);
+  setTimeout(scheduleCalcBarPosition,160);
+  setTimeout(scheduleCalcBarPosition,320);
+}
+
+function hideCalcBar(){
+  const bar=el("calcBar");
+  if(bar) bar.classList.remove("show");
+  document.body.classList.remove("keyboardOpen");
+}
+
+function commitExpression(input){
+  if(!input) return false;
+  const raw=String(input.value??"").trim();
+  if(plainNumber(raw)!==null) return true;
+  const n=evalArithmetic(raw);
+  if(n===null) return false;
+  input.value=displayNumber(n);
+  input.dispatchEvent(new Event("input",{bubbles:true}));
+  return true;
+}
+function bindCalcInputs(){
+  document.querySelectorAll(".calcInput").forEach(input=>{
+    if(input.dataset.calcBound==="1") return;
+    input.dataset.calcBound="1";
+    input.addEventListener("focus",()=>{
+      showCalcBarForInput(input);
+      if(!restoringAnyFocus){
+        requestAnimationFrame(()=>{
+          try{ input.select(); }catch(_){}
+        });
+      }
+    });
+    input.addEventListener("blur",()=>{
+      // 点击计算操作条时会 preventDefault，因此不会触发 blur。
+      commitExpression(input);
+      setTimeout(()=>{
+        const ae=document.activeElement;
+        const stillEditing=ae && ae.classList && ae.classList.contains("calcInput");
+        if(!stillEditing) hideCalcBar();
+      },120);
+    });
+    input.addEventListener("keydown",ev=>{
+      if(ev.key==="Enter"){
+        ev.preventDefault();
+        commitExpression(input);
+        try{ input.select(); }catch(_){}
+      }
+    });
+  });
+}
+
+function ensureApproxRates(row){
+  if(!row.approxRates || typeof row.approxRates!=="object") row.approxRates={};
+  if(!Number(row.approxRates.USD)){
+    // 仅作占位估算，不代表实时汇率；每个资产独立生成并保存。
+    row.approxRates.USD = Math.round((6.80 + Math.random()*0.60)*10000)/10000;
+  }
+  if(!Number(row.approxRates.HKD)){
+    row.approxRates.HKD = Math.round((0.87 + Math.random()*0.08)*10000)/10000;
+  }
+}
+function rateInfoFor(row, ccy, allowApprox=true){
+  if(ccy==="CNY") return {rate:1, source:"fixed"};
+
+  // 本行参考汇率只用于本行“换汇后币种”。
+  if(ccy===row.ccy && row.rowRate !== null && row.rowRate !== ""){
+    const n=Number(row.rowRate)||0;
+    if(n>0) return {rate:n, source:"row"};
+  }
+
+  if(ccy==="USD"){
+    const top=Number(state.usdRate)||0;
+    if(top>0) return {rate:top, source:"top"};
+    const hkd=Number(state.hkdRate)||0;
+    const cross=Number(state.usdHkdRate)||0; // 1 USD = ? HKD
+    if(hkd>0 && cross>0) return {rate:hkd*cross, source:"cross"};
+  }
+
+  if(ccy==="HKD"){
+    const top=Number(state.hkdRate)||0;
+    if(top>0) return {rate:top, source:"top"};
+    const usd=Number(state.usdRate)||0;
+    const cross=Number(state.usdHkdRate)||0;
+    if(usd>0 && cross>0) return {rate:usd/cross, source:"cross"};
+  }
+
+  if(!allowApprox) return {rate:0, source:"none"};
+  ensureApproxRates(row);
+  return {rate:Number(row.approxRates[ccy])||0, source:"rough"};
+}
+function refRateFor(row){
+  // 配置的“参考汇率 / 换汇差额”仍只使用用户提供的准确/参考数据；
+  // 没填时不拿粗略汇率参与换汇差额。
+  return rateInfoFor(row,row.ccy,false).rate;
+}
+function convertCurrency(row, amount, fromCcy, toCcy, allowApprox=true){
+  const n=Number(amount)||0;
+  if(fromCcy===toCcy) return n;
+  const from=rateInfoFor(row,fromCcy,allowApprox);
+  const to=rateInfoFor(row,toCcy,allowApprox);
+  if(!(from.rate>0) || !(to.rate>0)) return null;
+  return n*from.rate/to.rate;
+}
+function updateRmbEquivalent(row){
+  const pay=Number(row.payAmount)||0;
+  const info=rateInfoFor(row,row.payCcy||"CNY",true);
+  row.actualRmb = pay * (info.rate||1);
+}
+function syncPaymentFromFx(row){
+  const fx=Number(row.fxAmount)||0;
+  const payCcy=row.payCcy||"CNY";
+  const converted=convertCurrency(row,fx,row.ccy,payCcy,true);
+  if(converted===null) return;
+  row.payAmount=converted;
+  row.rmbManual=true;
+  updateRmbEquivalent(row);
+}
+function autoRateNote(row){
+  if(!row.autoFromFx || row.ccy==="CNY") return "";
+  const fxInfo=rateInfoFor(row,row.ccy,true);
+  const payInfo=rateInfoFor(row,row.payCcy||"CNY",true);
+  if(fxInfo.source!=="rough" && payInfo.source!=="rough") return "";
+  const parts=[];
+  if(fxInfo.source==="rough") parts.push(`1 ${row.ccy} ≈ ${num(fxInfo.rate,4)} CNY`);
+  if((row.payCcy||"CNY")!=="CNY" && payInfo.source==="rough"){
+    parts.push(`1 ${row.payCcy} ≈ ${num(payInfo.rate,4)} CNY`);
+  }
+  return `估算换算：${parts.join("；")}（请填写参考/实际汇率校准）`;
+}
+const reducePriority = ["ief","hstech","gold","qqq","sgov","csi300","voo"];
+const addPriority = ["voo","csi300","sgov","qqq","gold","hstech","ief"];
+let ratioEditBase = null;
+let restoringRatioFocus = false;
+
+function pctRound(n){
+  return Math.max(0, Math.round((Number(n)||0) * 10000) / 10000);
+}
+function totalPct(){
+  return state.rows.reduce((s,r)=>s+(Number(r.pct)||0),0);
+}
+function snapshotRatios(id){
+  ratioEditBase = {
+    id,
+    pcts: Object.fromEntries(state.rows.map(r=>[r.id, Number(r.pct)||0]))
+  };
+}
+function restoreRatioSnapshot(id){
+  if(!ratioEditBase || ratioEditBase.id!==id) snapshotRatios(id);
+  state.rows.forEach(r=>{
+    if(Object.prototype.hasOwnProperty.call(ratioEditBase.pcts,r.id)){
+      r.pct = ratioEditBase.pcts[r.id];
+    }
+  });
+}
+function rebalanceAfterEdit(changedId){
+  if(!state.autoGold) return;
+
+  let total = totalPct();
+  const EPS = 0.000001;
+
+  // 超过 100%：保护当前编辑资产，按“不重要 → 重要”削减其他资产。
+  if(total > 100 + EPS){
+    let excess = total - 100;
+    for(const id of reducePriority){
+      if(id===changedId) continue;
+      const r = state.rows.find(x=>x.id===id);
+      if(!r || excess<=EPS) continue;
+      const current = Number(r.pct)||0;
+      const cut = Math.min(current, excess);
+      r.pct = pctRound(current-cut);
+      excess -= cut;
+    }
+
+    // 极端情况：当前资产自己超过 100%，其他资产已经全部归零。
+    if(excess > EPS && changedId){
+      const changed = state.rows.find(x=>x.id===changedId);
+      if(changed) changed.pct = pctRound((Number(changed.pct)||0)-excess);
+    }
+  }
+
+  // 低于 100%：按重要性从高到低依次补入，当前正在修改的资产跳过。
+  total = totalPct();
+  if(total < 100 - EPS){
+    let deficit = 100-total;
+    for(const id of addPriority){
+      if(id===changedId || deficit<=EPS) continue;
+      const r = state.rows.find(x=>x.id===id);
+      if(!r) continue;
+      const current = Number(r.pct)||0;
+      const room = Math.max(0, 100-current);
+      const add = Math.min(room, deficit);
+      r.pct = pctRound(current+add);
+      deficit -= add;
+    }
+  }
+}
+function targetOf(r){ return state.principal*(Number(r.pct)||0)/100; }
+function ensureAutoValues(r){
+  const target = targetOf(r);
+  r.payCcy=r.payCcy||"CNY";
+
+  if(r.ccy==="CNY"){
+    r.rowRate=1;
+  }
+
+  // 单股价格/换汇金额已开启联动时，始终只刷新当前这一行。
+  // 参考汇率后来被用户补充/修改时，当前行的支付金额也会随之更新。
+  if(r.autoFromFx && Number(r.fxAmount)>0){
+    syncPaymentFromFx(r);
+    return;
+  }
+
+  // 未手动填写支付金额时，跟随目标人民币金额。
+  if(!r.rmbManual || r.actualRmb===null){
+    r.actualRmb=target;
+    const converted=convertCurrency(r,target,"CNY",r.payCcy,true);
+    r.payAmount=converted===null?target:converted;
+    return;
+  }
+
+  // 手动支付金额以所选币种折算为人民币，供配置差额与总计使用。
+  if(r.payAmount===null || r.payAmount===undefined){
+    const converted=convertCurrency(r,Number(r.actualRmb)||0,"CNY",r.payCcy,true);
+    r.payAmount=converted===null?(Number(r.actualRmb)||0):converted;
+  }
+  updateRmbEquivalent(r);
+}
+function diffClass(v){ return Math.abs(v)<0.005 ? "good" : (v>0 ? "bad" : "good"); }
+function render(){
+  state.rows.forEach(ensureAutoValues);
+  const tbody=el("tbody");
+  tbody.innerHTML="";
+  state.rows.forEach((r,i)=>{
+    const target=targetOf(r), actual=Number(r.actualRmb)||0, allocDiff=actual-target;
+    const payAmount=Number(r.payAmount)||0, payCcy=r.payCcy||"CNY";
+    const allocPct=target ? allocDiff/target*100 : 0;
+    const rate=refRateFor(r), fx=Number(r.fxAmount)||0;
+    // 主汇率统一按“1 外币 = X CNY”显示，同时计算反向汇率。
+    const implied=(r.ccy!=="CNY" && fx>0 && actual>0) ? actual/fx : (r.ccy==="CNY"?1:0);
+    const reverse=(r.ccy!=="CNY" && fx>0 && actual>0) ? fx/actual : (r.ccy==="CNY"?1:0);
+    const rateDiff=(r.ccy!=="CNY" && fx>0 && actual>0 && rate>0) ? implied-rate : 0;
+    const fxPct=(r.ccy!=="CNY" && fx>0 && actual>0 && rate>0) ? (implied/rate-1)*100 : 0;
+    const fxDiff=(r.ccy!=="CNY" && fx>0 && rate>0) ? actual-(fx*rate) : 0;
+    const goldDisabled = "";
+    const fxDisabled = r.ccy==="CNY" ? "disabled" : "";
+    const row = document.createElement("tr");
+    row.dataset.rowId=r.id;
+    row.innerHTML=`
+      <td>
+        <div class="assetCellTop">
+          <div class="assetInfo">
+            <div class="assetRow">
+              <div class="asset">
+                <button type="button" class="dragHandle" data-id="${r.id}" aria-label="拖动调整 ${r.name} 的配置顺序" title="拖动调整顺序">${toRoman(i+1)}</button>
+                <span class="assetName">${r.name}</span>
+                <button type="button" class="assetSelectBtn" data-id="${r.id}" aria-label="替换 ${r.name}" title="选择其它 ETF">
+                  <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.25 6 8 10.5 12.75 6"/></svg>
+                </button>
+              </div>
+              <div class="hintWrap" tabindex="0" aria-label="查看用途">
+                <span class="hintIcon">i</span>
+                <div class="hintBubble">${r.purpose}</div>
+              </div>
+              <div class="unitPriceInline">
+                <span class="unitLabel">单股金额</span>
+                <input class="field calcInput unitPriceInput" data-id="${r.id}" type="text" inputmode="decimal" autocomplete="off"
+                  value="${r.unitPrice??""}" placeholder="可选" />
+                <select class="select priceCcyInput" data-id="${r.id}">
+                  ${[["CNY","RMB"],["HKD","HKD"],["USD","USD"]].map(([v,label])=>`<option value="${v}" ${v===(r.priceCcy||r.ccy)?"selected":""}>${label}</option>`).join("")}
+                </select>
+              </div>
+            </div>
+            <div class="desc">${r.desc}</div>
+          </div>
+        </div>
+      </td>
+      <td>
+        <div class="mobileFieldHead">
+          <span>目标比例</span>
+          <span class="hintWrap" tabindex="0" aria-label="查看自动平衡逻辑">
+            <span class="hintIcon">i</span>
+            <span class="hintBubble">
+              各资产比例独立输入。修改当前资产时不会自动改变其他资产；总比例允许暂时高于或低于 100%，可根据合计提示继续手动调整。
+            </span>
+          </span>
+        </div>
+        <div class="ratioBox">
+          <input class="field ratio pctInput calcInput" data-id="${r.id}" type="text" inputmode="decimal" value="${Number(r.pct)}" ${goldDisabled}/>
+          <b>%</b>
+        </div>
+
+      </td>
+      <td>
+        <div class="mobileFieldHead">目标金额（CNY）</div>
+        <div class="money ${r.id==="gold"?"blue":""}">${money(target)}</div>
+      </td>
+      <td>
+        <div class="mobileFieldHead">实际交易与换汇</div>
+        <div class="tradeGrid">
+          <input class="field actualInput calcInput" data-id="${r.id}" type="text" inputmode="decimal"
+            value="${payAmount.toFixed(2)}" title="实际支付金额"/>
+          <select class="select payCcyInput" data-id="${r.id}" title="支付币种">
+            ${[["CNY","RMB"],["HKD","HKD"],["USD","USD"]].map(([v,label])=>`<option value="${v}" ${v===payCcy?"selected":""}>${label}</option>`).join("")}
+          </select>
+          <input class="field fxInput calcInput" data-id="${r.id}" type="text" inputmode="decimal"
+            value="${r.fxAmount??""}" placeholder="换汇后金额" />
+          <select class="select ccyInput" data-id="${r.id}" title="换汇后币种">
+            ${[["CNY","RMB"],["HKD","HKD"],["USD","USD"]].map(([v,label])=>`<option value="${v}" ${v===r.ccy?"selected":""}>${label}</option>`).join("")}
+          </select>
+        </div>
+        <div class="inlineHelp">
+          <span>支付金额（可选 RMB / HKD / USD）</span><span>→</span><span>换汇后金额（可输入 单价×股数）</span>
+          <button class="mini followBtn" data-id="${r.id}">支付金额跟随目标</button>
+          ${r.ccy!=="CNY"?`<button class="mini fxCalcBtn" data-id="${r.id}">按参考汇率</button>`:""}
+          ${autoRateNote(r)?`<span class="warn">${autoRateNote(r)}</span>`:""}
+        </div>
+      </td>
+      <td>
+        <div class="mobileFieldHead">交易汇率 / 参考汇率（可选）</div>
+        <div class="rateGrid">
+          <div>
+            <label>参考：1 ${r.ccy} = ? CNY（可选）</label>
+            <input class="field rowRateInput calcInput" data-id="${r.id}" type="text" inputmode="decimal" value="${r.ccy==="CNY"?"1":(r.rowRate??"")}" placeholder="${r.ccy==="USD"?"跟随顶部 USD":r.ccy==="HKD"?"跟随顶部 HKD":"1"}" ${r.ccy==="CNY"?"disabled":""}/>
+          </div>
+          <div>
+            <label>计算交易汇率</label>
+            <div class="metric">
+              ${r.ccy==="CNY"
+                ? `<b class="desktopRateOnly">1.000000</b><b class="mobileRateOnly">1.0000</b>`
+                : implied
+                  ? `<b class="desktopRateOnly">1 ${r.ccy} = ${num(implied,6)} CNY</b>
+                     <span class="mobileRateOnly rateEquation">
+                       <span class="rateLead">1 ${r.ccy} =</span>
+                       <span class="rateValue">${num(implied,4)} CNY</span>
+                     </span>`
+                  : "—"}
+            </div>
+            ${r.ccy!=="CNY" && reverse
+              ? `<div class="desc desktopRateOnly">反向：1 CNY = ${num(reverse,6)} ${r.ccy}</div>
+                 <div class="reverseRateMobile mobileRateOnly">
+                   <span>反向 1 CNY =</span>
+                   <span>${num(reverse,4)} ${r.ccy}</span>
+                 </div>`
+              : ""}
+          </div>
+        </div>
+      </td>
+      <td>
+        <div class="mobileFieldHead">
+          <span>配置差额</span>
+          <span class="hintWrap" tabindex="0" aria-label="查看配置差额计算逻辑">
+            <span class="hintIcon">i</span>
+            <span class="hintBubble">
+              配置差额 = 实际人民币金额 − 目标金额。配置差额比例 = 配置差额 ÷ 目标金额 × 100%。正数表示超配，负数表示低配。
+            </span>
+          </span>
+        </div>
+        <div class="metric ${diffClass(allocDiff)}">
+          <b class="desktopCompactOnly">${allocDiff>=0?"+":""}${money(allocDiff)}</b>
+          <b class="mobileCompactOnly">${allocDiff>=0?"+":""}${mobileMoney(allocDiff)}</b>
+        </div>
+        <div class="metric muted">${allocPct>=0?"+":""}${allocPct.toFixed(2)}%</div>
+      </td>
+      <td>
+        <div class="mobileFieldHead">换汇差额（可选）</div>
+        ${r.ccy==="CNY"
+          ? '<div class="metric muted">无需换汇</div>'
+          : `<div class="metric ${fx>0&&rate>0?diffClass(fxDiff):"muted"}"><b>${(fx>0&&rate>0)?money(fxDiff):"—"}</b></div>
+             <div class="metric muted">${(fx>0&&rate>0)
+               ? `<span class="desktopRateOnly">汇率差 ${(rateDiff>=0?"+":"")}${rateDiff.toFixed(6)} · ${(fxPct>=0?"+":"")}${fxPct.toFixed(3)}%</span>
+                  <span class="mobileRateOnly">汇率差 ${(rateDiff>=0?"+":"")}${rateDiff.toFixed(4)} · ${(fxPct>=0?"+":"")}${fxPct.toFixed(2)}%</span>`
+               : "参考汇率可留空"}</div>`}
+      </td>
+
+    `;
+    tbody.appendChild(row);
+  });
+  bindRowEvents();
+  bindRowReorder();
+  updateTotals();
+  save();
+}
+function rerenderKeepTyping(e, apply){
+  const target=e.target;
+  const id=target.dataset.id;
+  const raw=target.value;
+  const cls=["pctInput","actualInput","fxInput","rowRateInput","unitPriceInput"].find(c=>target.classList.contains(c));
+
+  // 记录光标/选区位置。表格重绘后不仅恢复焦点，也恢复到原来的插入位置。
+  const selStart = typeof target.selectionStart === "number" ? target.selectionStart : raw.length;
+  const selEnd = typeof target.selectionEnd === "number" ? target.selectionEnd : selStart;
+  const selDir = target.selectionDirection || "none";
+
+  apply(raw);
+  render();
+
+  if(cls && id){
+    const next=document.querySelector(`.${cls}[data-id="${id}"]`);
+    if(next){
+      next.value=raw;
+      restoringRatioFocus = cls==="pctInput";
+      restoringAnyFocus = true;
+      try{ next.focus({preventScroll:true}); }catch(_){ next.focus(); }
+      restoringAnyFocus = false;
+      restoringRatioFocus = false;
+      if(activeCalcInput===target) activeCalcInput=next;
+      try{
+        next.setSelectionRange(
+          Math.min(selStart, raw.length),
+          Math.min(selEnd, raw.length),
+          selDir
+        );
+      }catch(_){}
+    }
+  }
+}
+let reorderSession=null;
+
+function reorderStateFromDom(){
+  const ids=[...el("tbody").querySelectorAll("tr[data-row-id]")].map(tr=>tr.dataset.rowId);
+  const byId=new Map(state.rows.map(r=>[r.id,r]));
+  const ordered=ids.map(id=>byId.get(id)).filter(Boolean);
+  state.rows.forEach(r=>{ if(!ids.includes(r.id)) ordered.push(r); });
+  state.rows=ordered;
+  ratioEditBase=null;
+  save();
+}
+
+function clearReorderVisuals(){
+  document.querySelectorAll("#tbody tr.reorderDragging,#tbody tr.reorderTarget,#tbody tr.reorderTargetAfter").forEach(tr=>{
+    tr.classList.remove("reorderDragging","reorderTarget","reorderTargetAfter");
+  });
+}
+
+function finishRowReorder({rerender=true}={}){
+  if(!reorderSession) return;
+  reorderStateFromDom();
+  clearReorderVisuals();
+  const focusId=reorderSession.id;
+  reorderSession=null;
+  if(rerender){
+    render();
+    requestAnimationFrame(()=>{
+      const h=document.querySelector(`.dragHandle[data-id="${focusId}"]`);
+      if(h) try{h.focus({preventScroll:true});}catch(_){h.focus();}
+    });
+  }
+}
+
+function moveRowByKeyboard(id,delta){
+  const idx=state.rows.findIndex(r=>r.id===id);
+  if(idx<0) return;
+  const next=Math.max(0,Math.min(state.rows.length-1,idx+delta));
+  if(next===idx) return;
+  const [item]=state.rows.splice(idx,1);
+  state.rows.splice(next,0,item);
+  ratioEditBase=null;
+  render();
+  requestAnimationFrame(()=>{
+    const h=document.querySelector(`.dragHandle[data-id="${id}"]`);
+    if(h) try{h.focus({preventScroll:true});}catch(_){h.focus();}
+  });
+}
+
+function bindRowReorder(){
+  document.querySelectorAll(".dragHandle").forEach(handle=>{
+    if(handle.dataset.reorderBound==="1") return;
+    handle.dataset.reorderBound="1";
+
+    handle.addEventListener("keydown",ev=>{
+      if(ev.key==="ArrowUp"){
+        ev.preventDefault();
+        moveRowByKeyboard(handle.dataset.id,-1);
+      }else if(ev.key==="ArrowDown"){
+        ev.preventDefault();
+        moveRowByKeyboard(handle.dataset.id,1);
+      }
+    });
+
+    handle.addEventListener("pointerdown",ev=>{
+      if(window.matchMedia("(max-width:760px)").matches) return;
+      if(ev.pointerType==="mouse" && ev.button!==0) return;
+      const row=handle.closest("tr[data-row-id]");
+      if(!row) return;
+      ev.preventDefault();
+      try{handle.setPointerCapture(ev.pointerId);}catch(_){}
+      reorderSession={
+        pointerId:ev.pointerId,
+        id:handle.dataset.id,
+        handle,
+        row,
+        clientY:ev.clientY
+      };
+      row.classList.add("reorderDragging");
+    });
+
+    handle.addEventListener("pointermove",ev=>{
+      if(!reorderSession || reorderSession.pointerId!==ev.pointerId) return;
+      ev.preventDefault();
+      reorderSession.clientY=ev.clientY;
+      const dragged=reorderSession.row;
+      const tbody=el("tbody");
+      if(!dragged || !tbody) return;
+
+      // 完全按鼠标/手指的纵向位置排序，而不是依赖 elementFromPoint 命中某一行。
+      // 鼠标越过其它资产行的中线时，拖动项会立即移动到对应位置；
+      // 即使指针位于两行之间的空隙，也能继续顺畅地上下排序。
+      const otherRows=[...tbody.querySelectorAll("tr[data-row-id]")].filter(tr=>tr!==dragged);
+      let insertBefore=null;
+      for(const tr of otherRows){
+        const rect=tr.getBoundingClientRect();
+        const middle=rect.top + rect.height/2;
+        if(ev.clientY < middle){
+          insertBefore=tr;
+          break;
+        }
+      }
+
+      document.querySelectorAll("#tbody tr.reorderTarget,#tbody tr.reorderTargetAfter").forEach(tr=>{
+        tr.classList.remove("reorderTarget","reorderTargetAfter");
+      });
+
+      if(insertBefore){
+        insertBefore.classList.add("reorderTarget");
+        if(dragged.nextElementSibling!==insertBefore){
+          tbody.insertBefore(dragged,insertBefore);
+        }
+      }else{
+        const last=otherRows[otherRows.length-1];
+        if(last) last.classList.add("reorderTargetAfter");
+        if(dragged!==tbody.lastElementChild){
+          tbody.appendChild(dragged);
+        }
+      }
+
+      // 拖到屏幕上下边缘时自动滚动，便于跨多行移动。
+      const edge=80;
+      if(ev.clientY<edge) window.scrollBy(0,-14);
+      else if(ev.clientY>window.innerHeight-edge) window.scrollBy(0,14);
+    });
+
+    const end=ev=>{
+      if(!reorderSession || reorderSession.pointerId!==ev.pointerId) return;
+      try{handle.releasePointerCapture(ev.pointerId);}catch(_){}
+      finishRowReorder();
+    };
+    handle.addEventListener("pointerup",end);
+    handle.addEventListener("pointercancel",end);
+  });
+}
+
+
+let assetSortSession=null;
+
+function buildAssetSortList(){
+  const list=el("assetSortList");
+  if(!list) return;
+  list.innerHTML="";
+  state.rows.forEach((r,index)=>{
+    const item=document.createElement("div");
+    item.className="assetSortItem";
+    item.dataset.id=r.id;
+    item.tabIndex=0;
+    item.setAttribute("role","button");
+    item.setAttribute("aria-label",`拖动 ${r.name} 调整顺序`);
+    item.innerHTML=`<span class="assetSortName">${r.name}</span>`;
+    list.appendChild(item);
+  });
+  bindAssetSortItems();
+}
+
+function syncAssetSortStateFromList(){
+  const list=el("assetSortList");
+  if(!list) return;
+  const ids=[...list.querySelectorAll(".assetSortItem")].map(x=>x.dataset.id);
+  const byId=new Map(state.rows.map(r=>[r.id,r]));
+  const ordered=ids.map(id=>byId.get(id)).filter(Boolean);
+  state.rows.forEach(r=>{if(!ids.includes(r.id)) ordered.push(r);});
+  state.rows=ordered;
+  ratioEditBase=null;
+  render();
+}
+
+function clearAssetSortVisuals(){
+  document.querySelectorAll("#assetSortList .sortDragging,#assetSortList .sortTargetBefore,#assetSortList .sortTargetAfter").forEach(x=>{
+    x.classList.remove("sortDragging","sortTargetBefore","sortTargetAfter");
+  });
+}
+
+function moveAssetSortItem(id,delta){
+  const idx=state.rows.findIndex(r=>r.id===id);
+  if(idx<0) return;
+  const next=Math.max(0,Math.min(state.rows.length-1,idx+delta));
+  if(next===idx) return;
+  const [row]=state.rows.splice(idx,1);
+  state.rows.splice(next,0,row);
+  ratioEditBase=null;
+  render();
+  buildAssetSortList();
+  requestAnimationFrame(()=>{
+    const target=el("assetSortList")?.querySelector(`.assetSortItem[data-id="${id}"]`);
+    if(target) try{target.focus({preventScroll:true});}catch(_){target.focus();}
+  });
+}
+
+function bindAssetSortItems(){
+  const list=el("assetSortList");
+  if(!list) return;
+
+  list.querySelectorAll(".assetSortItem").forEach(item=>{
+    item.addEventListener("keydown",ev=>{
+      if(ev.target!==item) return;
+      if(ev.key==="ArrowUp"){
+        ev.preventDefault();
+        moveAssetSortItem(item.dataset.id,-1);
+      }else if(ev.key==="ArrowDown"){
+        ev.preventDefault();
+        moveAssetSortItem(item.dataset.id,1);
+      }
+    });
+
+    item.addEventListener("pointerdown",ev=>{
+      if(ev.pointerType==="mouse" && ev.button!==0) return;
+      ev.preventDefault();
+      try{item.setPointerCapture(ev.pointerId);}catch(_){}
+      assetSortSession={
+        pointerId:ev.pointerId,
+        id:item.dataset.id,
+        item,
+        clientY:ev.clientY
+      };
+      item.classList.add("sortDragging");
+    });
+
+    item.addEventListener("pointermove",ev=>{
+      if(!assetSortSession || assetSortSession.pointerId!==ev.pointerId) return;
+      ev.preventDefault();
+      assetSortSession.clientY=ev.clientY;
+      const dragged=assetSortSession.item;
+      const other=[...list.querySelectorAll(".assetSortItem")].filter(x=>x!==dragged);
+      let insertBefore=null;
+      for(const row of other){
+        const rect=row.getBoundingClientRect();
+        if(ev.clientY < rect.top + rect.height/2){
+          insertBefore=row;
+          break;
+        }
+      }
+
+      other.forEach(x=>x.classList.remove("sortTargetBefore","sortTargetAfter"));
+      if(insertBefore){
+        insertBefore.classList.add("sortTargetBefore");
+        if(dragged.nextElementSibling!==insertBefore){
+          list.insertBefore(dragged,insertBefore);
+        }
+      }else{
+        const last=other[other.length-1];
+        if(last) last.classList.add("sortTargetAfter");
+        if(dragged!==list.lastElementChild) list.appendChild(dragged);
+      }
+    });
+
+    const finish=ev=>{
+      if(!assetSortSession || assetSortSession.pointerId!==ev.pointerId) return;
+      try{item.releasePointerCapture(ev.pointerId);}catch(_){}
+      syncAssetSortStateFromList();
+      clearAssetSortVisuals();
+      const keepId=assetSortSession.id;
+      assetSortSession=null;
+      buildAssetSortList();
+      requestAnimationFrame(()=>{
+        const target=el("assetSortList")?.querySelector(`.assetSortItem[data-id="${keepId}"]`);
+        if(target) try{target.focus({preventScroll:true});}catch(_){target.focus();}
+      });
+    };
+    item.addEventListener("pointerup",finish);
+    item.addEventListener("pointercancel",finish);
+  });
+}
+
+function openAssetSortModal(){
+  const modal=el("assetSortModal");
+  if(!modal) return;
+  buildAssetSortList();
+  modal.setAttribute("aria-hidden","false");
+  document.body.classList.add("assetSortOpen");
+  requestAnimationFrame(()=>{
+    const first=el("assetSortList")?.querySelector(".assetSortItem");
+    if(first) try{first.focus({preventScroll:true});}catch(_){first.focus();}
+  });
+}
+
+function closeAssetSortModal(){
+  const modal=el("assetSortModal");
+  if(!modal) return;
+  modal.setAttribute("aria-hidden","true");
+  document.body.classList.remove("assetSortOpen");
+  assetSortSession=null;
+  clearAssetSortVisuals();
+  const opener=el("openAssetSortBtn");
+  if(opener) try{opener.focus({preventScroll:true});}catch(_){opener.focus();}
+}
+
+
+let assetPickerSlotId=null;
+let assetPickerLastFocus=null;
+
+function currentProductKey(row){
+  return row?.productKey || null;
+}
+
+function renderAssetPicker(){
+  const list=el("assetPickerList");
+  if(!list) return;
+  const slot=state.rows.find(r=>r.id===assetPickerSlotId);
+  const q=String(el("assetPickerSearch")?.value||"").trim().toLowerCase();
+  const filtered=etfCatalog.filter(p=>{
+    if(!q) return true;
+    return [p.key,p.name,p.desc,p.group,p.purpose].some(v=>String(v||"").toLowerCase().includes(q));
+  });
+  list.innerHTML="";
+  if(!filtered.length){
+    list.innerHTML='<div class="assetChoiceEmpty">没有匹配的 ETF</div>';
+    return;
+  }
+  let lastGroup="";
+  filtered.forEach(p=>{
+    if(p.group!==lastGroup){
+      const group=document.createElement("div");
+      group.className="assetChoiceGroup";
+      group.textContent=p.group;
+      list.appendChild(group);
+      lastGroup=p.group;
+    }
+    const wrap=document.createElement("div");
+    wrap.className="assetChoice"+(slot && currentProductKey(slot)===p.key?" current":"");
+    wrap.dataset.key=p.key;
+    wrap.innerHTML=`
+      <button class="assetChoiceSelect" type="button" data-key="${p.key}" aria-label="选择 ${p.name}">
+        <div class="assetChoiceTicker">${p.name}</div>
+        <div class="assetChoiceMeta">${p.desc} · ${p.ccy}${slot && currentProductKey(slot)===p.key?" · 当前":""}</div>
+      </button>
+      <button class="assetChoiceInfo" type="button" aria-label="查看 ${p.name} 说明">i</button>
+      <div class="assetChoiceDetail">${p.purpose}</div>`;
+    list.appendChild(wrap);
+  });
+
+  list.querySelectorAll(".assetChoiceSelect").forEach(btn=>{
+    btn.addEventListener("click",()=>replaceAssetInSlot(assetPickerSlotId,btn.dataset.key));
+  });
+  list.querySelectorAll(".assetChoiceInfo").forEach(btn=>{
+    btn.addEventListener("click",ev=>{
+      ev.stopPropagation();
+      const item=btn.closest(".assetChoice");
+      const was=item.classList.contains("detailOpen");
+      list.querySelectorAll(".assetChoice.detailOpen").forEach(x=>x.classList.remove("detailOpen"));
+      if(!was) item.classList.add("detailOpen");
+    });
+  });
+}
+
+function openAssetPicker(slotId, opener){
+  const row=state.rows.find(r=>r.id===slotId);
+  const modal=el("assetPickerModal");
+  if(!row || !modal) return;
+  assetPickerSlotId=slotId;
+  assetPickerLastFocus=opener||document.activeElement;
+  if(el("assetPickerTitle")) el("assetPickerTitle").textContent=`替换 ${row.name}`;
+  if(el("assetPickerSearch")) el("assetPickerSearch").value="";
+  renderAssetPicker();
+  modal.setAttribute("aria-hidden","false");
+  document.body.classList.add("assetPickerOpen");
+  requestAnimationFrame(()=>{
+    const search=el("assetPickerSearch");
+    if(search) try{search.focus({preventScroll:true});}catch(_){search.focus();}
+  });
+}
+
+function closeAssetPicker(){
+  const modal=el("assetPickerModal");
+  if(!modal) return;
+  modal.setAttribute("aria-hidden","true");
+  document.body.classList.remove("assetPickerOpen");
+  assetPickerSlotId=null;
+  const focus=assetPickerLastFocus;
+  assetPickerLastFocus=null;
+  if(focus && focus.isConnected){
+    try{focus.focus({preventScroll:true});}catch(_){try{focus.focus();}catch(__){}}
+  }
+}
+
+function replaceAssetInSlot(slotId,key){
+  const row=state.rows.find(r=>r.id===slotId);
+  const p=etfByKey[key];
+  if(!row || !p) return;
+  const oldCcy=row.ccy;
+  row.productKey=p.key;
+  row.name=p.name;
+  row.desc=p.desc;
+  row.purpose=p.purpose;
+  row.ccy=p.ccy;
+
+  // 目标比例、排序位置、支付金额保持；资产专属的单价/换汇后数量与参考汇率清空，避免旧标的数据串入新ETF。
+  row.unitPrice=null;
+  row.priceCcy=p.ccy;
+  row.fxAmount=null;
+  row.fxManual=false;
+  row.autoFromFx=false;
+  row.rowRate=p.ccy==="CNY"?1:null;
+  row.approxRates={};
+  if(oldCcy!==p.ccy && !row.rmbManual){
+    row.actualRmb=null;
+    row.payAmount=null;
+  }
+  ratioEditBase=null;
+  closeAssetPicker();
+  render();
+}
+
+function bindAssetPickerButtons(){
+  document.querySelectorAll(".assetSelectBtn").forEach(btn=>{
+    btn.onclick=ev=>{
+      ev.stopPropagation();
+      openAssetPicker(btn.dataset.id,btn);
+    };
+  });
+}
+
+function bindRowEvents(){
+  document.querySelectorAll(".pctInput").forEach(x=>{
+    x.oninput=e=>{
+      const n=plainNumber(e.target.value);
+      if(n===null) return;
+      rerenderKeepTyping(e, raw=>{
+        const id=e.target.dataset.id;
+        const r=state.rows.find(r=>r.id===id);
+        // 比例独立输入：只修改当前资产，不联动其他资产。
+        r.pct=Math.max(0,n);
+      });
+    };
+  });
+  document.querySelectorAll(".actualInput").forEach(x=>x.oninput=e=>{
+    const n=plainNumber(e.target.value);
+    if(n===null) return;
+    rerenderKeepTyping(e, raw=>{
+      const r=state.rows.find(r=>r.id===e.target.dataset.id);
+      r.payAmount=n;
+      r.rmbManual=true;
+      r.autoFromFx=false; // 用户手动填写后，不再被单股价格/换汇金额覆盖
+      updateRmbEquivalent(r);
+    });
+  });
+  document.querySelectorAll(".payCcyInput").forEach(x=>x.onchange=e=>{
+    const r=state.rows.find(r=>r.id===e.target.dataset.id);
+    const oldCcy=r.payCcy||"CNY";
+    const newCcy=e.target.value;
+    const currentRmb=Number(r.actualRmb)||0;
+    r.payCcy=newCcy;
+
+    if(r.autoFromFx && Number(r.fxAmount)>0){
+      syncPaymentFromFx(r);
+    }else{
+      // 切换支付币种时保持当前人民币等值不变，只改变显示的支付金额。
+      const converted=convertCurrency(r,currentRmb,"CNY",newCcy,true);
+      r.payAmount=converted===null?currentRmb:converted;
+      r.rmbManual=true;
+      updateRmbEquivalent(r);
+    }
+    render();
+  });
+
+  document.querySelectorAll(".fxInput").forEach(x=>x.oninput=e=>{
+    const n=plainNumber(e.target.value);
+    if(n===null) return;
+    rerenderKeepTyping(e, raw=>{
+      const r=state.rows.find(r=>r.id===e.target.dataset.id);
+      r.fxAmount=n;
+      r.fxManual=true;
+      if(r.autoFromFx) syncPaymentFromFx(r);
+    });
+  });
+  document.querySelectorAll(".ccyInput").forEach(x=>x.onchange=e=>{
+    const r=state.rows.find(r=>r.id===e.target.dataset.id);
+    r.ccy=e.target.value;
+    r.rowRate=r.ccy==="CNY"?1:null;
+    r.fxManual=false;
+    if(r.unitPrice && r.priceCcy===r.ccy){
+      r.fxAmount=Number(r.unitPrice)||0;
+      r.autoFromFx=true;
+      syncPaymentFromFx(r);
+    }else{
+      r.fxAmount=null;
+      r.autoFromFx=false;
+    }
+    render();
+  });
+  document.querySelectorAll(".rowRateInput").forEach(x=>x.oninput=e=>{
+    const n=plainNumber(e.target.value);
+    if(n===null) return;
+    rerenderKeepTyping(e, raw=>{
+      const r=state.rows.find(r=>r.id===e.target.dataset.id);
+      r.rowRate=String(raw).trim()===""?null:n;
+      if(r.autoFromFx) syncPaymentFromFx(r);
+    });
+  });
+
+  document.querySelectorAll(".unitPriceInput").forEach(x=>x.oninput=e=>{
+    const n=plainNumber(e.target.value);
+    if(n===null) return;
+    rerenderKeepTyping(e, raw=>{
+      const r=state.rows.find(r=>r.id===e.target.dataset.id);
+      r.unitPrice=String(raw).trim()===""?null:n;
+      r.priceCcy=r.priceCcy||r.ccy;
+      if(n>0){
+        // 只修改当前资产：单股金额绝不复制到其他行。
+        r.ccy=r.priceCcy;
+        r.fxAmount=n;
+        r.fxManual=true;
+        r.autoFromFx=true;
+
+        if(r.priceCcy==="CNY"){
+          r.rowRate=1;
+        }else if(r.rowRate===1){
+          r.rowRate=null;
+        }
+
+        // 单股金额 = 当前行换汇后金额时，前面的支付金额按汇率自动联动。
+        // 未填写准确参考汇率时，仅使用本资产独立的粗略估算汇率。
+        syncPaymentFromFx(r);
+      }else{
+        r.unitPrice=null;
+        r.autoFromFx=false;
+      }
+    });
+  });
+  document.querySelectorAll(".priceCcyInput").forEach(x=>x.onchange=e=>{
+    const r=state.rows.find(r=>r.id===e.target.dataset.id);
+    r.priceCcy=e.target.value;
+    r.ccy=e.target.value;
+    const n=Number(r.unitPrice)||0;
+    if(r.ccy==="CNY"){
+      r.rowRate=1;
+    }else if(r.rowRate===1){
+      r.rowRate=null;
+    }
+    if(n>0){
+      r.fxAmount=n;
+      r.fxManual=true;
+      r.autoFromFx=true;
+      syncPaymentFromFx(r);
+    }else{
+      r.autoFromFx=false;
+    }
+    render();
+  });
+
+  document.querySelectorAll(".followBtn").forEach(x=>x.onclick=e=>{
+    const r=state.rows.find(r=>r.id===e.target.dataset.id);
+    r.rmbManual=false;
+    r.autoFromFx=false;
+    r.actualRmb=null;
+    r.payAmount=null;
+    render();
+  });
+  document.querySelectorAll(".fxCalcBtn").forEach(x=>x.onclick=e=>{
+    const r=state.rows.find(r=>r.id===e.target.dataset.id);
+    const rate=refRateFor(r);
+    if(rate>0){
+      r.fxAmount=(Number(r.actualRmb)||0)/rate;
+      r.fxManual=false;
+      r.autoFromFx=false;
+      render();
+    }
+  });
+  bindHintInteractions();
+  bindAssetPickerButtons();
+  bindCalcInputs();
+}
+function bindHintInteractions(){
+  document.querySelectorAll(".hintWrap").forEach(h=>{
+    if(h.dataset.tapBound==="1") return;
+    h.dataset.tapBound="1";
+    h.addEventListener("click", ev=>{
+      ev.stopPropagation();
+      const wasOpen=h.classList.contains("open");
+      document.querySelectorAll(".hintWrap.open").forEach(x=>x.classList.remove("open"));
+      if(!wasOpen) h.classList.add("open");
+    });
+  });
+}
+function updateTotals(){
+  const rows=state.rows;
+  const totalPct=rows.reduce((s,r)=>s+(Number(r.pct)||0),0);
+  const totalTarget=rows.reduce((s,r)=>s+targetOf(r),0);
+  const totalActual=rows.reduce((s,r)=>s+(Number(r.actualRmb)||0),0);
+  let totalFxDiff=0, fxDiffCount=0;
+  const fxAgg={
+    USD:{rmb:0,fx:0,refRmb:0,refFx:0},
+    HKD:{rmb:0,fx:0,refRmb:0,refFx:0}
+  };
+  rows.forEach(r=>{
+    if(!fxAgg[r.ccy]) return;
+    const fx=Number(r.fxAmount)||0, actual=Number(r.actualRmb)||0, rate=refRateFor(r);
+    if(fx>0 && actual>0){
+      fxAgg[r.ccy].rmb+=actual;
+      fxAgg[r.ccy].fx+=fx;
+    }
+    if(fx>0 && actual>0 && rate>0){
+      const d=actual-(fx*rate);
+      totalFxDiff+=d;
+      fxDiffCount++;
+      fxAgg[r.ccy].refRmb+=fx*rate;
+      fxAgg[r.ccy].refFx+=fx;
+    }
+  });
+  const allocDiff=totalActual-state.principal;
+  el("sumRatio").textContent=totalPct.toFixed(2)+"%";
+  el("sumRatio").className=Math.abs(totalPct-100)<0.005?"good":"warn";
+  el("sumTarget").textContent=money(totalTarget);
+  el("sumActual").textContent="实际 "+money(totalActual);
+  el("sumAllocDiff").textContent=money(allocDiff);
+  el("sumAllocDiff").className=diffClass(allocDiff);
+  el("sumFxDiff").textContent=fxDiffCount?money(totalFxDiff):"—";
+  el("sumFxDiff").className=fxDiffCount?diffClass(totalFxDiff):"muted";
+  const rateText=[];
+  ["USD","HKD"].forEach(c=>{
+    const a=fxAgg[c];
+    if(a.fx>0 && a.rmb>0){
+      const actualAvg=a.rmb/a.fx;
+      const refAvg=a.refFx>0?a.refRmb/a.refFx:0;
+      rateText.push(`1 ${c} = ${num(actualAvg,6)} CNY${refAvg?` / 参考 ${num(refAvg,6)}`:""}`);
+    }
+  });
+  el("sumRates").textContent=rateText.length?rateText.join("；"):"填写实际外币后自动计算交易汇率";
+  el("cardActual").textContent=money(totalActual);
+  if(el("mobileActual")) el("mobileActual").textContent=money(totalActual);
+  el("cardAlloc").textContent=money(allocDiff);
+  el("cardAlloc").className="v "+diffClass(allocDiff);
+  el("cardFx").textContent=fxDiffCount?money(totalFxDiff):"—";
+  el("cardFx").className="v "+(fxDiffCount?diffClass(totalFxDiff):"");
+  ["USD","HKD"].forEach(c=>{
+    const a=fxAgg[c], id=c==="USD"?"Usd":"Hkd";
+    if(a.fx>0 && a.rmb>0){
+      const actualAvg=a.rmb/a.fx;
+      const reverseAvg=a.fx/a.rmb;
+      const refAvg=a.refFx>0?a.refRmb/a.refFx:0;
+      el("card"+id).textContent=num(actualAvg,6);
+      el("card"+id+"Sub").textContent=refAvg
+        ? `1 ${c} = ${num(actualAvg,6)} CNY；反向 ${num(reverseAvg,6)}；参考加权平均 ${num(refAvg,6)}`
+        : `1 ${c} = ${num(actualAvg,6)} CNY；反向：1 CNY = ${num(reverseAvg,6)} ${c}`;
+    }else{
+      el("card"+id).textContent="—";
+      el("card"+id+"Sub").textContent=`填写实际人民币 + ${c} 实际金额后计算。`;
+    }
+  });
+}
+function normalizeState(s){
+  if(!s || !Array.isArray(s.rows)) return null;
+  const byId=Object.fromEntries(defaults.map(d=>[d.id,d]));
+  s.rows=s.rows.map(r=>{
+    const d=byId[r.id]||{};
+    const payCcy=r.payCcy||"CNY";
+    const actual=Number(r.actualRmb)||0;
+    let productKey=r.productKey||d.productKey||null;
+    // 兼容旧版本保存的产品代码。
+    if(productKey==="03153") productKey="EWJ";
+    if(productKey==="QQQM") productKey="QQQ";
+    if(productKey==="GOLD_EXISTING") productKey="SGOL";
+    const product=productKey ? etfByKey[productKey] : null;
+    const base={...d,...r,productKey};
+    if(product){
+      base.name=product.name;
+      base.desc=product.desc;
+      base.purpose=product.purpose;
+      // 已保存的交易币种仍保留；产品默认币种用于缺失值和单股币种。
+      if(!base.ccy) base.ccy=product.ccy;
+    }
+    return {
+      ...base,
+      unitPrice:r.unitPrice??null,
+      priceCcy:r.priceCcy||base.ccy||d.ccy||"CNY",
+      payCcy,
+      payAmount:r.payAmount??actual,
+      autoFromFx:Boolean(r.autoFromFx),
+      approxRates:(r.approxRates && typeof r.approxRates==="object")?r.approxRates:{}
+    };
+  });
+  // V14 起比例改为独立输入，旧版本的自动平衡开关不再生效。
+  s.autoGold=false;
+  if(s.usdHkdRate===undefined || s.usdHkdRate===null) s.usdHkdRate="";
+  return s;
+}
+function save(){
+  try{ localStorage.setItem("investmentAllocatorV17",JSON.stringify(state)); }catch(e){}
+}
+function load(){
+  try{
+    const keys=[
+      "investmentAllocatorV17","investmentAllocatorV16","investmentAllocatorV15","investmentAllocatorV14","investmentAllocatorV13","investmentAllocatorV12","investmentAllocatorV11","investmentAllocatorV10","investmentAllocatorV9","investmentAllocatorV8","investmentAllocatorV7",
+      "investmentAllocatorV6","investmentAllocatorV5","investmentAllocatorV4",
+      "investmentAllocatorV3","investmentAllocatorV2"
+    ];
+    for(const key of keys){
+      const raw=localStorage.getItem(key);
+      if(!raw) continue;
+      const s=normalizeState(JSON.parse(raw));
+      if(s){
+        const sig=s.rows.map(r=>r.productKey).join(",");
+        const legacyDefaultSigs=new Set([
+          "VOO,QQQ,510300,03032,SGOV,IEF,SGOL",
+          "VOO,QQQM,510300,03032,SGOV,IEF,GOLD_EXISTING"
+        ]);
+        if(legacyDefaultSigs.has(sig)) s.rows=makeRows();
+        state=s; return;
+      }
+    }
+  }catch(e){}
+}
+function makeRows({clear=false}={}){
+  return defaults.map(x=>({
+    ...x,
+    pct:clear?0:x.pct,
+    actualRmb:null,
+    payAmount:null,
+    payCcy:"CNY",
+    fxAmount:null,
+    rmbManual:false,
+    fxManual:false,
+    rowRate:null,
+    unitPrice:null,
+    priceCcy:x.ccy,
+    autoFromFx:false,
+    approxRates:{}
+  }));
+}
+function reset(){
+  state={principal:100000,usdRate:"",hkdRate:"",usdHkdRate:"",autoGold:false,rows:makeRows()};
+  el("principal").value=state.principal;
+  el("usdRate").value="";
+  el("hkdRate").value="";
+  el("usdHkdRate").value="";
+  render();
+}
+function clearAll(){
+  state={principal:0,usdRate:"",hkdRate:"",usdHkdRate:"",autoGold:false,rows:makeRows({clear:true})};
+  el("principal").value="";
+  el("usdRate").value="";
+  el("hkdRate").value="";
+  el("usdHkdRate").value="";
+  ratioEditBase=null;
+  render();
+}
+load();
+state.autoGold=false;
+el("principal").value=state.principal||"";
+el("usdRate").value=state.usdRate??"";
+el("hkdRate").value=state.hkdRate??"";
+el("usdHkdRate").value=state.usdHkdRate??"";
+
+el("principal").oninput=e=>{const n=plainNumber(e.target.value); if(n===null)return; state.principal=n; render();};
+el("usdRate").oninput=e=>{const n=plainNumber(e.target.value); if(n===null)return; state.usdRate=String(e.target.value).trim()===""?"":n; render();};
+el("hkdRate").oninput=e=>{const n=plainNumber(e.target.value); if(n===null)return; state.hkdRate=String(e.target.value).trim()===""?"":n; render();};
+el("usdHkdRate").oninput=e=>{const n=plainNumber(e.target.value); if(n===null)return; state.usdHkdRate=String(e.target.value).trim()===""?"":n; render();};
+el("resetBtn").onclick=reset;
+el("clearBtn").onclick=clearAll;
+
+if(el("openAssetSortBtn")) el("openAssetSortBtn").onclick=openAssetSortModal;
+if(el("openAssetSortBtnDesktop")) el("openAssetSortBtnDesktop").onclick=openAssetSortModal;
+if(el("assetSortDoneBtn")) el("assetSortDoneBtn").onclick=closeAssetSortModal;
+document.querySelectorAll("[data-sort-close='1']").forEach(x=>x.addEventListener("click",closeAssetSortModal));
+if(el("assetPickerCloseBtn")) el("assetPickerCloseBtn").onclick=closeAssetPicker;
+document.querySelectorAll("[data-asset-picker-close='1']").forEach(x=>x.addEventListener("click",closeAssetPicker));
+if(el("assetPickerSearch")) el("assetPickerSearch").addEventListener("input",renderAssetPicker);
+document.addEventListener("keydown",ev=>{
+  if(ev.key!=="Escape") return;
+  if(el("assetPickerModal")?.getAttribute("aria-hidden")==="false"){
+    closeAssetPicker();
+    return;
+  }
+  if(el("assetSortModal")?.getAttribute("aria-hidden")==="false") closeAssetSortModal();
+});
+
+document.addEventListener("click", ()=>{
+  document.querySelectorAll(".hintWrap.open").forEach(x=>x.classList.remove("open"));
+});
+
+
+
+if(window.visualViewport){
+  window.visualViewport.addEventListener("resize",scheduleCalcBarPosition,{passive:true});
+  window.visualViewport.addEventListener("scroll",scheduleCalcBarPosition,{passive:true});
+}
+window.addEventListener("resize",scheduleCalcBarPosition,{passive:true});
+window.addEventListener("scroll",scheduleCalcBarPosition,{passive:true});
+document.addEventListener("selectionchange",()=>{
+  if(activeCalcInput && document.activeElement===activeCalcInput){
+    scheduleCalcBarPosition();
+  }
+});
+
+const calcBar=el("calcBar");
+if(calcBar){
+  calcBar.querySelectorAll("button").forEach(btn=>{
+    btn.addEventListener("pointerdown",ev=>ev.preventDefault());
+    btn.addEventListener("click",()=>{
+      const input=activeCalcInput;
+      if(!input) return;
+      const action=btn.dataset.calc;
+      if(action==="equals"){
+        commitExpression(input);
+        const selected=activeCalcInput&&activeCalcInput.isConnected?activeCalcInput:input;
+        try{selected.select();}catch(_){}
+        return;
+      }
+      if(action==="clear"){
+        input.value="";
+        input.dispatchEvent(new Event("input",{bubbles:true}));
+        try{input.focus({preventScroll:true});}catch(_){input.focus();}
+        return;
+      }
+      const start=typeof input.selectionStart==="number"?input.selectionStart:input.value.length;
+      const end=typeof input.selectionEnd==="number"?input.selectionEnd:start;
+      if(action==="back"){
+        if(start!==end){
+          input.value=input.value.slice(0,start)+input.value.slice(end);
+          input.setSelectionRange(start,start);
+        }else if(start>0){
+          input.value=input.value.slice(0,start-1)+input.value.slice(end);
+          input.setSelectionRange(start-1,start-1);
+        }
+      }else{
+        input.value=input.value.slice(0,start)+action+input.value.slice(end);
+        const p=start+action.length;
+        input.setSelectionRange(p,p);
+      }
+      input.dispatchEvent(new Event("input",{bubbles:true}));
+      const focusTarget=activeCalcInput&&activeCalcInput.isConnected?activeCalcInput:input;
+      try{focusTarget.focus({preventScroll:true});}catch(_){focusTarget.focus();}
+      scheduleCalcBarPosition();
+    });
+  });
+}
+
+const mobileNoticeToggle=el("mobileNoticeToggle");
+if(mobileNoticeToggle){
+  mobileNoticeToggle.onclick=()=>{
+    const n=el("fxNotice");
+    const open=n.classList.toggle("mobileShow");
+    mobileNoticeToggle.textContent=open?"收起汇率说明":"查看汇率说明";
+  };
+}
+if(el("mobileSummaryBtn")){
+  el("mobileSummaryBtn").onclick=()=>document.querySelector(".summary").scrollIntoView({behavior:"auto",block:"start"});
+}
+if(el("mobileTopBtn")){
+  el("mobileTopBtn").onclick=()=>el("referenceRates").scrollIntoView({behavior:"auto",block:"start"});
+}
+
+el("fillFxBtn").onclick=()=>{
+  state.rows.forEach(r=>{
+    if(r.ccy==="CNY") return;
+    const rate=refRateFor(r);
+    if(rate>0){r.fxAmount=(Number(r.actualRmb)||0)/rate;r.fxManual=false;}
+  });
+  render();
+};
+render();
+bindCalcInputs();
+document.addEventListener("visibilitychange",()=>{
+  if(!document.hidden) setTimeout(scheduleCalcBarPosition,80);
+});
+</script>
+
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-worker.js", { scope: "./" })
+      .then(registration => registration.update())
+      .catch(error => console.warn("Service Worker registration failed:", error));
+  });
+}
+</script>
+
+</body>
+</html>
