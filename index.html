@@ -1123,6 +1123,19 @@
     }
   }
 
+
+  /* v53：配置差额/计算交易汇率只保留一个右下角翻转 ICON */
+  .allocFlipShell{position:relative}
+  .allocFlipToggleShared{
+    position:absolute !important;
+    right:7px !important;
+    bottom:7px !important;
+    z-index:10 !important;
+    transform:none !important;
+    backface-visibility:visible !important;
+    -webkit-backface-visibility:visible !important;
+  }
+
 </style>
 </head>
 <body>
@@ -1979,6 +1992,18 @@ function render(){
             </div>
             <div class="desc">${r.desc}</div>
           </div>
+          <button type="button"
+            class="allocFlipToggle allocFlipToggleShared"
+            data-id="${r.id}"
+            aria-label="${r.diffFlipped?`返回 ${r.name} 配置差额`:`查看 ${r.name} 计算交易汇率`}"
+            title="${r.diffFlipped?"翻转返回配置差额":"翻转查看计算交易汇率"}">
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <path d="M4.5 7.5A6 6 0 0 1 15 6"></path>
+              <path d="m14 3 1.5 3L12 7"></path>
+              <path d="M15.5 12.5A6 6 0 0 1 5 14"></path>
+              <path d="m6 17-1.5-3L8 13"></path>
+            </svg>
+          </button>
         </div>
       </td>
       <td>
@@ -2055,14 +2080,6 @@ function render(){
                     </span>
                   </span>
                 </div>
-                <button type="button" class="allocFlipToggle" data-id="${r.id}" aria-label="查看 ${r.name} 计算交易汇率" title="翻转查看计算交易汇率">
-                  <svg viewBox="0 0 20 20" aria-hidden="true">
-                    <path d="M4.5 7.5A6 6 0 0 1 15 6"></path>
-                    <path d="m14 3 1.5 3L12 7"></path>
-                    <path d="M15.5 12.5A6 6 0 0 1 5 14"></path>
-                    <path d="m6 17-1.5-3L8 13"></path>
-                  </svg>
-                </button>
               </div>
               <div class="metric ${targetReady?diffClass(allocDiff):"muted"}">
                 <b class="desktopCompactOnly">${targetReady?`${allocDiff>=0?"+":""}${money(allocDiff)}`:"—"}</b>
@@ -2074,14 +2091,6 @@ function render(){
             <div class="allocFlipFace allocFlipBack">
               <div class="allocFlipHead">
                 <div class="mobileFieldHead" style="margin:0;min-height:0">计算交易汇率</div>
-                <button type="button" class="allocFlipToggle" data-id="${r.id}" aria-label="返回 ${r.name} 配置差额" title="翻转返回配置差额">
-                  <svg viewBox="0 0 20 20" aria-hidden="true">
-                    <path d="M4.5 7.5A6 6 0 0 1 15 6"></path>
-                    <path d="m14 3 1.5 3L12 7"></path>
-                    <path d="M15.5 12.5A6 6 0 0 1 5 14"></path>
-                    <path d="m6 17-1.5-3L8 13"></path>
-                  </svg>
-                </button>
               </div>
               ${pairSame
                 ? `<div class="allocRateResult"><strong>1 ${receiveCcy} = 1.0000 ${payCcy}</strong><div class="allocRateReverse">同币种，无需换汇</div></div>`
