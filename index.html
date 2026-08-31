@@ -26,7 +26,7 @@
   h1{margin:0 0 8px;font-size:34px;line-height:1.2;letter-spacing:-.5px}
   .sub{color:#9bb0c8;font-size:16px;margin-bottom:22px}
   .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
-  .top{padding:18px;display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:14px;align-items:end;margin-bottom:18px}
+  .top{padding:18px;display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr auto;gap:14px;align-items:end;margin-bottom:18px}
   label{font-size:13px;color:var(--muted);display:block;margin:0 0 7px}
   input,select,button{font:inherit}
   .field,.select{width:100%;height:46px;background:var(--input);border:1px solid var(--line);border-radius:9px;color:var(--text);padding:0 13px;outline:none}
@@ -65,6 +65,16 @@
     font-size:12px;font-weight:750;outline:none
   }
   .principalCcySelect:focus{border-color:#4b86c5;box-shadow:0 0 0 3px rgba(88,166,255,.08)}
+
+.pairLabelGroup{display:flex;align-items:center;gap:6px;min-width:0;flex:1 1 auto;white-space:nowrap;color:var(--muted);font-size:13px;overflow:hidden}
+.pairLabelGroup .pairLabelText,.pairLabelGroup .pairLabelSuffix{color:var(--muted);font-size:13px;line-height:1}
+.pairQuoteSelect{
+  width:78px;height:28px;min-width:78px;padding:0 24px 0 9px;
+  border:1px solid #334151;border-radius:8px;background:#111923;color:#dce9f8;
+  font-size:12px;font-weight:750;outline:none
+}
+.pairQuoteSelect:focus{border-color:#4b86c5;box-shadow:0 0 0 3px rgba(88,166,255,.08)}
+  .pairArrow{color:var(--muted);font-size:14px;line-height:1;flex:0 0 auto}
   .swapRateBtn{
     flex:0 0 30px;width:30px;height:30px;padding:6px;
     display:inline-flex;align-items:center;justify-content:center;
@@ -162,7 +172,10 @@
   .inlineHelp{display:flex;align-items:center;gap:7px;margin-top:7px;color:var(--muted);font-size:11px}
   .rateGrid{display:grid;grid-template-columns:110px 110px;gap:8px}
   .rateGrid .field{height:39px;font-size:13px}
-  .rateModeActions{display:flex;justify-content:flex-start;align-items:center;gap:0;margin:10px 0 0}
+  .rateModeActions{display:flex;justify-content:flex-end;align-items:center;gap:0;margin:10px 0 0}
+  .rateCalcRow{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:12px;align-items:start;margin-top:2px}
+  .rateCalcInfo{min-width:0}
+  .rateCalcRow .rateModeActions{margin:0;align-self:start;justify-content:flex-end;padding-top:2px}
   .rateModeBtn{
     width:auto;min-width:118px;min-height:30px;padding:6px 10px;border:1px solid #334151;border-radius:8px;
     background:#101720;color:#b7c7da;font-size:11px;line-height:1.2;cursor:pointer;
@@ -542,7 +555,10 @@
     .rateGrid{grid-template-columns:1fr;gap:10px;min-width:0}
     .rateGrid>div{min-width:0}
     .rateGrid .field{height:48px;font-size:16px}
+    .rateCalcRow{grid-template-columns:minmax(0,1fr) auto;column-gap:10px;align-items:start;margin-top:2px}
+    .rateCalcRow .rateCalcInfo{min-width:0}
     .rateModeActions{margin-top:10px}
+    .rateCalcRow .rateModeActions{margin:0;align-self:start;justify-content:flex-end}
     .rateModeBtn{min-width:132px;min-height:38px;padding:7px 12px;font-size:12px}
     .metric{
       min-width:0;font-size:13px;white-space:normal;
@@ -690,6 +706,7 @@
           <option value="CNY">CNY</option>
           <option value="USD">USD</option>
           <option value="HKD">HKD</option>
+          <option value="USDT">USDT</option>
         </select>
       </div>
       <input id="principal" class="field calcInput" type="text" inputmode="decimal" autocomplete="off" value="100000" />
@@ -706,10 +723,30 @@
       <div class="topFieldHint" aria-hidden="true"></div>
     </div>
     <div class="topFieldCell">
+      <div class="topLabelRow"><label for="usdtRate">USDT 参考汇率</label></div>
+      <input id="usdtRate" class="field calcInput" type="text" inputmode="decimal" placeholder="1 USDT = ? CNY" autocomplete="off" />
+      <div class="topFieldHint" aria-hidden="true"></div>
+    </div>
+    <div class="topFieldCell">
       <div class="topLabelRow">
-        <label for="usdHkdRate">USD ↔ HKD 参考汇率</label>
+        <div class="pairLabelGroup">
+          <select id="pairBaseCcy" class="pairQuoteSelect" aria-label="选择左侧币种" title="左侧币种">
+            <option value="USD">USD</option>
+            <option value="HKD">HKD</option>
+            <option value="USDT">USDT</option>
+            <option value="CNY">CNY</option>
+          </select>
+          <span class="pairArrow">↔</span>
+          <select id="pairQuoteCcy" class="pairQuoteSelect" aria-label="选择右侧币种" title="右侧币种">
+            <option value="HKD">HKD</option>
+            <option value="USD">USD</option>
+            <option value="USDT">USDT</option>
+            <option value="CNY">CNY</option>
+          </select>
+          <span class="pairLabelSuffix">参考汇率</span>
+        </div>
         <button id="swapUsdHkdBtn" class="swapRateBtn" type="button"
-          aria-label="切换 USD 与 HKD 汇率方向" title="切换汇率方向">
+          aria-label="交换左右币种" title="交换左右币种">
           <svg viewBox="0 0 20 20" aria-hidden="true">
             <path d="M3 6h12"></path><path d="m12 3 3 3-3 3"></path>
             <path d="M17 14H5"></path><path d="m8 11-3 3 3 3"></path>
@@ -726,7 +763,7 @@
     <div class="topInfoSlot">
       <button id="fxInfoBtn" class="fxInfoBtn" type="button" aria-label="查看汇率说明" aria-expanded="false" title="汇率说明">i</button>
       <div id="fxInfoPopover" class="fxInfoPopover" role="dialog" aria-label="汇率说明" hidden>
-        交易汇率始终按当前这一行真实的“支付币种 → 换汇后币种”显示：例如 HKD 支付、USD 到账时，显示为「1 USD = X HKD」，而不是误写成 USD/CNY；CNY 支付、USD 到账时才显示「1 USD = X CNY」。每行同时显示反向汇率。顶部 USD/CNY、HKD/CNY 与 USD↔HKD 只作为对应货币对的参考来源；点击“使用当前的汇率”时，会把当前这一行的汇率同步回正确的顶部货币对。底部合计仍统一折算成人民币，但交易汇率文字保持原始货币对，不混用 CNY。手机端汇率显示 4 位小数，桌面端显示 6 位小数，底层计算精度不变。
+        交易汇率始终按当前这一行真实的“支付币种 → 换汇后币种”显示：例如 HKD 支付、USD 到账时，显示为「1 USD = X HKD」，而不是误写成 USD/CNY；CNY 支付、USD 到账时才显示「1 USD = X CNY」。每行同时显示反向汇率。顶部 USD/CNY、HKD/CNY、USDT/CNY 与自选币种对只作为对应货币对的参考来源；点击“使用当前的汇率”时，会把当前这一行的汇率同步回正确的顶部货币对。底部合计仍统一折算成人民币，但交易汇率文字保持原始货币对，不混用 CNY。手机端汇率显示 4 位小数，桌面端显示 6 位小数，底层计算精度不变。
       </div>
     </div>
   </div>
@@ -947,7 +984,13 @@ let state = {
   principalCcy:"CNY",
   usdRate:"",
   hkdRate:"",
+  usdtRate:"",
   usdHkdRate:"",
+  usdUsdtRate:"",
+  hkdUsdtRate:"",
+  topPairBase:"USD",
+  topPairQuote:"HKD",
+  usdPairQuote:"HKD",
   usdHkdDirection:"USD_HKD",
   autoGold:false,
   pairRateVersion:1,
@@ -1120,45 +1163,94 @@ function ensureApproxRates(row){
   if(!Number(row.approxRates.HKD)){
     row.approxRates.HKD = Math.round((0.87 + Math.random()*0.08)*10000)/10000;
   }
+  if(!Number(row.approxRates.USDT)){
+    const usdApprox = Number(row.approxRates.USD) || Math.round((6.80 + Math.random()*0.60)*10000)/10000;
+    row.approxRates.USDT = Math.round(usdApprox*10000)/10000;
+  }
 }
-function crossRateCanonical(){
-  const n=Number(state.usdHkdRate)||0;
-  return n>0?n:0; // canonical: 1 USD = n HKD
+const PAIR_CURRENCIES=["USD","HKD","USDT","CNY"];
+function firstDifferentCurrency(exclude, fallback="HKD"){
+  return PAIR_CURRENCIES.find(c=>c!==exclude) || fallback;
 }
-function displayedUsdHkdRate(){
-  const n=crossRateCanonical();
-  if(!(n>0)) return "";
-  return state.usdHkdDirection==="HKD_USD" ? (1/n) : n;
+function normalizeTopPairSelection(target=state){
+  if(!PAIR_CURRENCIES.includes(target.topPairBase)) target.topPairBase="USD";
+  if(!PAIR_CURRENCIES.includes(target.topPairQuote)) target.topPairQuote=(target.usdPairQuote==="USDT"?"USDT":"HKD");
+  if(target.topPairBase===target.topPairQuote){
+    target.topPairQuote=firstDifferentCurrency(target.topPairBase, target.topPairBase==="USD"?"HKD":"USD");
+  }
+}
+function clearStoredTopPair(payCcy, receiveCcy){
+  const pay=payCcy||"CNY", recv=receiveCcy||"CNY";
+  if(pay===recv) return false;
+  if(pay==="CNY" && ["USD","HKD","USDT"].includes(recv)){
+    if(recv==="USD") state.usdRate="";
+    else if(recv==="HKD") state.hkdRate="";
+    else state.usdtRate="";
+    return true;
+  }
+  if(recv==="CNY" && ["USD","HKD","USDT"].includes(pay)){
+    if(pay==="USD") state.usdRate="";
+    else if(pay==="HKD") state.hkdRate="";
+    else state.usdtRate="";
+    return true;
+  }
+  if(pay==="HKD" && recv==="USD" || pay==="USD" && recv==="HKD"){ state.usdHkdRate=""; return true; }
+  if(pay==="USDT" && recv==="USD" || pay==="USD" && recv==="USDT"){ state.usdUsdtRate=""; return true; }
+  if(pay==="HKD" && recv==="USDT" || pay==="USDT" && recv==="HKD"){ state.hkdUsdtRate=""; return true; }
+  return false;
+}
+function displayedTopPairRate(){
+  normalizeTopPairSelection();
+  return topPairRate(state.topPairQuote, state.topPairBase).rate || 0;
 }
 function updateUsdHkdControl(){
-  const reverse=state.usdHkdDirection==="HKD_USD";
+  normalizeTopPairSelection();
+  const base=state.topPairBase;
+  const quote=state.topPairQuote;
+  const baseSel=el("pairBaseCcy");
+  const quoteSel=el("pairQuoteCcy");
+  if(baseSel) baseSel.value=base;
+  if(quoteSel) quoteSel.value=quote;
   const input=el("usdHkdRate");
   if(!input) return;
-  input.placeholder=reverse ? "1 HKD = ? USD" : "1 USD = ? HKD";
-  input.setAttribute("aria-label", reverse ? "1 HKD 等于多少 USD" : "1 USD 等于多少 HKD");
-  const v=displayedUsdHkdRate();
+  input.placeholder=`1 ${base} = ? ${quote}`;
+  input.setAttribute("aria-label", `1 ${base} 等于多少 ${quote}`);
+  const v=displayedTopPairRate();
   input.value=v ? String(Number(v.toPrecision(10))) : "";
   const btn=el("swapUsdHkdBtn");
   if(btn){
-    btn.title=reverse ? "切换为 1 USD = ? HKD" : "切换为 1 HKD = ? USD";
-    btn.setAttribute("aria-label",btn.title);
+    btn.title=`交换 ${base} 与 ${quote}`;
+    btn.setAttribute("aria-label", btn.title);
   }
 }
-function principalRateInfo(){
-  const ccy=state.principalCcy||"CNY";
+function topCnyRateInfo(ccy){
   if(ccy==="CNY") return {rate:1,source:"fixed"};
   const usd=Number(state.usdRate)||0;
   const hkd=Number(state.hkdRate)||0;
-  const cross=crossRateCanonical();
+  const usdt=Number(state.usdtRate)||0;
+  const usdHkd=Number(state.usdHkdRate)||0;
+  const usdUsdt=Number(state.usdUsdtRate)||0;
+  const hkdUsdt=Number(state.hkdUsdtRate)||0;
+
   if(ccy==="USD"){
-    if(usd>0) return {rate:usd,source:"usd"};
-    if(hkd>0 && cross>0) return {rate:hkd*cross,source:"cross"};
+    if(usd>0) return {rate:usd,source:"top"};
+    if(hkd>0 && usdHkd>0) return {rate:hkd*usdHkd,source:"cross"};
+    if(usdt>0 && usdUsdt>0) return {rate:usdt*usdUsdt,source:"cross"};
   }
   if(ccy==="HKD"){
-    if(hkd>0) return {rate:hkd,source:"hkd"};
-    if(usd>0 && cross>0) return {rate:usd/cross,source:"cross"};
+    if(hkd>0) return {rate:hkd,source:"top"};
+    if(usd>0 && usdHkd>0) return {rate:usd/usdHkd,source:"cross"};
+    if(usdt>0 && hkdUsdt>0) return {rate:usdt/hkdUsdt,source:"cross"};
+  }
+  if(ccy==="USDT"){
+    if(usdt>0) return {rate:usdt,source:"top"};
+    if(usd>0 && usdUsdt>0) return {rate:usd/usdUsdt,source:"cross"};
+    if(hkd>0 && hkdUsdt>0) return {rate:hkd*hkdUsdt,source:"cross"};
   }
   return {rate:0,source:"none"};
+}
+function principalRateInfo(){
+  return topCnyRateInfo(state.principalCcy||"CNY");
 }
 function principalCnyValue(){
   const amount=Number(state.principal)||0;
@@ -1178,36 +1270,21 @@ function updatePrincipalCurrencyUi(){
   }
   const cny=principalCnyValue();
   if(cny===null){
+    const tips={
+      USD:"需填写 USD/CNY；也可配合 HKD/CNY + USD↔HKD，或 USDT/CNY + USD↔USDT 推导",
+      HKD:"需填写 HKD/CNY；也可填写 USD/CNY + USD↔HKD，或 USDT/CNY + HKD↔USDT 推导",
+      USDT:"需填写 USDT/CNY；也可填写 USD/CNY + USD↔USDT，或 HKD/CNY + HKD↔USDT 推导"
+    };
     hint.classList.add("warn");
-    hint.textContent=ccy==="USD"
-      ? "需填写 USD/CNY，或填写 HKD/CNY + USD↔HKD"
-      : "需填写 HKD/CNY，或填写 USD/CNY + USD↔HKD";
+    hint.textContent=tips[ccy]||"需填写对应参考汇率";
   }else{
     hint.textContent=`折算基准：≈ ${money(cny)} CNY`;
   }
 }
 
 function rateInfoFor(row, ccy, allowApprox=true){
-  // 这里只负责“某币种折算成人民币”的基准汇率。
-  // 行内 rowRate 已改为“支付币种 ↔ 换汇后币种”的交易对汇率，绝不能再混入这里。
-  if(ccy==="CNY") return {rate:1, source:"fixed"};
-
-  if(ccy==="USD"){
-    const top=Number(state.usdRate)||0;
-    if(top>0) return {rate:top, source:"top"};
-    const hkd=Number(state.hkdRate)||0;
-    const cross=Number(state.usdHkdRate)||0; // 1 USD = ? HKD
-    if(hkd>0 && cross>0) return {rate:hkd*cross, source:"cross"};
-  }
-
-  if(ccy==="HKD"){
-    const top=Number(state.hkdRate)||0;
-    if(top>0) return {rate:top, source:"top"};
-    const usd=Number(state.usdRate)||0;
-    const cross=Number(state.usdHkdRate)||0;
-    if(usd>0 && cross>0) return {rate:usd/cross, source:"cross"};
-  }
-
+  const top=topCnyRateInfo(ccy);
+  if(top.rate>0) return top;
   if(!allowApprox) return {rate:0, source:"none"};
   ensureApproxRates(row);
   return {rate:Number(row.approxRates[ccy])||0, source:"rough"};
@@ -1215,15 +1292,22 @@ function rateInfoFor(row, ccy, allowApprox=true){
 function topPairRate(payCcy, receiveCcy){
   const pay=payCcy||"CNY", recv=receiveCcy||"CNY";
   if(pay===recv) return {rate:1, source:"fixed"};
-  const usd=Number(state.usdRate)||0;      // 1 USD = ? CNY
-  const hkd=Number(state.hkdRate)||0;      // 1 HKD = ? CNY
-  const cross=Number(state.usdHkdRate)||0; // 1 USD = ? HKD
-  if(pay==="CNY" && recv==="USD" && usd>0) return {rate:usd,source:"top"};
-  if(pay==="USD" && recv==="CNY" && usd>0) return {rate:1/usd,source:"top"};
-  if(pay==="CNY" && recv==="HKD" && hkd>0) return {rate:hkd,source:"top"};
-  if(pay==="HKD" && recv==="CNY" && hkd>0) return {rate:1/hkd,source:"top"};
-  if(pay==="HKD" && recv==="USD" && cross>0) return {rate:cross,source:"top"};
-  if(pay==="USD" && recv==="HKD" && cross>0) return {rate:1/cross,source:"top"};
+
+  const usdHkd=Number(state.usdHkdRate)||0;
+  const usdUsdt=Number(state.usdUsdtRate)||0;
+  const hkdUsdt=Number(state.hkdUsdtRate)||0;
+  if(pay==="HKD" && recv==="USD" && usdHkd>0) return {rate:usdHkd,source:"top"};
+  if(pay==="USD" && recv==="HKD" && usdHkd>0) return {rate:1/usdHkd,source:"top"};
+  if(pay==="USDT" && recv==="USD" && usdUsdt>0) return {rate:usdUsdt,source:"top"};
+  if(pay==="USD" && recv==="USDT" && usdUsdt>0) return {rate:1/usdUsdt,source:"top"};
+  if(pay==="HKD" && recv==="USDT" && hkdUsdt>0) return {rate:hkdUsdt,source:"top"};
+  if(pay==="USDT" && recv==="HKD" && hkdUsdt>0) return {rate:1/hkdUsdt,source:"top"};
+
+  const payInfo=topCnyRateInfo(pay);
+  const recvInfo=topCnyRateInfo(recv);
+  if(payInfo.rate>0 && recvInfo.rate>0){
+    return {rate:recvInfo.rate/payInfo.rate, source:(payInfo.source==="top" && recvInfo.source==="top")?"top":"cross"};
+  }
   return {rate:0,source:"none"};
 }
 function refRateFor(row){
@@ -1239,17 +1323,27 @@ function refRateFor(row){
 function pairKey(a,b){
   return [a||"CNY",b||"CNY"].sort().join("|");
 }
+function setDirectTopCnyRate(ccy, cnyPerUnit){
+  const n=Number(cnyPerUnit)||0;
+  if(!(n>0)) return false;
+  if(ccy==="USD") state.usdRate=n;
+  else if(ccy==="HKD") state.hkdRate=n;
+  else if(ccy==="USDT") state.usdtRate=n;
+  else return false;
+  return true;
+}
 function setTopPairRate(payCcy, receiveCcy, quotedRate){
   const pay=payCcy||"CNY", recv=receiveCcy||"CNY", q=Number(quotedRate)||0;
   if(!(q>0) || pay===recv) return false;
-  if(pay==="CNY" && recv==="USD") state.usdRate=q;
-  else if(pay==="USD" && recv==="CNY") state.usdRate=1/q;
-  else if(pay==="CNY" && recv==="HKD") state.hkdRate=q;
-  else if(pay==="HKD" && recv==="CNY") state.hkdRate=1/q;
-  else if(pay==="HKD" && recv==="USD") state.usdHkdRate=q;
-  else if(pay==="USD" && recv==="HKD") state.usdHkdRate=1/q;
-  else return false;
-  return true;
+  if(pay==="CNY" && ["USD","HKD","USDT"].includes(recv)) return setDirectTopCnyRate(recv,q);
+  if(recv==="CNY" && ["USD","HKD","USDT"].includes(pay)) return setDirectTopCnyRate(pay,1/q);
+  if(pay==="HKD" && recv==="USD"){ state.usdHkdRate=q; return true; }
+  if(pay==="USD" && recv==="HKD"){ state.usdHkdRate=1/q; return true; }
+  if(pay==="USDT" && recv==="USD"){ state.usdUsdtRate=q; return true; }
+  if(pay==="USD" && recv==="USDT"){ state.usdUsdtRate=1/q; return true; }
+  if(pay==="HKD" && recv==="USDT"){ state.hkdUsdtRate=q; return true; }
+  if(pay==="USDT" && recv==="HKD"){ state.hkdUsdtRate=1/q; return true; }
+  return false;
 }
 function convertCurrency(row, amount, fromCcy, toCcy, allowApprox=true){
   const n=Number(amount)||0;
@@ -1440,7 +1534,7 @@ function render(){
                 <input class="field calcInput unitPriceInput" data-id="${r.id}" type="text" inputmode="decimal" autocomplete="off"
                   value="${r.unitPrice??""}" placeholder="可选" />
                 <select class="select priceCcyInput" data-id="${r.id}">
-                  ${[["CNY","RMB"],["HKD","HKD"],["USD","USD"]].map(([v,label])=>`<option value="${v}" ${v===(r.priceCcy||r.ccy)?"selected":""}>${label}</option>`).join("")}
+                  ${[["CNY","RMB"],["HKD","HKD"],["USD","USD"],["USDT","USDT"]].map(([v,label])=>`<option value="${v}" ${v===(r.priceCcy||r.ccy)?"selected":""}>${label}</option>`).join("")}
                 </select>
               </div>
             </div>
@@ -1474,16 +1568,16 @@ function render(){
           <input class="field actualInput calcInput" data-id="${r.id}" type="text" inputmode="decimal"
             value="${payAmount.toFixed(2)}" title="实际支付金额"/>
           <select class="select payCcyInput" data-id="${r.id}" title="支付币种">
-            ${[["CNY","RMB"],["HKD","HKD"],["USD","USD"]].map(([v,label])=>`<option value="${v}" ${v===payCcy?"selected":""}>${label}</option>`).join("")}
+            ${[["CNY","RMB"],["HKD","HKD"],["USD","USD"],["USDT","USDT"]].map(([v,label])=>`<option value="${v}" ${v===payCcy?"selected":""}>${label}</option>`).join("")}
           </select>
           <input class="field fxInput calcInput" data-id="${r.id}" type="text" inputmode="decimal"
             value="${r.fxAmount??""}" placeholder="换汇后金额" />
           <select class="select ccyInput" data-id="${r.id}" title="换汇后币种">
-            ${[["CNY","RMB"],["HKD","HKD"],["USD","USD"]].map(([v,label])=>`<option value="${v}" ${v===r.ccy?"selected":""}>${label}</option>`).join("")}
+            ${[["CNY","RMB"],["HKD","HKD"],["USD","USD"],["USDT","USDT"]].map(([v,label])=>`<option value="${v}" ${v===r.ccy?"selected":""}>${label}</option>`).join("")}
           </select>
         </div>
         <div class="inlineHelp">
-          <span>支付金额（可选 RMB / HKD / USD）</span><span>→</span><span>换汇后金额（可输入 单价×股数）</span>
+          <span>支付金额（可选 RMB / HKD / USD / USDT）</span><span>→</span><span>换汇后金额（可输入 单价×股数）</span>
           <button class="mini followBtn" data-id="${r.id}">支付金额跟随目标</button>
           ${!pairSame?`<button class="mini fxCalcBtn" data-id="${r.id}">按参考汇率</button>`:""}
           ${autoRateNote(r)?`<span class="warn">${autoRateNote(r)}</span>`:""}
@@ -1502,29 +1596,33 @@ function render(){
           <div>
             <label>计算交易汇率</label>
             ${pairSame ? `<div class="rateModeFixed">支付币种与换汇后币种相同，无需换汇</div>` : ""}
-            <div class="metric">
-              ${pairSame
-                ? `<b class="desktopRateOnly">1 ${receiveCcy} = 1.000000 ${payCcy}</b><b class="mobileRateOnly">1 ${receiveCcy} = 1.0000 ${payCcy}</b>`
-                : implied
-                  ? `<b class="desktopRateOnly">1 ${receiveCcy} = ${num(implied,6)} ${payCcy}</b>
-                     <span class="mobileRateOnly rateEquation">
-                       <span class="rateLead">1 ${receiveCcy} =</span>
-                       <span class="rateValue">${num(implied,4)} ${payCcy}</span>
-                     </span>`
-                  : "—"}
+            <div class="rateCalcRow">
+              <div class="rateCalcInfo">
+                <div class="metric">
+                  ${pairSame
+                    ? `<b class="desktopRateOnly">1 ${receiveCcy} = 1.000000 ${payCcy}</b><b class="mobileRateOnly">1 ${receiveCcy} = 1.0000 ${payCcy}</b>`
+                    : implied
+                      ? `<b class="desktopRateOnly">1 ${receiveCcy} = ${num(implied,6)} ${payCcy}</b>
+                         <span class="mobileRateOnly rateEquation">
+                           <span class="rateLead">1 ${receiveCcy} =</span>
+                           <span class="rateValue">${num(implied,4)} ${payCcy}</span>
+                         </span>`
+                      : "—"}
+                </div>
+                ${!pairSame && reverse
+                  ? `<div class="desc desktopRateOnly">反向：1 ${payCcy} = ${num(reverse,6)} ${receiveCcy}</div>
+                     <div class="reverseRateMobile mobileRateOnly">
+                       <span>反向 1 ${payCcy} =</span>
+                       <span>${num(reverse,4)} ${receiveCcy}</span>
+                     </div>`
+                  : ""}
+              </div>
+              ${!pairSame
+                ? `<div class="rateModeActions">
+                     <button type="button" class="rateModeBtn useCurrentRateBtn ${rowRateMode==="current"?"active":""}" data-id="${r.id}" title="使用本资产当前货币对汇率，并同步更新顶部对应货币对">使用当前的汇率</button>
+                   </div>`
+                : ""}
             </div>
-            ${!pairSame && reverse
-              ? `<div class="desc desktopRateOnly">反向：1 ${payCcy} = ${num(reverse,6)} ${receiveCcy}</div>
-                 <div class="reverseRateMobile mobileRateOnly">
-                   <span>反向 1 ${payCcy} =</span>
-                   <span>${num(reverse,4)} ${receiveCcy}</span>
-                 </div>`
-              : ""}
-            ${!pairSame
-              ? `<div class="rateModeActions">
-                   <button type="button" class="rateModeBtn useCurrentRateBtn ${rowRateMode==="current"?"active":""}" data-id="${r.id}" title="使用本资产当前货币对汇率，并同步更新顶部对应货币对">使用当前的汇率</button>
-                 </div>`
-              : ""}
           </div>
         </div>
       </td>
@@ -2219,6 +2317,7 @@ function bindRowEvents(){
 
       if(el("usdRate")) el("usdRate").value=state.usdRate??"";
       if(el("hkdRate")) el("hkdRate").value=state.hkdRate??"";
+      if(el("usdtRate")) el("usdtRate").value=state.usdtRate??"";
       updateUsdHkdControl();
       updatePrincipalCurrencyUi();
     }else{
@@ -2430,9 +2529,16 @@ function normalizeState(s){
   // V14 起比例改为独立输入，旧版本的自动平衡开关不再生效。
   s.autoGold=false;
   s.pairRateVersion=1;
-  if(!["CNY","USD","HKD"].includes(s.principalCcy)) s.principalCcy="CNY";
+  if(!["CNY","USD","HKD","USDT"].includes(s.principalCcy)) s.principalCcy="CNY";
+  if(s.usdtRate===undefined || s.usdtRate===null) s.usdtRate="";
   if(s.usdHkdRate===undefined || s.usdHkdRate===null) s.usdHkdRate="";
+  if(s.usdUsdtRate===undefined || s.usdUsdtRate===null) s.usdUsdtRate="";
+  if(s.hkdUsdtRate===undefined || s.hkdUsdtRate===null) s.hkdUsdtRate="";
+  if(!PAIR_CURRENCIES.includes(s.topPairBase)) s.topPairBase="USD";
+  if(!PAIR_CURRENCIES.includes(s.topPairQuote)) s.topPairQuote=( ["HKD","USDT","CNY"].includes(s.usdPairQuote) ? s.usdPairQuote : "HKD" );
+  if(!["HKD","USDT"].includes(s.usdPairQuote)) s.usdPairQuote="HKD";
   if(!["USD_HKD","HKD_USD"].includes(s.usdHkdDirection)) s.usdHkdDirection="USD_HKD";
+  normalizeTopPairSelection(s);
   return s;
 }
 function save(){
@@ -2482,20 +2588,26 @@ function makeRows({clear=false}={}){
   }));
 }
 function reset(){
-  state={principal:100000,principalCcy:"CNY",usdRate:"",hkdRate:"",usdHkdRate:"",usdHkdDirection:"USD_HKD",autoGold:false,pairRateVersion:1,rows:makeRows()};
+  state={principal:100000,principalCcy:"CNY",usdRate:"",hkdRate:"",usdtRate:"",usdHkdRate:"",usdUsdtRate:"",hkdUsdtRate:"",topPairBase:"USD",topPairQuote:"HKD",usdPairQuote:"HKD",usdHkdDirection:"USD_HKD",autoGold:false,pairRateVersion:1,rows:makeRows()};
   el("principal").value=state.principal;
   el("principalCcy").value=state.principalCcy;
   el("usdRate").value="";
   el("hkdRate").value="";
+  if(el("usdtRate")) el("usdtRate").value="";
+  if(el("pairBaseCcy")) el("pairBaseCcy").value=state.topPairBase;
+  if(el("pairQuoteCcy")) el("pairQuoteCcy").value=state.topPairQuote;
   updateUsdHkdControl();
   render();
 }
 function clearAll(){
-  state={principal:0,principalCcy:"CNY",usdRate:"",hkdRate:"",usdHkdRate:"",usdHkdDirection:"USD_HKD",autoGold:false,pairRateVersion:1,rows:makeRows({clear:true})};
+  state={principal:0,principalCcy:"CNY",usdRate:"",hkdRate:"",usdtRate:"",usdHkdRate:"",usdUsdtRate:"",hkdUsdtRate:"",topPairBase:"USD",topPairQuote:"HKD",usdPairQuote:"HKD",usdHkdDirection:"USD_HKD",autoGold:false,pairRateVersion:1,rows:makeRows({clear:true})};
   el("principal").value="";
   el("principalCcy").value=state.principalCcy;
   el("usdRate").value="";
   el("hkdRate").value="";
+  if(el("usdtRate")) el("usdtRate").value="";
+  if(el("pairBaseCcy")) el("pairBaseCcy").value=state.topPairBase;
+  if(el("pairQuoteCcy")) el("pairQuoteCcy").value=state.topPairQuote;
   updateUsdHkdControl();
   ratioEditBase=null;
   render();
@@ -2506,6 +2618,9 @@ el("principal").value=state.principal||"";
 el("principalCcy").value=state.principalCcy||"CNY";
 el("usdRate").value=state.usdRate??"";
 el("hkdRate").value=state.hkdRate??"";
+if(el("usdtRate")) el("usdtRate").value=state.usdtRate??"";
+if(el("pairBaseCcy")) el("pairBaseCcy").value=state.topPairBase||"USD";
+if(el("pairQuoteCcy")) el("pairQuoteCcy").value=state.topPairQuote||"HKD";
 updateUsdHkdControl();
 updatePrincipalCurrencyUi();
 
@@ -2513,16 +2628,37 @@ el("principal").oninput=e=>{const n=plainNumber(e.target.value); if(n===null)ret
 el("principalCcy").onchange=e=>{state.principalCcy=e.target.value; render();};
 el("usdRate").oninput=e=>{const n=plainNumber(e.target.value); if(n===null)return; state.usdRate=String(e.target.value).trim()===""?"":n; render();};
 el("hkdRate").oninput=e=>{const n=plainNumber(e.target.value); if(n===null)return; state.hkdRate=String(e.target.value).trim()===""?"":n; render();};
+if(el("usdtRate")) el("usdtRate").oninput=e=>{const n=plainNumber(e.target.value); if(n===null)return; state.usdtRate=String(e.target.value).trim()===""?"":n; render();};
+if(el("pairBaseCcy")) el("pairBaseCcy").onchange=e=>{
+  state.topPairBase=e.target.value;
+  normalizeTopPairSelection();
+  updateUsdHkdControl();
+  render();
+};
+if(el("pairQuoteCcy")) el("pairQuoteCcy").onchange=e=>{
+  state.topPairQuote=e.target.value;
+  normalizeTopPairSelection();
+  updateUsdHkdControl();
+  render();
+};
 el("usdHkdRate").oninput=e=>{
   const raw=String(e.target.value).trim();
-  if(raw===""){state.usdHkdRate="";render();return;}
+  if(raw===""){
+    clearStoredTopPair(state.topPairQuote,state.topPairBase);
+    render();
+    return;
+  }
   const n=plainNumber(raw);
   if(n===null || !(n>0)) return;
-  state.usdHkdRate=state.usdHkdDirection==="HKD_USD" ? 1/n : n;
+  setTopPairRate(state.topPairQuote, state.topPairBase, n);
   render();
 };
 el("swapUsdHkdBtn").onclick=()=>{
-  state.usdHkdDirection=state.usdHkdDirection==="HKD_USD"?"USD_HKD":"HKD_USD";
+  normalizeTopPairSelection();
+  const oldBase=state.topPairBase;
+  state.topPairBase=state.topPairQuote;
+  state.topPairQuote=oldBase;
+  normalizeTopPairSelection();
   updateUsdHkdControl();
   render();
   try{el("usdHkdRate").focus();}catch(_){}

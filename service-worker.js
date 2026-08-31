@@ -1,4 +1,4 @@
-const CACHE_NAME = "asset-allocator-pwa-v30";
+const CACHE_NAME = "asset-allocator-v35";
 const CORE_ASSETS = [
   "./",
   "./index.html",
