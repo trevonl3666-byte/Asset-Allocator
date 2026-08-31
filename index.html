@@ -103,18 +103,23 @@
   tbody tr.reorderTarget td{box-shadow:inset 0 2px 0 #4b86c5}
   tbody tr.reorderTargetAfter td{box-shadow:inset 0 -2px 0 #4b86c5}
 
-  /* USD 资产：美元图明显铺满整张资产卡；首栏清晰，内容区玻璃模糊但仍看得到钞票 */
+  /* 所有资产：保留首栏不变，下面各栏用当前色的轻度透明减淡版 */
+  tbody tr td:not(:first-child){
+    background:rgba(18,26,36,.24);
+  }
+
+  /* USD 资产：采用更清晰的美元背景；首栏保持最清楚，下面内容区轻度模糊暗化 */
   tbody tr.usdAsset{
-    background-image:linear-gradient(rgba(5,10,17,.06),rgba(5,10,17,.06)),url("assets/usd-background.png");
+    background-image:linear-gradient(rgba(5,10,17,.04),rgba(5,10,17,.04)),url("assets/usd-background.png");
     background-size:cover;background-position:center 42%;background-repeat:no-repeat
   }
   tbody tr.usdAsset td{
-    background:rgba(10,17,25,.16);
-    -webkit-backdrop-filter:blur(2px) saturate(.96);
-    backdrop-filter:blur(2px) saturate(.96)
+    background:rgba(10,17,25,.12);
+    -webkit-backdrop-filter:blur(1.8px) saturate(.97);
+    backdrop-filter:blur(1.8px) saturate(.97)
   }
   tbody tr.usdAsset td:first-child{
-    background:linear-gradient(90deg,rgba(7,13,21,.12),rgba(7,13,21,.04));
+    background:linear-gradient(90deg,rgba(7,13,21,.10),rgba(7,13,21,.03));
     -webkit-backdrop-filter:none;backdrop-filter:none
   }
   tbody tr.usdAsset .field,
@@ -464,13 +469,13 @@
       grid-template-columns:minmax(0,3fr) minmax(0,2fr);
     }
     tbody tr.usdAsset{
-      background-image:linear-gradient(rgba(4,9,15,.04),rgba(4,9,15,.04)),url("assets/usd-background.png");
+      background-image:linear-gradient(rgba(4,9,15,.03),rgba(4,9,15,.03)),url("assets/usd-background.png");
       background-size:cover;background-position:center 40%;background-repeat:no-repeat
     }
     tbody tr.usdAsset td{
-      background:rgba(9,16,24,.12);
-      -webkit-backdrop-filter:blur(2px) saturate(.98);
-      backdrop-filter:blur(2px) saturate(.98)
+      background:rgba(9,16,24,.10);
+      -webkit-backdrop-filter:blur(1.8px) saturate(.99);
+      backdrop-filter:blur(1.8px) saturate(.99)
     }
     tbody tr.usdAsset td:first-child{
       background:linear-gradient(90deg,rgba(6,12,20,.08),rgba(6,12,20,.02));
@@ -561,6 +566,15 @@
       font-size:11px;line-height:1.35;color:var(--muted)
     }
     tbody td{overflow:hidden}
+    /* 手机端：资产顶部信息区保持原样；下方内容区统一轻度减淡，增强分区感 */
+    tbody tr td:not(:first-child){
+      background:rgba(18,26,36,.66);
+    }
+    tbody tr.usdAsset td:not(:first-child){
+      background:rgba(10,17,25,.14);
+      -webkit-backdrop-filter:blur(2.2px) saturate(.95);
+      backdrop-filter:blur(2.2px) saturate(.95);
+    }
     tbody td .mobileFieldHead{min-width:0}
     tbody td:nth-child(5),tbody td:nth-child(6),tbody td:nth-child(7){min-width:0}
 
@@ -665,7 +679,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>Trevon</h1>
+  <h1>Your Asset Allocation Advisor</h1>
   <div class="sub">按本金和目标比例自动生成配置；实际人民币、换汇金额与参考汇率可手动修改，差额与合计实时刷新。</div>
 
   <div class="panel top">
