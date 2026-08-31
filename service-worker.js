@@ -1,4 +1,4 @@
-const CACHE_NAME = "asset-allocator-v72";
+const CACHE_NAME = "asset-allocator-v73";
 const CORE_ASSETS = [
   "./",
   "./index.html",

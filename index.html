@@ -1840,6 +1840,40 @@
     }
   }
 
+
+
+  /* v73：股数为辅助控件，框高度低于单股金额 */
+  .sharesFieldWrap{
+    height:38px !important;
+    align-self:center !important;
+    border-radius:8px !important;
+  }
+  .sharesFieldWrap .sharesInput{
+    height:36px !important;
+    line-height:36px !important;
+    font-size:14px !important;
+  }
+  .sharesTimes{
+    font-size:16px !important;
+  }
+  @media(max-width:760px){
+    .sharesFieldWrap{
+      height:34px !important;
+      min-height:34px !important;
+      border-radius:8px !important;
+    }
+    .sharesFieldWrap .sharesInput{
+      height:32px !important;
+      line-height:32px !important;
+      font-size:14px !important;
+      padding-top:0 !important;
+      padding-bottom:0 !important;
+    }
+    .sharesTimes{
+      font-size:15px !important;
+    }
+  }
+
 </style>
 </head>
 <body>
