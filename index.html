@@ -36,8 +36,9 @@
   .ghost{height:46px;padding:0 14px;white-space:nowrap}
   .dangerGhost{color:#ffaaa5;border-color:#5b3337;background:#21171a}
   .dangerGhost:hover{border-color:#9b4e52;background:#2a191d}
-  .topActions{display:flex;gap:8px;align-items:center;justify-content:flex-end;grid-column:1/-1;width:100%}
-  .topInfoSlot{display:flex;align-items:center;justify-content:center;grid-column:1/-1;position:relative;width:100%;min-height:30px;margin-top:-4px}
+  .topFooterBar{display:flex;align-items:center;justify-content:space-between;gap:14px;grid-column:1/-1;width:100%;margin-top:-4px}
+  .topActions{display:flex;gap:8px;align-items:center;justify-content:flex-start;min-width:0;flex-wrap:wrap}
+  .topInfoSlot{display:flex;align-items:center;justify-content:flex-end;position:relative;flex:0 0 auto;min-height:30px;margin:0}
   .fxInfoBtn{
     width:30px;height:30px;padding:0;border:1px solid #395069;border-radius:999px;
     background:transparent;color:#a9bdd3;display:inline-flex;align-items:center;justify-content:center;
@@ -115,7 +116,7 @@
 
   /* 所有资产：保留首栏不变，下面各栏用当前色的轻度透明减淡版 */
   tbody tr td:not(:first-child){
-    background:rgba(17,23,31,.58);
+    background:rgba(17,23,31,.42);
   }
 
   /* USD 资产：采用更清晰的美元背景；首栏保持最清楚，下面内容区轻度模糊暗化 */
@@ -129,9 +130,9 @@
     backdrop-filter:blur(1.8px) saturate(.97)
   }
   tbody tr.usdAsset td:not(:first-child){
-    background:rgba(7,12,19,.24);
-    -webkit-backdrop-filter:blur(2.4px) saturate(.93);
-    backdrop-filter:blur(2.4px) saturate(.93)
+    background:rgba(6,10,16,.34);
+    -webkit-backdrop-filter:blur(4px) saturate(.90);
+    backdrop-filter:blur(4px) saturate(.90)
   }
   tbody tr.usdAsset td:first-child{
     background:linear-gradient(90deg,rgba(7,13,21,.10),rgba(7,13,21,.03));
@@ -178,9 +179,9 @@
   .rateGrid{display:grid;grid-template-columns:110px 110px;gap:8px}
   .rateGrid .field{height:39px;font-size:13px}
   .rateModeActions{display:flex;justify-content:flex-end;align-items:center;gap:0;margin:10px 0 0}
-  .rateCalcRow{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:12px;align-items:start;margin-top:2px}
+  .rateCalcRow{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:12px;align-items:stretch;margin-top:2px}
   .rateCalcInfo{min-width:0}
-  .rateCalcRow .rateModeActions{margin:0;align-self:end;justify-content:flex-end;padding-top:0;padding-bottom:2px}
+  .rateCalcRow .rateModeActions{margin:0;align-self:stretch;display:flex;align-items:flex-end;justify-content:flex-end;padding-top:0;padding-bottom:2px;transform:translateY(8px)}
   .rateModeBtn{
     width:auto;min-width:118px;min-height:30px;padding:6px 10px;border:1px solid #334151;border-radius:8px;
     background:#101720;color:#b7c7da;font-size:11px;line-height:1.2;cursor:pointer;
@@ -442,7 +443,8 @@
     .quick{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
     .quick .mini{height:44px;padding:0;font-size:14px}
     .ghost{width:100%}
-    .topActions{display:flex;justify-content:flex-end;gap:8px;width:100%;grid-column:1/-1}
+    .topFooterBar{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;grid-column:1/-1;flex-wrap:nowrap}
+    .topActions{display:flex;justify-content:flex-start;gap:8px;width:auto;min-width:0;flex-wrap:nowrap}
     .topActions .ghost{min-width:0;padding:0 12px;font-size:14px;width:auto;flex:0 0 auto}
     .mobileOnly{display:block}
 
@@ -462,7 +464,7 @@
 
     .mobileSortBar + .panel.tableWrap{border-top-left-radius:0;border-top-right-radius:0}
 
-    .topInfoSlot{justify-content:center;grid-column:1/-1;margin-top:-2px}
+    .topInfoSlot{justify-content:flex-end;grid-column:auto;margin-top:0;min-height:32px}
     .fxInfoBtn{width:32px;height:32px}
     .fxInfoPopover{right:0;bottom:40px;width:min(330px,calc(100vw - 40px));font-size:12px;line-height:1.65}
 
@@ -487,23 +489,23 @@
       grid-template-columns:minmax(0,3fr) minmax(0,2fr);
     }
     tbody tr.usdAsset{
-      background-image:linear-gradient(rgba(4,9,15,.03),rgba(4,9,15,.03)),url("assets/usd-background.png");
-      background-size:cover;background-position:center 40%;background-repeat:no-repeat
+      background-image:linear-gradient(rgba(4,9,15,.012),rgba(4,9,15,.012)),url("assets/usd-background.png");
+      background-size:cover;background-position:center 38%;background-repeat:no-repeat
     }
     tbody tr.usdAsset td{
-      background:rgba(9,16,24,.10);
-      -webkit-backdrop-filter:blur(1.8px) saturate(.99);
-      backdrop-filter:blur(1.8px) saturate(.99)
+      background:rgba(9,16,24,.07);
+      -webkit-backdrop-filter:blur(1px) saturate(1.01);
+      backdrop-filter:blur(1px) saturate(1.01)
     }
     tbody tr.usdAsset td:first-child{
-      background:linear-gradient(90deg,rgba(6,12,20,.08),rgba(6,12,20,.02));
-      -webkit-backdrop-filter:none;backdrop-filter:none
+      background:linear-gradient(180deg,rgba(6,12,20,.02),rgba(6,12,20,.05));
+      -webkit-backdrop-filter:blur(.35px) saturate(1.01);backdrop-filter:blur(.35px) saturate(1.01)
     }
     tbody tr.usdAsset .field,
     tbody tr.usdAsset .select,
     tbody tr.usdAsset .mini,
     tbody tr.usdAsset .rateModeBtn{
-      background:rgba(4,9,15,.38);
+      background:rgba(4,9,15,.42);
       -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)
     }
     tbody td:nth-child(1),
@@ -560,11 +562,11 @@
     .rateGrid{grid-template-columns:1fr;gap:10px;min-width:0}
     .rateGrid>div{min-width:0}
     .rateGrid .field{height:48px;font-size:16px}
-    .rateCalcRow{grid-template-columns:minmax(0,1fr) auto;column-gap:10px;align-items:start;margin-top:2px}
-    .rateCalcRow .rateCalcInfo{min-width:0}
+    .rateCalcRow{display:block;position:relative;min-height:98px;margin-top:4px}
+    .rateCalcRow .rateCalcInfo{min-width:0;max-width:46%}
     .rateModeActions{margin-top:10px}
-    .rateCalcRow .rateModeActions{margin:0;align-self:end;justify-content:flex-end;padding-bottom:2px}
-    .rateModeBtn{min-width:132px;min-height:38px;padding:7px 12px;font-size:12px}
+    .rateCalcRow .rateModeActions{position:absolute;right:22px;top:60px;margin:0;display:flex;align-items:flex-start;justify-content:flex-start;padding:0;transform:none}
+    .rateModeBtn{min-width:0;width:96px;min-height:28px;padding:4px 8px;font-size:9.6px;line-height:1.05;color:#fff}
     .metric{
       min-width:0;font-size:13px;white-space:normal;
       word-break:normal;overflow-wrap:anywhere
@@ -587,14 +589,14 @@
       font-size:11px;line-height:1.35;color:var(--muted)
     }
     tbody td{overflow:hidden}
-    /* 手机端：资产顶部信息区保持原样；下方内容区统一轻度减淡，增强分区感 */
+    /* 手机端：资产顶部信息区更清晰；下方内容区进一步减淡并暗化，增强分区感 */
     tbody tr td:not(:first-child){
-      background:rgba(17,23,31,.52);
+      background:rgba(17,23,31,.28);
     }
     tbody tr.usdAsset td:not(:first-child){
-      background:rgba(7,12,19,.20);
-      -webkit-backdrop-filter:blur(2.6px) saturate(.93);
-      backdrop-filter:blur(2.6px) saturate(.93);
+      background:rgba(5,9,15,.44);
+      -webkit-backdrop-filter:blur(6px) saturate(.88);
+      backdrop-filter:blur(6px) saturate(.88);
     }
     tbody td .mobileFieldHead{min-width:0}
     tbody td:nth-child(5),tbody td:nth-child(6),tbody td:nth-child(7){min-width:0}
@@ -761,14 +763,16 @@
       <input id="usdHkdRate" class="field calcInput" type="text" inputmode="decimal" placeholder="1 USD = ? HKD" autocomplete="off" />
       <div class="topFieldHint" aria-hidden="true"></div>
     </div>
-    <div class="topActions">
-      <button id="resetBtn" class="ghost" type="button">恢复默认配置</button>
-      <button id="clearBtn" class="ghost dangerGhost" type="button">清零所有配置</button>
-    </div>
-    <div class="topInfoSlot">
-      <button id="fxInfoBtn" class="fxInfoBtn" type="button" aria-label="查看汇率说明" aria-expanded="false" title="汇率说明">i</button>
-      <div id="fxInfoPopover" class="fxInfoPopover" role="dialog" aria-label="汇率说明" hidden>
-        交易汇率始终按当前这一行真实的“支付币种 → 换汇后币种”显示：例如 HKD 支付、USD 到账时，显示为「1 USD = X HKD」，而不是误写成 USD/CNY；CNY 支付、USD 到账时才显示「1 USD = X CNY」。每行同时显示反向汇率。顶部 USD/CNY、HKD/CNY、USDT/CNY 与自选币种对只作为对应货币对的参考来源；点击“使用当前的汇率”时，会把当前这一行的汇率同步回正确的顶部货币对。底部合计仍统一折算成人民币，但交易汇率文字保持原始货币对，不混用 CNY。手机端汇率显示 4 位小数，桌面端显示 6 位小数，底层计算精度不变。
+    <div class="topFooterBar">
+      <div class="topActions">
+        <button id="resetBtn" class="ghost" type="button">恢复默认配置</button>
+        <button id="clearBtn" class="ghost dangerGhost" type="button">清零所有配置</button>
+      </div>
+      <div class="topInfoSlot">
+        <button id="fxInfoBtn" class="fxInfoBtn" type="button" aria-label="查看汇率说明" aria-expanded="false" title="汇率说明">i</button>
+        <div id="fxInfoPopover" class="fxInfoPopover" role="dialog" aria-label="汇率说明" hidden>
+          交易汇率始终按当前这一行真实的“支付币种 → 换汇后币种”显示：例如 HKD 支付、USD 到账时，显示为「1 USD = X HKD」，而不是误写成 USD/CNY；CNY 支付、USD 到账时才显示「1 USD = X CNY」。每行同时显示反向汇率。顶部 USD/CNY、HKD/CNY、USDT/CNY 与自选币种对只作为对应货币对的参考来源；点击“使用当前汇率”时，会把当前这一行的汇率同步回正确的顶部货币对。底部合计仍统一折算成人民币，但交易汇率文字保持原始货币对，不混用 CNY。手机端汇率显示 4 位小数，桌面端显示 6 位小数，底层计算精度不变。
+        </div>
       </div>
     </div>
   </div>
@@ -1624,7 +1628,7 @@ function render(){
               </div>
               ${!pairSame
                 ? `<div class="rateModeActions">
-                     <button type="button" class="rateModeBtn useCurrentRateBtn ${rowRateMode==="current"?"active":""}" data-id="${r.id}" title="使用本资产当前货币对汇率，并同步更新顶部对应货币对">使用当前的汇率</button>
+                     <button type="button" class="rateModeBtn useCurrentRateBtn ${rowRateMode==="current"?"active":""}" data-id="${r.id}" title="使用本资产当前货币对汇率，并同步更新顶部对应货币对">使用当前汇率</button>
                    </div>`
                 : ""}
             </div>
