@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <meta name="theme-color" content="#0b0f14" />
 <meta name="application-name" content="Asset Allocator" />
 <meta name="mobile-web-app-capable" content="yes" />
@@ -1546,6 +1546,152 @@
     .allocFlipInner{transition:none !important}
   }
 
+
+  /* v69：页面固定，不允许双击缩放或横向晃动 */
+  html,body{
+    width:100%;max-width:100%;overflow-x:hidden!important;
+    overscroll-behavior-x:none;
+    -webkit-text-size-adjust:100%;
+  }
+  body{touch-action:pan-y;position:relative}
+  button,input,select,.hintWrap,.hintIcon,.allocFlipShell,.assetDetailsToggle{
+    touch-action:manipulation;
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  /* 单股金额 + 股数 */
+  .unitPriceInline{flex-wrap:wrap}
+  .sharesLabel{margin-left:4px}
+  .sharesInput{width:78px!important;min-width:64px;text-align:center}
+  .sharesAutoMark{font-size:10px;color:#8ea0b5;white-space:nowrap}
+
+  /* 所有 i 说明都通过 body 顶层浮层展示，永不被表格/卡片裁切 */
+  .hintWrap .hintBubble{display:none!important}
+  .globalHintPopover{
+    position:fixed;z-index:2147483647;
+    width:min(360px,calc(100vw - 24px));max-height:min(55vh,420px);overflow:auto;
+    padding:13px 14px;border:1px solid #42607d;border-radius:12px;
+    background:rgba(12,20,30,.985);color:#edf4ff;
+    font-size:13px;line-height:1.65;text-align:left;
+    box-shadow:0 18px 52px rgba(0,0,0,.66);
+    -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);
+    pointer-events:auto;
+  }
+  @media(max-width:760px){
+    .globalHintPopover{left:12px!important;right:12px!important;bottom:calc(82px + env(safe-area-inset-bottom))!important;top:auto!important;width:auto!important}
+    .unitPriceInline{gap:6px}
+    .unitPriceInline .sharesInput{width:72px!important;height:42px;font-size:15px}
+    .sharesLabel{margin-left:0}
+  }
+
+
+  /* v69.1：换汇差额展开后，收起箭头保持在展开前的同一位置 */
+  @media(max-width:760px){
+    tbody tr:not(.assetDetailsCollapsed) td:nth-child(7){padding:1px 0 6px!important}
+    tbody tr:not(.assetDetailsCollapsed) td:nth-child(7) .assetFxDetails{padding:8px 12px 0}
+  }
+
+
+
+  /* v70：单股金额行重排：金额 → ×股数 → 币种 */
+  .unitPriceInline{
+    display:flex!important;
+    align-items:center!important;
+    flex-wrap:nowrap!important;
+    gap:6px!important;
+    width:100%!important;
+    min-width:0!important;
+  }
+  .unitPriceInline>.unitLabel{
+    flex:0 0 auto!important;
+    margin:0!important;
+    white-space:nowrap!important;
+  }
+  .unitPriceInline>.unitPriceInput{
+    flex:1 1 112px!important;
+    min-width:76px!important;
+    width:auto!important;
+  }
+  .sharesFieldWrap{
+    flex:0 0 86px;
+    width:86px;
+    height:46px;
+    min-width:0;
+    display:flex;
+    align-items:center;
+    overflow:hidden;
+    border:1px solid var(--line);
+    border-radius:9px;
+    background:rgba(5,10,16,.42);
+    -webkit-backdrop-filter:blur(3px);
+    backdrop-filter:blur(3px);
+  }
+  .sharesTimes{
+    flex:0 0 28px;
+    width:28px;
+    text-align:right;
+    padding-right:2px;
+    color:#e7eef8;
+    font-size:18px;
+    font-weight:800;
+    line-height:1;
+  }
+  .sharesFieldWrap .sharesInput{
+    flex:1 1 auto!important;
+    width:0!important;
+    min-width:0!important;
+    height:100%!important;
+    padding:0 8px 0 4px!important;
+    margin:0!important;
+    border:0!important;
+    outline:0!important;
+    background:transparent!important;
+    color:var(--text)!important;
+    font:inherit!important;
+    font-size:15px!important;
+    text-align:left!important;
+    box-shadow:none!important;
+    border-radius:0!important;
+    touch-action:manipulation;
+  }
+  .sharesFieldWrap .sharesInput::placeholder{color:#738296}
+  .unitPriceInline>.priceCcyInput{
+    flex:0 0 88px!important;
+    width:88px!important;
+    min-width:88px!important;
+  }
+  @media(max-width:760px){
+    .unitPriceInline{gap:5px!important;margin-top:9px!important}
+    .unitPriceInline>.unitLabel{font-size:11px!important}
+    .unitPriceInline>.unitPriceInput{
+      flex:1 1 86px!important;
+      min-width:66px!important;
+      height:42px!important;
+      font-size:15px!important;
+    }
+    .sharesFieldWrap{
+      flex:0 0 72px!important;
+      width:72px!important;
+      height:42px!important;
+      border-radius:9px!important;
+    }
+    .sharesTimes{flex-basis:22px;width:22px;font-size:17px;padding-right:1px}
+    .sharesFieldWrap .sharesInput{font-size:15px!important;padding:0 5px 0 2px!important}
+    .unitPriceInline>.priceCcyInput{
+      flex:0 0 76px!important;
+      width:76px!important;
+      min-width:76px!important;
+      height:42px!important;
+      font-size:14px!important;
+    }
+  }
+  @media(max-width:370px){
+    .unitPriceInline{gap:4px!important}
+    .unitPriceInline>.unitLabel{font-size:10px!important}
+    .sharesFieldWrap{flex-basis:64px!important;width:64px!important}
+    .unitPriceInline>.priceCcyInput{flex-basis:70px!important;width:70px!important;min-width:70px!important}
+  }
+
 </style>
 </head>
 <body>
@@ -1851,7 +1997,7 @@ let state = {
   usdHkdDirection:"USD_HKD",
   autoGold:false,
   pairRateVersion:1,
-  rows: defaults.map(x=>({...x, actualRmb:null, payAmount:null, payCcy:"CNY", fxAmount:null, rmbManual:false, fxManual:false, rowRate:null, rowRateMode:x.ccy==="CNY"?"fixed":"top", unitPrice:null, priceCcy:x.ccy, autoFromFx:false, approxRates:{}, detailsExpanded:false}))
+  rows: defaults.map(x=>({...x, actualRmb:null, payAmount:null, payCcy:"CNY", fxAmount:null, rmbManual:false, fxManual:false, rowRate:null, rowRateMode:x.ccy==="CNY"?"fixed":"top", unitPrice:null, priceCcy:x.ccy, shares:null, sharesManual:false, autoFromFx:false, approxRates:{}, detailsExpanded:false}))
 };
 
 const money = n => "¥" + (Number(n)||0).toLocaleString("zh-CN",{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -2309,6 +2455,46 @@ function rebalanceAfterEdit(changedId){
     }
   }
 }
+
+function unitPriceCnyValue(r){
+  const price=Number(r.unitPrice)||0;
+  if(!(price>0)) return 0;
+  const ccy=r.priceCcy||r.ccy||"CNY";
+  if(ccy==="CNY") return price;
+  const info=rateInfoFor(r,ccy,true);
+  return info.rate>0 ? price*info.rate : 0;
+}
+function maxSharesForTarget(r){
+  const target=targetOf(r);
+  const unitCny=unitPriceCnyValue(r);
+  if(target===null || !(unitCny>0)) return null;
+  return Math.max(0,Math.floor((target+1e-8)/unitCny));
+}
+function syncSharePlan(r){
+  const price=Number(r.unitPrice)||0;
+  if(!(price>0)){
+    r.shares=null;
+    r.sharesManual=false;
+    return;
+  }
+  if(r.sharesManual){
+    r.shares=Math.max(0,Math.floor(Number(r.shares)||0));
+    const principal=principalCnyValue();
+    const unitCny=unitPriceCnyValue(r);
+    if(principal!==null && principal>0 && unitCny>0){
+      r.pct=(r.shares*unitCny/principal)*100;
+    }
+  }else{
+    const maxShares=maxSharesForTarget(r);
+    r.shares=maxShares===null?null:maxShares;
+  }
+  const shares=Math.max(0,Math.floor(Number(r.shares)||0));
+  r.ccy=r.priceCcy||r.ccy;
+  r.fxAmount=price*shares;
+  r.fxManual=false;
+  r.autoFromFx=shares>0;
+  if(shares>0) syncPaymentFromFx(r);
+}
 function targetOf(r){ const base=principalCnyValue(); return base===null?null:base*(Number(r.pct)||0)/100; }
 function ensureAutoValues(r){
   const target = targetOf(r);
@@ -2345,6 +2531,7 @@ function ensureAutoValues(r){
 function diffClass(v){ return Math.abs(v)<0.005 ? "good" : (v>0 ? "bad" : "good"); }
 function render(){
   updatePrincipalCurrencyUi();
+  state.rows.forEach(syncSharePlan);
   state.rows.forEach(ensureAutoValues);
   const tbody=el("tbody");
   tbody.innerHTML="";
@@ -2395,7 +2582,12 @@ function render(){
                 <span class="unitLabel">单股金额</span>
                 <input class="field calcInput unitPriceInput" data-id="${r.id}" type="text" inputmode="decimal" autocomplete="off"
                   value="${r.unitPrice??""}" placeholder="可选" />
-                <select class="select priceCcyInput" data-id="${r.id}">
+                <div class="sharesFieldWrap" title="按目标金额可买的最大整数股数；手动修改后会反推目标金额与比例">
+                  <span class="sharesTimes" aria-hidden="true">×</span>
+                  <input class="sharesInput" data-id="${r.id}" type="text" inputmode="numeric" autocomplete="off"
+                    value="${r.shares??""}" placeholder="股数" aria-label="股数" />
+                </div>
+                <select class="select priceCcyInput" data-id="${r.id}" aria-label="单股金额币种">
                   ${[["CNY","RMB"],["HKD","HKD"],["USD","USD"],["USDT","USDT"]].map(([v,label])=>`<option value="${v}" ${v===(r.priceCcy||r.ccy)?"selected":""}>${label}</option>`).join("")}
                 </select>
               </div>
@@ -2519,8 +2711,19 @@ function render(){
         </div>
       </td>
       <td>
+        <div class="assetDetailsToggleWrap">
+          <button type="button" class="assetDetailsToggle" data-id="${r.id}" aria-expanded="${r.detailsExpanded?"true":"false"}" aria-label="${r.detailsExpanded?"收起":"展开"} ${r.name} 换汇差额" title="${r.detailsExpanded?"收起换汇差额":"展开换汇差额"}">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 7 5 5 5-5"/></svg>
+          </button>
+        </div>
         ${r.detailsExpanded ? `<div class="assetFxDetails">
-          <div class="mobileFieldHead">换汇差额（可选）</div>
+          <div class="mobileFieldHead" style="display:flex;align-items:center;gap:7px">
+            <span>换汇差额（可选）</span>
+            <span class="hintWrap" tabindex="0" aria-label="查看换汇差额说明">
+              <span class="hintIcon">i</span>
+              <span class="hintBubble">换汇差额用于比较实际成交汇率与参考汇率造成的人民币金额差异。正值表示按实际汇率支付的人民币等值更多，负值表示更少；只有支付币种与换汇后币种不同、且存在参考汇率时才参与计算。它不会修改你的资产比例或实际交易金额。</span>
+            </span>
+          </div>
           ${pairSame
             ? '<div class="metric muted">无需换汇</div>'
             : `<div class="metric ${fx>0&&rate>0?diffClass(fxDiff):"muted"}"><b>${(fx>0&&rate>0)?money(fxDiff):"—"}</b></div>
@@ -2529,11 +2732,6 @@ function render(){
                     <span class="mobileRateOnly">汇率差 ${(rateDiff>=0?"+":"")}${rateDiff.toFixed(4)} · ${(fxPct>=0?"+":"")}${fxPct.toFixed(2)}%</span>`
                  : "参考汇率可留空"}</div>`}
         </div>` : ""}
-        <div class="assetDetailsToggleWrap">
-          <button type="button" class="assetDetailsToggle" data-id="${r.id}" aria-expanded="${r.detailsExpanded?"true":"false"}" aria-label="${r.detailsExpanded?"收起":"展开"} ${r.name} 换汇差额" title="${r.detailsExpanded?"收起换汇差额":"展开换汇差额"}">
-            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 7 5 5 5-5"/></svg>
-          </button>
-        </div>
       </td>
 
     `;
@@ -2548,7 +2746,7 @@ function rerenderKeepTyping(e, apply){
   const target=e.target;
   const id=target.dataset.id;
   const raw=target.value;
-  const cls=["pctInput","actualInput","fxInput","rowRateInput","unitPriceInput"].find(c=>target.classList.contains(c));
+  const cls=["pctInput","actualInput","fxInput","rowRateInput","unitPriceInput","sharesInput"].find(c=>target.classList.contains(c));
 
   // 记录光标/选区位置。表格重绘后不仅恢复焦点，也恢复到原来的插入位置。
   const selStart = typeof target.selectionStart === "number" ? target.selectionStart : raw.length;
@@ -3300,40 +3498,46 @@ function bindRowEvents(){
       const r=state.rows.find(r=>r.id===e.target.dataset.id);
       r.unitPrice=String(raw).trim()===""?null:n;
       r.priceCcy=r.priceCcy||r.ccy;
+      r.sharesManual=false;
       if(n>0){
-        // 只修改当前资产：单股金额绝不复制到其他行。
         r.ccy=r.priceCcy;
-        r.fxAmount=n;
-        r.fxManual=true;
-        r.autoFromFx=true;
-
         r.rowRate=null;
         r.rowRateMode=(r.payCcy||"CNY")===r.ccy?"fixed":"top";
-
-        // 单股金额 = 当前行换汇后金额时，前面的支付金额按汇率自动联动。
-        // 未填写准确参考汇率时，仅使用本资产独立的粗略估算汇率。
-        syncPaymentFromFx(r);
+        syncSharePlan(r);
       }else{
         r.unitPrice=null;
+        r.shares=null;
+        r.sharesManual=false;
         r.autoFromFx=false;
       }
+    });
+  });
+  document.querySelectorAll(".sharesInput").forEach(x=>x.oninput=e=>{
+    const n=plainNumber(e.target.value);
+    if(n===null) return;
+    rerenderKeepTyping(e, raw=>{
+      const r=state.rows.find(r=>r.id===e.target.dataset.id);
+      if(!r) return;
+      const empty=String(raw).trim()==="";
+      if(empty){
+        r.sharesManual=false;
+        r.shares=null;
+        syncSharePlan(r);
+        return;
+      }
+      r.shares=Math.max(0,Math.floor(n));
+      r.sharesManual=true;
+      syncSharePlan(r);
     });
   });
   document.querySelectorAll(".priceCcyInput").forEach(x=>x.onchange=e=>{
     const r=state.rows.find(r=>r.id===e.target.dataset.id);
     r.priceCcy=e.target.value;
     r.ccy=e.target.value;
-    const n=Number(r.unitPrice)||0;
     r.rowRate=null;
     r.rowRateMode=(r.payCcy||"CNY")===r.ccy?"fixed":"top";
-    if(n>0){
-      r.fxAmount=n;
-      r.fxManual=true;
-      r.autoFromFx=true;
-      syncPaymentFromFx(r);
-    }else{
-      r.autoFromFx=false;
-    }
+    r.sharesManual=false;
+    syncSharePlan(r);
     render();
   });
 
@@ -3359,15 +3563,40 @@ function bindRowEvents(){
   bindAssetPickerButtons();
   bindCalcInputs();
 }
+let globalHintPopover=null;
+function closeGlobalHint(){
+  if(globalHintPopover){ globalHintPopover.remove(); globalHintPopover=null; }
+  const topInfo=el("fxInfoBtn");
+  if(topInfo) topInfo.setAttribute("aria-expanded","false");
+}
+function showGlobalHint(wrap){
+  closeGlobalHint();
+  const source=wrap.querySelector(".hintBubble");
+  if(!source) return;
+  const pop=document.createElement("div");
+  pop.className="globalHintPopover";
+  pop.innerHTML=source.innerHTML;
+  document.body.appendChild(pop);
+  globalHintPopover=pop;
+
+  if(!window.matchMedia("(max-width:760px)").matches){
+    const rect=wrap.getBoundingClientRect();
+    const pw=pop.offsetWidth||360, ph=pop.offsetHeight||120;
+    let left=Math.min(window.innerWidth-pw-10,Math.max(10,rect.right+10));
+    if(left<10 || left+pw>window.innerWidth-10) left=Math.max(10,Math.min(window.innerWidth-pw-10,rect.left-pw-10));
+    let top=Math.max(10,Math.min(window.innerHeight-ph-10,rect.top+rect.height/2-ph/2));
+    pop.style.left=`${left}px`;
+    pop.style.top=`${top}px`;
+  }
+}
 function bindHintInteractions(){
   document.querySelectorAll(".hintWrap").forEach(h=>{
     if(h.dataset.tapBound==="1") return;
     h.dataset.tapBound="1";
-    h.addEventListener("click", ev=>{
+    h.addEventListener("click",ev=>{
+      ev.preventDefault();
       ev.stopPropagation();
-      const wasOpen=h.classList.contains("open");
-      document.querySelectorAll(".hintWrap.open").forEach(x=>x.classList.remove("open"));
-      if(!wasOpen) h.classList.add("open");
+      showGlobalHint(h);
     });
   });
 }
@@ -3482,6 +3711,8 @@ function normalizeState(s){
       ...base,
       unitPrice:r.unitPrice??null,
       priceCcy:r.priceCcy||base.ccy||d.ccy||"CNY",
+      shares:Number.isFinite(Number(r.shares))?Math.max(0,Math.floor(Number(r.shares))):null,
+      sharesManual:Boolean(r.sharesManual),
       payCcy,
       payAmount:r.payAmount??actual,
       autoFromFx:Boolean(r.autoFromFx),
@@ -3545,6 +3776,8 @@ function makeRows({clear=false}={}){
     rowRateMode:x.ccy==="CNY"?"fixed":"top",
     unitPrice:null,
     priceCcy:x.ccy,
+    shares:null,
+    sharesManual:false,
     autoFromFx:false,
     approxRates:{}
   }));
@@ -3637,6 +3870,7 @@ document.querySelectorAll("[data-asset-picker-close='1']").forEach(x=>x.addEvent
 if(el("assetPickerSearch")) el("assetPickerSearch").addEventListener("input",renderAssetPicker);
 document.addEventListener("keydown",ev=>{
   if(ev.key!=="Escape") return;
+  if(globalHintPopover){ closeGlobalHint(); return; }
   if(el("assetPickerModal")?.getAttribute("aria-hidden")==="false"){
     closeAssetPicker();
     return;
@@ -3708,16 +3942,26 @@ if(calcBar){
 const fxInfoBtn=el("fxInfoBtn");
 const fxInfoPopover=el("fxInfoPopover");
 if(fxInfoBtn && fxInfoPopover){
-  const closeFxInfo=()=>{fxInfoPopover.hidden=true;fxInfoBtn.setAttribute("aria-expanded","false");};
+  fxInfoPopover.hidden=true;
   fxInfoBtn.onclick=e=>{
+    e.preventDefault();
     e.stopPropagation();
-    const open=fxInfoPopover.hidden;
-    fxInfoPopover.hidden=!open;
-    fxInfoBtn.setAttribute("aria-expanded",open?"true":"false");
+    const sameOpen=fxInfoBtn.getAttribute("aria-expanded")==="true" && globalHintPopover;
+    closeGlobalHint();
+    if(sameOpen) return;
+    const pop=document.createElement("div");
+    pop.className="globalHintPopover";
+    pop.innerHTML=fxInfoPopover.innerHTML;
+    document.body.appendChild(pop);
+    globalHintPopover=pop;
+    fxInfoBtn.setAttribute("aria-expanded","true");
+    if(!window.matchMedia("(max-width:760px)").matches){
+      const rect=fxInfoBtn.getBoundingClientRect();
+      const pw=pop.offsetWidth||360, ph=pop.offsetHeight||120;
+      pop.style.left=`${Math.max(10,Math.min(window.innerWidth-pw-10,rect.right-pw))}px`;
+      pop.style.top=`${Math.max(10,Math.min(window.innerHeight-ph-10,rect.top-ph-10))}px`;
+    }
   };
-  fxInfoPopover.onclick=e=>e.stopPropagation();
-  document.addEventListener("click",closeFxInfo);
-  document.addEventListener("keydown",e=>{if(e.key==="Escape")closeFxInfo();});
 }
 if(el("mobileSummaryBtn")){
   el("mobileSummaryBtn").onclick=()=>document.querySelector(".summary").scrollIntoView({behavior:"auto",block:"start"});
@@ -3744,6 +3988,16 @@ document.addEventListener("visibilitychange",()=>{
 
 
 <script>
+
+// v69：全页面禁止双击缩放/双击触发浏览器手势，并锁定横向滚动。
+document.addEventListener("dblclick",e=>{ e.preventDefault(); },{passive:false,capture:true});
+document.addEventListener("click",e=>{
+  if(globalHintPopover && !e.target.closest(".globalHintPopover") && !e.target.closest(".hintWrap")) closeGlobalHint();
+},true);
+window.addEventListener("resize",closeGlobalHint,{passive:true});
+window.addEventListener("orientationchange",closeGlobalHint,{passive:true});
+window.addEventListener("scroll",()=>{ if(globalHintPopover && !window.matchMedia("(max-width:760px)").matches) closeGlobalHint(); },{passive:true,capture:true});
+
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./service-worker.js", { scope: "./" })
