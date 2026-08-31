@@ -1508,6 +1508,44 @@
     }
   }
 
+
+
+  /* v66：原地 3D 翻卡 + 防连续点击跳动 / iOS 双击放大 */
+  .allocFlipShell{
+    perspective:1100px !important;
+    perspective-origin:50% 48% !important;
+    touch-action:manipulation !important;
+    -webkit-user-select:none;
+    user-select:none;
+    -webkit-touch-callout:none;
+    contain:layout paint;
+  }
+  .allocFlipInner{
+    transform-origin:50% 50% !important;
+    transform-style:preserve-3d !important;
+    -webkit-transform-style:preserve-3d !important;
+    transition:none !important; /* v66 使用 Web Animations，避免 render/transition 互相抢 */
+    will-change:transform;
+  }
+  .allocFlipInner.isFlipped{transform:rotateY(180deg) !important}
+  .allocFlipFace{
+    backface-visibility:hidden !important;
+    -webkit-backface-visibility:hidden !important;
+    transform:translateZ(0.6px);
+  }
+  .allocFlipBack{transform:rotateY(180deg) translateZ(0.6px) !important}
+  .allocFlipShell.isAnimating .allocFlipToggleShared{pointer-events:none !important}
+  .allocFlipToggleShared{
+    touch-action:manipulation !important;
+    -webkit-user-select:none !important;
+    user-select:none !important;
+    -webkit-touch-callout:none !important;
+    -webkit-tap-highlight-color:transparent !important;
+  }
+  @media (prefers-reduced-motion:reduce){
+    .allocFlipInner{transition:none !important}
+  }
+
 </style>
 </head>
 <body>
@@ -3065,12 +3103,53 @@ function bindAssetPickerButtons(){
 
 function bindRowEvents(){
   document.querySelectorAll(".allocFlipToggle").forEach(btn=>{
+    const shell=btn.closest(".allocFlipShell");
+    const inner=shell?.querySelector(".allocFlipInner");
+
+    // 禁止该区域双击缩放 / 双击触发额外行为
+    btn.ondblclick=e=>{ e.preventDefault(); e.stopPropagation(); };
+    if(shell) shell.ondblclick=e=>{ e.preventDefault(); e.stopPropagation(); };
+
     btn.onclick=e=>{
+      e.preventDefault();
       e.stopPropagation();
+      if(!shell || !inner || shell.classList.contains("isAnimating")) return;
+
       const r=state.rows.find(row=>row.id===e.currentTarget.dataset.id);
       if(!r) return;
-      r.diffFlipped=!r.diffFlipped;
-      render();
+
+      const fromFlipped=!!r.diffFlipped;
+      const toFlipped=!fromFlipped;
+      r.diffFlipped=toFlipped;
+      save();
+
+      const reduced=window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const finish=()=>{
+        inner.classList.toggle("isFlipped",toFlipped);
+        shell.classList.remove("isAnimating");
+        btn.setAttribute("aria-label",toFlipped?`返回 ${r.name} 配置差额`:`查看 ${r.name} 计算交易汇率`);
+        btn.title=toFlipped?"翻转返回配置差额":"翻转查看计算交易汇率";
+      };
+
+      if(reduced || !inner.animate){ finish(); return; }
+
+      shell.classList.add("isAnimating");
+      // 动画期间先保持原来的 CSS 最终态，由 WAAPI 完整接管视觉；结束后才写入最终 class。
+      inner.classList.toggle("isFlipped",fromFlipped);
+
+      const from=fromFlipped?180:0;
+      const to=toFlipped?180:0;
+      const mid=(from+to)/2;
+      const anim=inner.animate([
+        {transform:`rotateY(${from}deg) scale3d(1,1,1)`,filter:"brightness(1)",offset:0},
+        {transform:`rotateY(${from+(to-from)*0.42}deg) scale3d(.985,.985,1)`,filter:"brightness(.96)",offset:.42},
+        {transform:`rotateY(${mid}deg) scale3d(.972,.972,1)`,filter:"brightness(.92)",offset:.50},
+        {transform:`rotateY(${from+(to-from)*0.72}deg) scale3d(.988,.988,1)`,filter:"brightness(.97)",offset:.72},
+        {transform:`rotateY(${to}deg) scale3d(1,1,1)`,filter:"brightness(1)",offset:1}
+      ],{duration:560,easing:"cubic-bezier(.22,.68,.24,1)",fill:"none"});
+
+      anim.onfinish=finish;
+      anim.oncancel=finish;
     };
   });
   document.querySelectorAll(".assetDetailsToggle").forEach(btn=>{
