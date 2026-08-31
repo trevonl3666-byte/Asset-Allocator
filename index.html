@@ -1624,8 +1624,9 @@ function render(){
     const row = document.createElement("tr");
     row.dataset.rowId=r.id;
     const isGoldAsset=(r.productKey==="SGOL") || /黄金/i.test(String(r.desc||"")) || /黄金/i.test(String(r.group||""));
+    const isCnyThemeAsset=((r.ccy||"")==="CNY") || (r.productKey==="03032") || /恒生科技/i.test(String(r.desc||"")) || /恒生科技/i.test(String(r.name||""));
     if(isGoldAsset) row.classList.add("goldAsset");
-    else if((r.ccy||"")==="CNY") row.classList.add("cnyAsset");
+    else if(isCnyThemeAsset) row.classList.add("cnyAsset");
     else if((r.ccy||"")==="USD") row.classList.add("usdAsset");
     row.innerHTML=`
       <td>
