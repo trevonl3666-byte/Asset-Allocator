@@ -1874,6 +1874,156 @@
     }
   }
 
+
+
+  /* v74：手机端以屏幕为基准真正居中，不靠裁切实现“看起来在屏幕内” */
+  @media (max-width:760px){
+    :root{--mobile-gutter:10px}
+    html,body{
+      margin:0!important;
+      padding-left:0!important;
+      padding-right:0!important;
+      width:100%!important;
+      max-width:100%!important;
+      overflow-x:hidden!important;
+    }
+    body{display:block!important}
+    .wrap{
+      box-sizing:border-box!important;
+      width:100%!important;
+      max-width:100%!important;
+      margin:0!important;
+      padding:16px var(--mobile-gutter) 28px!important;
+      overflow:visible!important;
+    }
+    .wrap>*,
+    .top,
+    .mobileSortBar,
+    .tableWrap,
+    .summary,
+    .footerPanel{
+      box-sizing:border-box!important;
+      width:100%!important;
+      max-width:100%!important;
+      margin-left:0!important;
+      margin-right:0!important;
+    }
+    .tableWrap{
+      padding:0!important;
+      overflow:visible!important;
+    }
+    table,tbody{
+      display:block!important;
+      box-sizing:border-box!important;
+      width:100%!important;
+      max-width:100%!important;
+      min-width:0!important;
+      margin:0!important;
+      padding:0!important;
+    }
+    tbody tr[data-row-id]{
+      box-sizing:border-box!important;
+      width:100%!important;
+      max-width:100%!important;
+      min-width:0!important;
+      margin:0 0 12px!important;
+      left:auto!important;
+      right:auto!important;
+      transform:none;
+      grid-template-columns:minmax(0,57%) minmax(0,43%)!important;
+    }
+    tbody td{
+      box-sizing:border-box!important;
+      min-width:0!important;
+      max-width:none!important;
+      overflow:visible!important;
+    }
+    tbody td:nth-child(1){grid-column:1/-1!important;width:auto!important}
+    tbody td:nth-child(2){grid-column:1!important;width:auto!important}
+    tbody td:nth-child(3){grid-column:2!important;width:auto!important}
+    tbody td:nth-child(4){grid-column:1!important;width:auto!important}
+    tbody td:nth-child(6){grid-column:2!important;width:auto!important}
+    tbody td:nth-child(7){grid-column:1/-1!important;width:auto!important}
+    .assetCellTop,.assetInfo,.ratioBox,.tradeGrid,.allocFlipShell,.allocFlipInner,.metric{
+      min-width:0!important;
+      max-width:100%!important;
+    }
+    tbody td:nth-child(3),tbody td:nth-child(6){padding-left:12px!important;padding-right:10px!important}
+    tbody td:nth-child(3) .money{
+      display:block!important;
+      width:100%!important;
+      max-width:100%!important;
+      white-space:nowrap!important;
+      overflow:hidden!important;
+      text-overflow:clip!important;
+      font-size:clamp(15px,4.45vw,18px)!important;
+      letter-spacing:-.15px!important;
+    }
+    tbody td:nth-child(6) .metric b{
+      display:block!important;
+      max-width:100%!important;
+      white-space:nowrap!important;
+      overflow:hidden!important;
+      font-size:clamp(14px,4vw,16px)!important;
+    }
+    .tradeGrid{
+      width:100%!important;
+      grid-template-columns:minmax(0,1fr) 78px!important;
+      gap:6px!important;
+    }
+    .tradeGrid .field,.tradeGrid .select{width:100%!important;min-width:0!important}
+    .unitPriceInline{
+      box-sizing:border-box!important;
+      width:100%!important;
+      max-width:100%!important;
+      display:grid!important;
+      grid-template-columns:auto minmax(0,calc(8ch + 18px)) 64px 72px!important;
+      align-items:center!important;
+      gap:5px!important;
+      overflow:visible!important;
+    }
+    .unitPriceInline>.unitLabel{grid-column:1!important;white-space:nowrap!important}
+    .unitPriceInline>.unitPriceInput{
+      grid-column:2!important;
+      width:100%!important;
+      min-width:0!important;
+      max-width:100%!important;
+      flex:none!important;
+    }
+    .sharesFieldWrap{
+      grid-column:3!important;
+      width:64px!important;
+      min-width:0!important;
+      max-width:64px!important;
+      height:34px!important;
+      flex:none!important;
+    }
+    .sharesTimes{flex:0 0 20px!important;width:20px!important;font-size:14px!important;padding-right:0!important}
+    .sharesFieldWrap .sharesInput{padding-left:2px!important;padding-right:4px!important;font-size:13px!important}
+    .unitPriceInline>.priceCcyInput{
+      grid-column:4!important;
+      width:72px!important;
+      min-width:0!important;
+      max-width:72px!important;
+      flex:none!important;
+    }
+    .mobileDock{
+      box-sizing:border-box!important;
+      left:var(--mobile-gutter)!important;
+      right:var(--mobile-gutter)!important;
+      width:auto!important;
+      max-width:none!important;
+    }
+  }
+  @media (max-width:390px){
+    :root{--mobile-gutter:8px}
+    tbody tr[data-row-id]{grid-template-columns:minmax(0,56%) minmax(0,44%)!important}
+    .unitPriceInline{grid-template-columns:auto minmax(0,calc(7ch + 15px)) 60px 66px!important;gap:4px!important}
+    .sharesFieldWrap{width:60px!important;max-width:60px!important}
+    .unitPriceInline>.priceCcyInput{width:66px!important;max-width:66px!important}
+    tbody td:nth-child(3),tbody td:nth-child(6){padding-left:10px!important;padding-right:8px!important}
+  }
+
 </style>
 </head>
 <body>
