@@ -1,7 +1,8 @@
-const CACHE_NAME = "asset-allocator-pwa-v17";
+const CACHE_NAME = "asset-allocator-pwa-v28";
 const CORE_ASSETS = [
   "./",
   "./index.html",
+  "./assets/usd-background.png",
   "./manifest.json",
   "./icons/apple-touch-icon.png",
   "./icons/favicon-32.png",

@@ -102,6 +102,30 @@
   tbody tr.reorderDragging td{background:#111b26;box-shadow:0 12px 26px rgba(0,0,0,.24)}
   tbody tr.reorderTarget td{box-shadow:inset 0 2px 0 #4b86c5}
   tbody tr.reorderTargetAfter td{box-shadow:inset 0 -2px 0 #4b86c5}
+
+  /* USD 资产：美元图明显铺满整张资产卡；首栏清晰，内容区玻璃模糊但仍看得到钞票 */
+  tbody tr.usdAsset{
+    background-image:linear-gradient(rgba(5,10,17,.06),rgba(5,10,17,.06)),url("assets/usd-background.png");
+    background-size:cover;background-position:center 42%;background-repeat:no-repeat
+  }
+  tbody tr.usdAsset td{
+    background:rgba(10,17,25,.16);
+    -webkit-backdrop-filter:blur(2px) saturate(.96);
+    backdrop-filter:blur(2px) saturate(.96)
+  }
+  tbody tr.usdAsset td:first-child{
+    background:linear-gradient(90deg,rgba(7,13,21,.12),rgba(7,13,21,.04));
+    -webkit-backdrop-filter:none;backdrop-filter:none
+  }
+  tbody tr.usdAsset .field,
+  tbody tr.usdAsset .select,
+  tbody tr.usdAsset .mini,
+  tbody tr.usdAsset .rateModeBtn{
+    background:rgba(5,10,16,.42);
+    -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)
+  }
+  tbody tr.usdAsset.reorderDragging td{background:rgba(17,27,38,.82)}
+
   .desc{margin-top:5px;color:var(--muted);font-size:12px}
   .hintWrap{position:relative;display:inline-flex;align-items:center}
   .hintIcon{
@@ -133,11 +157,11 @@
   .inlineHelp{display:flex;align-items:center;gap:7px;margin-top:7px;color:var(--muted);font-size:11px}
   .rateGrid{display:grid;grid-template-columns:110px 110px;gap:8px}
   .rateGrid .field{height:39px;font-size:13px}
-  .rateModeActions{display:grid;grid-template-columns:1fr;gap:6px;margin:0 0 8px}
+  .rateModeActions{display:flex;justify-content:flex-start;align-items:center;gap:0;margin:10px 0 0}
   .rateModeBtn{
-    width:100%;min-height:30px;padding:5px 7px;border:1px solid #334151;border-radius:8px;
-    background:#101720;color:#b7c7da;font-size:11px;line-height:1.25;cursor:pointer;
-    white-space:normal;text-align:center
+    width:auto;min-width:118px;min-height:30px;padding:6px 10px;border:1px solid #334151;border-radius:8px;
+    background:#101720;color:#b7c7da;font-size:11px;line-height:1.2;cursor:pointer;
+    white-space:nowrap;text-align:center;display:inline-flex;align-items:center;justify-content:center
   }
   .rateModeBtn:hover{border-color:#4d6075}
   .rateModeBtn.active{background:#153c62;border-color:#2d78b7;color:#fff}
@@ -439,6 +463,26 @@
     tbody tr{
       grid-template-columns:minmax(0,3fr) minmax(0,2fr);
     }
+    tbody tr.usdAsset{
+      background-image:linear-gradient(rgba(4,9,15,.04),rgba(4,9,15,.04)),url("assets/usd-background.png");
+      background-size:cover;background-position:center 40%;background-repeat:no-repeat
+    }
+    tbody tr.usdAsset td{
+      background:rgba(9,16,24,.12);
+      -webkit-backdrop-filter:blur(2px) saturate(.98);
+      backdrop-filter:blur(2px) saturate(.98)
+    }
+    tbody tr.usdAsset td:first-child{
+      background:linear-gradient(90deg,rgba(6,12,20,.08),rgba(6,12,20,.02));
+      -webkit-backdrop-filter:none;backdrop-filter:none
+    }
+    tbody tr.usdAsset .field,
+    tbody tr.usdAsset .select,
+    tbody tr.usdAsset .mini,
+    tbody tr.usdAsset .rateModeBtn{
+      background:rgba(4,9,15,.38);
+      -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)
+    }
     tbody td:nth-child(1),
     tbody td:nth-child(4){grid-column:1/-1}
     tbody td:nth-child(2){grid-column:1}
@@ -493,8 +537,8 @@
     .rateGrid{grid-template-columns:1fr;gap:10px;min-width:0}
     .rateGrid>div{min-width:0}
     .rateGrid .field{height:48px;font-size:16px}
-    .rateModeActions{gap:7px;margin-bottom:10px}
-    .rateModeBtn{min-height:42px;padding:7px 10px;font-size:12px}
+    .rateModeActions{margin-top:10px}
+    .rateModeBtn{min-width:132px;min-height:38px;padding:7px 12px;font-size:12px}
     .metric{
       min-width:0;font-size:13px;white-space:normal;
       word-break:normal;overflow-wrap:anywhere
@@ -621,7 +665,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>个人投资配置自动计算器</h1>
+  <h1>Trevon</h1>
   <div class="sub">按本金和目标比例自动生成配置；实际人民币、换汇金额与参考汇率可手动修改，差额与合计实时刷新。</div>
 
   <div class="panel top">
@@ -1360,6 +1404,7 @@ function render(){
     const fxDisabled = r.ccy==="CNY" ? "disabled" : "";
     const row = document.createElement("tr");
     row.dataset.rowId=r.id;
+    if((r.ccy||"")==="USD") row.classList.add("usdAsset");
     row.innerHTML=`
       <td>
         <div class="assetCellTop">
@@ -1442,11 +1487,7 @@ function render(){
           </div>
           <div>
             <label>计算交易汇率</label>
-            ${!pairSame
-              ? `<div class="rateModeActions">
-                   <button type="button" class="rateModeBtn useCurrentRateBtn ${rowRateMode==="current"?"active":""}" data-id="${r.id}" title="使用本资产当前货币对汇率，并同步更新顶部对应货币对">使用当前的汇率</button>
-                 </div>`
-              : `<div class="rateModeFixed">支付币种与换汇后币种相同，无需换汇</div>`}
+            ${pairSame ? `<div class="rateModeFixed">支付币种与换汇后币种相同，无需换汇</div>` : ""}
             <div class="metric">
               ${pairSame
                 ? `<b class="desktopRateOnly">1 ${receiveCcy} = 1.000000 ${payCcy}</b><b class="mobileRateOnly">1 ${receiveCcy} = 1.0000 ${payCcy}</b>`
@@ -1463,6 +1504,11 @@ function render(){
                  <div class="reverseRateMobile mobileRateOnly">
                    <span>反向 1 ${payCcy} =</span>
                    <span>${num(reverse,4)} ${receiveCcy}</span>
+                 </div>`
+              : ""}
+            ${!pairSame
+              ? `<div class="rateModeActions">
+                   <button type="button" class="rateModeBtn useCurrentRateBtn ${rowRateMode==="current"?"active":""}" data-id="${r.id}" title="使用本资产当前货币对汇率，并同步更新顶部对应货币对">使用当前的汇率</button>
                  </div>`
               : ""}
           </div>
