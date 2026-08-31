@@ -1136,6 +1136,378 @@
     -webkit-backface-visibility:visible !important;
   }
 
+
+  /* v54：翻转 ICON 固定在“配置差额 / 计算交易汇率”标题行最右侧 */
+  .allocFlipShell{position:relative;perspective:1200px;perspective-origin:50% 50%}
+  .allocFlipInner{
+    transform-style:preserve-3d;
+    -webkit-transform-style:preserve-3d;
+    will-change:transform;
+    transition:transform 430ms cubic-bezier(.22,.74,.26,1) !important;
+  }
+  .allocFlipInner.isFlipped{transform:rotateY(180deg)}
+  .allocFlipFace{
+    backface-visibility:hidden !important;
+    -webkit-backface-visibility:hidden !important;
+    transform:translateZ(.1px);
+  }
+  .allocFlipBack{transform:rotateY(180deg) translateZ(.1px)}
+  .allocFlipHead{padding-right:27px}
+  .allocFlipToggleShared{
+    position:absolute !important;
+    right:0 !important;
+    top:0 !important;
+    bottom:auto !important;
+    width:20px !important;
+    height:20px !important;
+    min-width:20px !important;
+    min-height:20px !important;
+    padding:0 !important;
+    margin:0 !important;
+    border:0 !important;
+    border-radius:0 !important;
+    background:transparent !important;
+    box-shadow:none !important;
+    color:#9eb4ca !important;
+    z-index:20 !important;
+    transform:none !important;
+  }
+  .allocFlipToggleShared svg{width:16px !important;height:16px !important}
+
+  @media (max-width:760px){
+    .allocFlipInner{transition-duration:400ms !important}
+    .allocFlipHead{padding-right:25px}
+    .allocFlipToggleShared{
+      right:0 !important;
+      top:0 !important;
+      width:19px !important;
+      height:19px !important;
+      min-width:19px !important;
+      min-height:19px !important;
+    }
+    .allocFlipToggleShared svg{width:15px !important;height:15px !important}
+
+    /* 顶部资产区单独取景，避免整卡高度改变背景裁切 */
+    tbody tr.usdAsset td:first-child{
+      background-image:linear-gradient(rgba(6,12,20,.24),rgba(6,12,20,.30)),url("assets/usd-background.png") !important;
+      background-size:112% auto !important;
+      background-position:50% 42% !important;
+      background-repeat:no-repeat !important;
+      -webkit-backdrop-filter:none !important;backdrop-filter:none !important;
+    }
+    tbody tr.cnyAsset td:first-child{
+      background-image:linear-gradient(rgba(18,10,13,.38),rgba(18,10,13,.42)),url("assets/cny-background.jpeg") !important;
+      background-size:140% auto !important;
+      background-position:50% 48% !important;
+      background-repeat:no-repeat !important;
+      -webkit-backdrop-filter:none !important;backdrop-filter:none !important;
+    }
+    tbody tr.goldAsset td:first-child{
+      background-image:linear-gradient(rgba(16,11,3,.36),rgba(16,11,3,.42)),url("assets/gold-background.jpeg") !important;
+      background-size:128% auto !important;
+      background-position:50% 47% !important;
+      background-repeat:no-repeat !important;
+      -webkit-backdrop-filter:none !important;backdrop-filter:none !important;
+    }
+
+    /* 内容区继续保留暗化、模糊、透明层次 */
+    tbody tr.cnyAsset td:not(:first-child),
+    tbody tr.goldAsset td:not(:first-child){
+      background:rgba(7,12,19,.58) !important;
+      -webkit-backdrop-filter:blur(7px) saturate(.88) !important;
+      backdrop-filter:blur(7px) saturate(.88) !important;
+    }
+  }
+
+
+  /* v55：按参考图重新锁定人民币 / 黄金顶部背景的取景范围和暗化 */
+  @media (max-width:760px){
+    tbody tr.cnyAsset td:first-child{
+      background-image:linear-gradient(rgba(17,10,13,.46),rgba(17,10,13,.50)),url("assets/cny-background.jpeg") !important;
+      background-size:104% auto !important;
+      background-position:50% 50% !important;
+      background-repeat:no-repeat !important;
+      -webkit-backdrop-filter:none !important;
+      backdrop-filter:none !important;
+    }
+    tbody tr.goldAsset td:first-child{
+      background-image:linear-gradient(rgba(15,10,2,.44),rgba(15,10,2,.49)),url("assets/gold-background.jpeg") !important;
+      background-size:108% auto !important;
+      background-position:50% 46% !important;
+      background-repeat:no-repeat !important;
+      -webkit-backdrop-filter:none !important;
+      backdrop-filter:none !important;
+    }
+
+    /* 下方内容区继续保持参考图中的深色玻璃层次 */
+    tbody tr.cnyAsset td:not(:first-child){
+      background:rgba(24,13,20,.61) !important;
+      -webkit-backdrop-filter:blur(7px) saturate(.82) !important;
+      backdrop-filter:blur(7px) saturate(.82) !important;
+    }
+    tbody tr.goldAsset td:not(:first-child){
+      background:rgba(27,19,7,.61) !important;
+      -webkit-backdrop-filter:blur(7px) saturate(.82) !important;
+      backdrop-filter:blur(7px) saturate(.82) !important;
+    }
+  }
+
+
+  /* v56：只调整资产标题区 / 内容区的颜色层次，不改背景取景位置 */
+  @media (max-width:760px){
+    /* 标题区：明显更亮，保留更多原图色彩 */
+    tbody tr.usdAsset td:first-child{
+      background-image:
+        linear-gradient(rgba(6,12,20,.13),rgba(6,12,20,.18)),
+        url("assets/usd-background.png") !important;
+      filter:saturate(1.03) brightness(1.05);
+    }
+    tbody tr.cnyAsset td:first-child{
+      background-image:
+        linear-gradient(rgba(17,10,13,.27),rgba(17,10,13,.31)),
+        url("assets/cny-background.jpeg") !important;
+      filter:saturate(1.02) brightness(1.04);
+    }
+    tbody tr.goldAsset td:first-child{
+      background-image:
+        linear-gradient(rgba(15,10,2,.25),rgba(15,10,2,.30)),
+        url("assets/gold-background.jpeg") !important;
+      filter:saturate(1.03) brightness(1.04);
+    }
+
+    /* 内容区：统一压成更深的蓝黑玻璃层，只保留弱背景纹理 */
+    tbody tr.usdAsset td:not(:first-child),
+    tbody tr.cnyAsset td:not(:first-child),
+    tbody tr.goldAsset td:not(:first-child){
+      background:rgba(9,15,23,.72) !important;
+      -webkit-backdrop-filter:blur(8px) saturate(.72) !important;
+      backdrop-filter:blur(8px) saturate(.72) !important;
+    }
+
+    /* 输入控件再黑一档，和内容区形成第三层 */
+    tbody tr.usdAsset td:not(:first-child) .field,
+    tbody tr.usdAsset td:not(:first-child) .select,
+    tbody tr.usdAsset td:not(:first-child) .mini,
+    tbody tr.cnyAsset td:not(:first-child) .field,
+    tbody tr.cnyAsset td:not(:first-child) .select,
+    tbody tr.cnyAsset td:not(:first-child) .mini,
+    tbody tr.goldAsset td:not(:first-child) .field,
+    tbody tr.goldAsset td:not(:first-child) .select,
+    tbody tr.goldAsset td:not(:first-child) .mini{
+      background:rgba(4,9,15,.86) !important;
+      -webkit-backdrop-filter:blur(3px) !important;
+      backdrop-filter:blur(3px) !important;
+    }
+
+    /* 分界线稍微明确，但不变亮 */
+    tbody tr td:nth-child(2),
+    tbody tr td:nth-child(3),
+    tbody tr td:nth-child(4),
+    tbody tr td:nth-child(6){
+      border-top-color:rgba(49,65,82,.70) !important;
+    }
+  }
+
+
+  /* v57：人民币标题区人物稍向右移，减少脸部被控件遮挡 */
+  @media (max-width:760px){
+    tbody tr.cnyAsset td:first-child{
+      background-position:58% 50% !important;
+    }
+  }
+
+
+  /* v58：按参考图固定顶部背景主体到右侧，避免被左侧控件遮挡 */
+  @media (max-width:760px){
+    tbody tr.usdAsset td:first-child{
+      background-image:linear-gradient(rgba(6,12,20,.20),rgba(6,12,20,.24)),url("assets/usd-background.png") !important;
+      background-size:120% auto !important;
+      background-position:15% 42% !important;
+      filter:saturate(.98) brightness(.98) !important;
+    }
+    tbody tr.cnyAsset td:first-child{
+      background-image:linear-gradient(rgba(17,10,13,.34),rgba(17,10,13,.38)),url("assets/cny-background.jpeg") !important;
+      background-size:120% auto !important;
+      background-position:15% 50% !important;
+      filter:saturate(.98) brightness(.97) !important;
+    }
+    tbody tr.goldAsset td:first-child{
+      background-image:linear-gradient(rgba(15,10,2,.32),rgba(15,10,2,.36)),url("assets/gold-background.jpeg") !important;
+      background-size:120% auto !important;
+      background-position:8% 46% !important;
+      filter:saturate(.98) brightness(.97) !important;
+    }
+  }
+
+
+  /* v59：最终锁定顶部背景主体到右侧可见区；只改取景，不改内容区层次 */
+  @media (max-width:760px){
+    tbody tr.usdAsset td:first-child{
+      background-size:122% auto !important;
+      background-position:8% 76% !important;
+    }
+    tbody tr.cnyAsset td:first-child{
+      background-size:120% auto !important;
+      background-position:8% 50% !important;
+    }
+    tbody tr.goldAsset td:first-child{
+      background-size:128% auto !important;
+      background-position:0% 46% !important;
+    }
+  }
+
+
+
+  /* v60：按用户要求继续调背景取景：黄金继续右移，人民币右上轻移；美元保持不动 */
+  @media (max-width:760px){
+    tbody tr.cnyAsset td:first-child{
+      background-size:120% auto !important;
+      background-position:2% 46% !important;
+    }
+    tbody tr.goldAsset td:first-child{
+      background-size:128% auto !important;
+      background-position:-10% 46% !important;
+    }
+  }
+
+
+
+  /* v61：人民币继续向资产名称区右上调整；黄金继续右移，让文字信息落在右下可见区；美元保持不动 */
+  @media (max-width:760px){
+    tbody tr.cnyAsset td:first-child{
+      background-size:120% auto !important;
+      background-position:-10% 42% !important;
+    }
+    tbody tr.goldAsset td:first-child{
+      background-size:128% auto !important;
+      background-position:-26% 43% !important;
+    }
+  }
+
+
+
+  /* v62：人民币与黄金顶部背景进一步精调——主体移到右侧/右下可见区，并统一加强暗化，避免露出原色 */
+  @media (max-width:760px){
+    tbody tr.cnyAsset td:first-child{
+      background-image:linear-gradient(rgba(17,10,13,.42),rgba(17,10,13,.46)),url("assets/cny-background.jpeg") !important;
+      background-size:122% auto !important;
+      background-position:-18% 39% !important;
+      background-repeat:no-repeat !important;
+      filter:saturate(.95) brightness(.93) !important;
+    }
+    tbody tr.goldAsset td:first-child{
+      background-image:linear-gradient(rgba(15,10,2,.40),rgba(15,10,2,.46)),url("assets/gold-background.jpeg") !important;
+      background-size:132% auto !important;
+      background-position:-42% 49% !important;
+      background-repeat:no-repeat !important;
+      filter:saturate(.96) brightness(.94) !important;
+    }
+  }
+
+
+  /* v63：人民币再避开票面文字并统一暗化；黄金保持构图但加深暗化，消除露出的原色 */
+  @media (max-width:760px){
+    tbody tr.cnyAsset td:first-child{
+      background-image:linear-gradient(rgba(16,10,14,.52),rgba(16,10,14,.56)),url("assets/cny-background.jpeg") !important;
+      background-size:128% auto !important;
+      background-position:-6% 27% !important;
+      background-repeat:no-repeat !important;
+      filter:saturate(.92) brightness(.88) !important;
+      box-shadow: inset 0 0 0 9999px rgba(10,14,20,.06) !important;
+    }
+    tbody tr.goldAsset td:first-child{
+      background-image:linear-gradient(rgba(15,10,2,.50),rgba(15,10,2,.56)),url("assets/gold-background.jpeg") !important;
+      background-size:132% auto !important;
+      background-position:-42% 49% !important;
+      background-repeat:no-repeat !important;
+      filter:saturate(.92) brightness(.89) !important;
+      box-shadow: inset 0 0 0 9999px rgba(10,14,20,.04) !important;
+    }
+  }
+
+
+
+  /* v64：补齐人民币/黄金左侧露出区域的暗化层，让露出的背景始终与整体一致 */
+  @media (max-width:760px){
+    tbody tr.cnyAsset,
+    tbody tr.goldAsset{
+      position:relative;
+      isolation:isolate;
+    }
+    tbody tr.cnyAsset::before,
+    tbody tr.goldAsset::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      border-radius:inherit;
+      pointer-events:none;
+      z-index:0;
+    }
+    tbody tr.cnyAsset::before{
+      background:
+        linear-gradient(90deg, rgba(8,12,18,.34) 0%, rgba(8,12,18,.27) 18%, rgba(8,12,18,.14) 38%, rgba(8,12,18,.05) 56%, rgba(8,12,18,0) 72%),
+        linear-gradient(180deg, rgba(8,12,18,.10), rgba(8,12,18,.14));
+    }
+    tbody tr.goldAsset::before{
+      background:
+        linear-gradient(90deg, rgba(8,12,18,.30) 0%, rgba(8,12,18,.23) 18%, rgba(8,12,18,.12) 38%, rgba(8,12,18,.04) 56%, rgba(8,12,18,0) 72%),
+        linear-gradient(180deg, rgba(8,12,18,.08), rgba(8,12,18,.12));
+    }
+    tbody tr.cnyAsset > td,
+    tbody tr.goldAsset > td{
+      position:relative;
+      z-index:1;
+    }
+  }
+
+
+
+  /* v65：弱化人民币/黄金卡片左侧露出区域和分界线，让顶部图片区与内容区过渡更像参考图 */
+  @media (max-width:760px){
+    tbody tr.cnyAsset td:first-child,
+    tbody tr.goldAsset td:first-child{
+      position:relative;
+      overflow:hidden;
+      isolation:isolate;
+    }
+    tbody tr.cnyAsset td:first-child > *,
+    tbody tr.goldAsset td:first-child > *{
+      position:relative;
+      z-index:1;
+    }
+    tbody tr.cnyAsset td:first-child::before,
+    tbody tr.goldAsset td:first-child::before,
+    tbody tr.cnyAsset td:first-child::after,
+    tbody tr.goldAsset td:first-child::after{
+      content:"";
+      position:absolute;
+      pointer-events:none;
+      z-index:0;
+    }
+    /* 左侧露出区整体再压暗，并在下半区补足一层更深的玻璃感 */
+    tbody tr.cnyAsset td:first-child::before{
+      inset:0;
+      background:
+        linear-gradient(90deg, rgba(7,11,17,.58) 0%, rgba(7,11,17,.50) 12%, rgba(7,11,17,.36) 26%, rgba(7,11,17,.20) 44%, rgba(7,11,17,.08) 58%, rgba(7,11,17,0) 72%),
+        linear-gradient(180deg, rgba(7,11,17,0) 0%, rgba(7,11,17,.06) 24%, rgba(7,11,17,.14) 30%, rgba(7,11,17,.28) 33%, rgba(7,11,17,.40) 45%, rgba(7,11,17,.54) 100%);
+    }
+    tbody tr.goldAsset td:first-child::before{
+      inset:0;
+      background:
+        linear-gradient(90deg, rgba(7,11,17,.54) 0%, rgba(7,11,17,.46) 12%, rgba(7,11,17,.32) 26%, rgba(7,11,17,.18) 44%, rgba(7,11,17,.08) 58%, rgba(7,11,17,0) 72%),
+        linear-gradient(180deg, rgba(7,11,17,0) 0%, rgba(7,11,17,.05) 24%, rgba(7,11,17,.12) 30%, rgba(7,11,17,.24) 33%, rgba(7,11,17,.34) 45%, rgba(7,11,17,.48) 100%);
+    }
+    /* 在第一列与后续内容区之间补一条柔和的过渡带，去掉生硬分界线 */
+    tbody tr.cnyAsset td:first-child::after,
+    tbody tr.goldAsset td:first-child::after{
+      top:0;
+      bottom:0;
+      right:-1px;
+      width:64px;
+      background:linear-gradient(90deg, rgba(9,14,20,.40) 0%, rgba(9,14,20,.24) 42%, rgba(9,14,20,.10) 68%, rgba(9,14,20,0) 100%);
+    }
+  }
+
 </style>
 </head>
 <body>
@@ -1992,18 +2364,6 @@ function render(){
             </div>
             <div class="desc">${r.desc}</div>
           </div>
-          <button type="button"
-            class="allocFlipToggle allocFlipToggleShared"
-            data-id="${r.id}"
-            aria-label="${r.diffFlipped?`返回 ${r.name} 配置差额`:`查看 ${r.name} 计算交易汇率`}"
-            title="${r.diffFlipped?"翻转返回配置差额":"翻转查看计算交易汇率"}">
-            <svg viewBox="0 0 20 20" aria-hidden="true">
-              <path d="M4.5 7.5A6 6 0 0 1 15 6"></path>
-              <path d="m14 3 1.5 3L12 7"></path>
-              <path d="M15.5 12.5A6 6 0 0 1 5 14"></path>
-              <path d="m6 17-1.5-3L8 13"></path>
-            </svg>
-          </button>
         </div>
       </td>
       <td>
@@ -2106,6 +2466,18 @@ function render(){
                   : `<div class="allocRateResult muted">填写支付金额与换汇后金额后自动计算</div>`}
             </div>
           </div>
+          <button type="button"
+            class="allocFlipToggle allocFlipToggleShared"
+            data-id="${r.id}"
+            aria-label="${r.diffFlipped?`返回 ${r.name} 配置差额`:`查看 ${r.name} 计算交易汇率`}"
+            title="${r.diffFlipped?"翻转返回配置差额":"翻转查看计算交易汇率"}">
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <path d="M4.5 7.5A6 6 0 0 1 15 6"></path>
+              <path d="m14 3 1.5 3L12 7"></path>
+              <path d="M15.5 12.5A6 6 0 0 1 5 14"></path>
+              <path d="m6 17-1.5-3L8 13"></path>
+            </svg>
+          </button>
         </div>
       </td>
       <td>
