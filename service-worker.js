@@ -1,8 +1,10 @@
-const CACHE_NAME = "asset-allocator-v33";
+const CACHE_NAME = "asset-allocator-v42";
 const CORE_ASSETS = [
   "./",
   "./index.html",
   "./assets/usd-background.png",
+  "./assets/cny-background.jpeg",
+  "./assets/gold-background.jpeg",
   "./manifest.json",
   "./icons/apple-touch-icon.png",
   "./icons/favicon-32.png",

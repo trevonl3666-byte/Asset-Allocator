@@ -147,6 +147,62 @@
   }
   tbody tr.usdAsset.reorderDragging td{background:rgba(17,27,38,.82)}
 
+  /* CNY 资产：与 USD 资产使用相同的清晰度 / 暗化 / 模糊 / 透明度层次 */
+  tbody tr.cnyAsset{
+    background-image:linear-gradient(rgba(5,10,17,.04),rgba(5,10,17,.04)),url("assets/cny-background.jpeg");
+    background-size:cover;background-position:center 42%;background-repeat:no-repeat
+  }
+  tbody tr.cnyAsset td{
+    background:rgba(10,17,25,.12);
+    -webkit-backdrop-filter:blur(1.8px) saturate(.97);
+    backdrop-filter:blur(1.8px) saturate(.97)
+  }
+  tbody tr.cnyAsset td:not(:first-child){
+    background:rgba(6,10,16,.34);
+    -webkit-backdrop-filter:blur(4px) saturate(.90);
+    backdrop-filter:blur(4px) saturate(.90)
+  }
+  tbody tr.cnyAsset td:first-child{
+    background:linear-gradient(90deg,rgba(7,13,21,.10),rgba(7,13,21,.03));
+    -webkit-backdrop-filter:none;backdrop-filter:none
+  }
+  tbody tr.cnyAsset .field,
+  tbody tr.cnyAsset .select,
+  tbody tr.cnyAsset .mini,
+  tbody tr.cnyAsset .rateModeBtn{
+    background:rgba(5,10,16,.42);
+    -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)
+  }
+  tbody tr.cnyAsset.reorderDragging td{background:rgba(17,27,38,.82)}
+
+  /* 黄金资产：与 USD 资产使用相同的清晰度 / 暗化 / 模糊 / 透明度层次 */
+  tbody tr.goldAsset{
+    background-image:linear-gradient(rgba(5,10,17,.04),rgba(5,10,17,.04)),url("assets/gold-background.jpeg");
+    background-size:cover;background-position:center 42%;background-repeat:no-repeat
+  }
+  tbody tr.goldAsset td{
+    background:rgba(10,17,25,.12);
+    -webkit-backdrop-filter:blur(1.8px) saturate(.97);
+    backdrop-filter:blur(1.8px) saturate(.97)
+  }
+  tbody tr.goldAsset td:not(:first-child){
+    background:rgba(6,10,16,.34);
+    -webkit-backdrop-filter:blur(4px) saturate(.90);
+    backdrop-filter:blur(4px) saturate(.90)
+  }
+  tbody tr.goldAsset td:first-child{
+    background:linear-gradient(90deg,rgba(7,13,21,.10),rgba(7,13,21,.03));
+    -webkit-backdrop-filter:none;backdrop-filter:none
+  }
+  tbody tr.goldAsset .field,
+  tbody tr.goldAsset .select,
+  tbody tr.goldAsset .mini,
+  tbody tr.goldAsset .rateModeBtn{
+    background:rgba(5,10,16,.42);
+    -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)
+  }
+  tbody tr.goldAsset.reorderDragging td{background:rgba(17,27,38,.82)}
+
   .desc{margin-top:5px;color:var(--muted);font-size:12px}
   .hintWrap{position:relative;display:inline-flex;align-items:center}
   .hintIcon{
@@ -508,6 +564,46 @@
       background:rgba(4,9,15,.42);
       -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)
     }
+    tbody tr.cnyAsset{
+      background-image:linear-gradient(rgba(4,9,15,.012),rgba(4,9,15,.012)),url("assets/cny-background.jpeg");
+      background-size:cover;background-position:center 38%;background-repeat:no-repeat
+    }
+    tbody tr.cnyAsset td{
+      background:rgba(9,16,24,.07);
+      -webkit-backdrop-filter:blur(1px) saturate(1.01);
+      backdrop-filter:blur(1px) saturate(1.01)
+    }
+    tbody tr.cnyAsset td:first-child{
+      background:linear-gradient(180deg,rgba(6,12,20,.02),rgba(6,12,20,.05));
+      -webkit-backdrop-filter:blur(.35px) saturate(1.01);backdrop-filter:blur(.35px) saturate(1.01)
+    }
+    tbody tr.cnyAsset .field,
+    tbody tr.cnyAsset .select,
+    tbody tr.cnyAsset .mini,
+    tbody tr.cnyAsset .rateModeBtn{
+      background:rgba(4,9,15,.42);
+      -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)
+    }
+    tbody tr.goldAsset{
+      background-image:linear-gradient(rgba(4,9,15,.012),rgba(4,9,15,.012)),url("assets/gold-background.jpeg");
+      background-size:cover;background-position:center 38%;background-repeat:no-repeat
+    }
+    tbody tr.goldAsset td{
+      background:rgba(9,16,24,.07);
+      -webkit-backdrop-filter:blur(1px) saturate(1.01);
+      backdrop-filter:blur(1px) saturate(1.01)
+    }
+    tbody tr.goldAsset td:first-child{
+      background:linear-gradient(180deg,rgba(6,12,20,.02),rgba(6,12,20,.05));
+      -webkit-backdrop-filter:blur(.35px) saturate(1.01);backdrop-filter:blur(.35px) saturate(1.01)
+    }
+    tbody tr.goldAsset .field,
+    tbody tr.goldAsset .select,
+    tbody tr.goldAsset .mini,
+    tbody tr.goldAsset .rateModeBtn{
+      background:rgba(4,9,15,.42);
+      -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)
+    }
     tbody td:nth-child(1),
     tbody td:nth-child(4){grid-column:1/-1}
     tbody td:nth-child(2){grid-column:1}
@@ -594,6 +690,12 @@
       background:rgba(17,23,31,.28);
     }
     tbody tr.usdAsset td:not(:first-child){
+      background:rgba(5,9,15,.44);
+      -webkit-backdrop-filter:blur(6px) saturate(.88);
+      backdrop-filter:blur(6px) saturate(.88);
+    }
+    tbody tr.cnyAsset td:not(:first-child),
+    tbody tr.goldAsset td:not(:first-child){
       background:rgba(5,9,15,.44);
       -webkit-backdrop-filter:blur(6px) saturate(.88);
       backdrop-filter:blur(6px) saturate(.88);
@@ -1521,7 +1623,10 @@ function render(){
     const fxDisabled = r.ccy==="CNY" ? "disabled" : "";
     const row = document.createElement("tr");
     row.dataset.rowId=r.id;
-    if((r.ccy||"")==="USD") row.classList.add("usdAsset");
+    const isGoldAsset=(r.productKey==="SGOL") || /黄金/i.test(String(r.desc||"")) || /黄金/i.test(String(r.group||""));
+    if(isGoldAsset) row.classList.add("goldAsset");
+    else if((r.ccy||"")==="CNY") row.classList.add("cnyAsset");
+    else if((r.ccy||"")==="USD") row.classList.add("usdAsset");
     row.innerHTML=`
       <td>
         <div class="assetCellTop">
