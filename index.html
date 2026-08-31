@@ -1692,6 +1692,154 @@
     .unitPriceInline>.priceCcyInput{flex-basis:70px!important;width:70px!important;min-width:70px!important}
   }
 
+
+
+  /* v71：手机端严格按可视宽度居中，禁止任何子元素把页面撑出屏幕 */
+  @media (max-width:760px){
+    html,body{
+      width:100% !important;
+      max-width:100% !important;
+      margin:0 !important;
+      overflow-x:hidden !important;
+    }
+    body{
+      padding-left:0 !important;
+      padding-right:0 !important;
+    }
+    .wrap{
+      width:100% !important;
+      max-width:100% !important;
+      margin:0 auto !important;
+      padding-left:max(10px,env(safe-area-inset-left)) !important;
+      padding-right:max(10px,env(safe-area-inset-right)) !important;
+      overflow-x:clip !important;
+    }
+    .mobileSortBar,
+    .panel.tableWrap,
+    table,
+    tbody{
+      width:100% !important;
+      max-width:100% !important;
+      min-width:0 !important;
+      margin-left:auto !important;
+      margin-right:auto !important;
+    }
+    tbody tr{
+      width:100% !important;
+      max-width:100% !important;
+      min-width:0 !important;
+      margin-left:auto !important;
+      margin-right:auto !important;
+      grid-template-columns:minmax(0,56%) minmax(0,44%) !important;
+    }
+    tbody td{
+      width:auto !important;
+      max-width:100% !important;
+      min-width:0 !important;
+      overflow:hidden !important;
+    }
+    tbody td > *,
+    .assetCellTop,
+    .assetInfo,
+    .ratioBox,
+    .tradeGrid,
+    .allocFlipShell,
+    .allocFlipInner,
+    .metric{
+      min-width:0 !important;
+      max-width:100% !important;
+    }
+    .money,
+    tbody td:nth-child(6) .metric,
+    tbody td:nth-child(3) .money{
+      white-space:normal !important;
+      overflow-wrap:anywhere !important;
+      word-break:normal !important;
+    }
+    tbody td:nth-child(3) .money{
+      font-size:clamp(15px,4.7vw,18px) !important;
+      line-height:1.2 !important;
+    }
+    tbody td:nth-child(6) .metric b{
+      font-size:clamp(14px,4.2vw,16px) !important;
+    }
+    .tradeGrid{
+      grid-template-columns:minmax(0,1fr) minmax(72px,80px) !important;
+    }
+    .tradeGrid .field,
+    .tradeGrid .select,
+    .ratioBox .field,
+    .unitPriceInline .field,
+    .unitPriceInline .select{
+      min-width:0 !important;
+      max-width:100% !important;
+    }
+    .unitPriceInline{
+      width:100% !important;
+      max-width:100% !important;
+      overflow:hidden !important;
+    }
+    .unitPriceInline>.unitPriceInput{
+      flex:1 1 0 !important;
+      min-width:54px !important;
+    }
+    .sharesFieldWrap{
+      flex:0 1 72px !important;
+      min-width:58px !important;
+      width:72px !important;
+    }
+    .unitPriceInline>.priceCcyInput{
+      flex:0 1 72px !important;
+      width:72px !important;
+      min-width:64px !important;
+    }
+    .mobileDock{
+      left:max(8px,env(safe-area-inset-left)) !important;
+      right:max(8px,env(safe-area-inset-right)) !important;
+      width:auto !important;
+      max-width:none !important;
+    }
+  }
+  @media (max-width:390px){
+    tbody tr{grid-template-columns:minmax(0,55%) minmax(0,45%) !important}
+    tbody td:nth-child(2),tbody td:nth-child(3),tbody td:nth-child(4),tbody td:nth-child(6){padding-left:10px !important;padding-right:10px !important}
+    .unitPriceInline{gap:4px !important}
+    .unitPriceInline>.unitLabel{font-size:10px !important}
+    .sharesFieldWrap{flex-basis:64px !important;width:64px !important;min-width:56px !important}
+    .unitPriceInline>.priceCcyInput{flex-basis:66px !important;width:66px !important;min-width:60px !important}
+  }
+
+
+
+  /* v72：单股金额仅保留约 8 位数字的显示宽度 */
+  .unitPriceInline>.unitPriceInput{
+    box-sizing:border-box !important;
+    flex:0 0 calc(8ch + 24px) !important;
+    width:calc(8ch + 24px) !important;
+    min-width:calc(8ch + 24px) !important;
+    max-width:calc(8ch + 24px) !important;
+  }
+  @media(max-width:760px){
+    .unitPriceInline>.unitPriceInput{
+      flex:0 0 calc(8ch + 22px) !important;
+      width:calc(8ch + 22px) !important;
+      min-width:calc(8ch + 22px) !important;
+      max-width:calc(8ch + 22px) !important;
+      padding-left:9px !important;
+      padding-right:9px !important;
+    }
+  }
+  @media(max-width:390px){
+    .unitPriceInline>.unitPriceInput{
+      flex-basis:calc(8ch + 18px) !important;
+      width:calc(8ch + 18px) !important;
+      min-width:calc(8ch + 18px) !important;
+      max-width:calc(8ch + 18px) !important;
+      padding-left:7px !important;
+      padding-right:7px !important;
+    }
+  }
+
 </style>
 </head>
 <body>
