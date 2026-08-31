@@ -36,8 +36,8 @@
   .ghost{height:46px;padding:0 14px;white-space:nowrap}
   .dangerGhost{color:#ffaaa5;border-color:#5b3337;background:#21171a}
   .dangerGhost:hover{border-color:#9b4e52;background:#2a191d}
-  .topActions{display:flex;gap:8px;align-items:center}
-  .topInfoSlot{display:flex;align-items:center;justify-content:flex-end;position:relative}
+  .topActions{display:flex;gap:8px;align-items:center;justify-content:flex-end;grid-column:1/-1;width:100%}
+  .topInfoSlot{display:flex;align-items:center;justify-content:center;grid-column:1/-1;position:relative;width:100%;min-height:30px;margin-top:-4px}
   .fxInfoBtn{
     width:30px;height:30px;padding:0;border:1px solid #395069;border-radius:999px;
     background:transparent;color:#a9bdd3;display:inline-flex;align-items:center;justify-content:center;
@@ -115,7 +115,7 @@
 
   /* 所有资产：保留首栏不变，下面各栏用当前色的轻度透明减淡版 */
   tbody tr td:not(:first-child){
-    background:rgba(18,26,36,.24);
+    background:rgba(17,23,31,.58);
   }
 
   /* USD 资产：采用更清晰的美元背景；首栏保持最清楚，下面内容区轻度模糊暗化 */
@@ -127,6 +127,11 @@
     background:rgba(10,17,25,.12);
     -webkit-backdrop-filter:blur(1.8px) saturate(.97);
     backdrop-filter:blur(1.8px) saturate(.97)
+  }
+  tbody tr.usdAsset td:not(:first-child){
+    background:rgba(7,12,19,.24);
+    -webkit-backdrop-filter:blur(2.4px) saturate(.93);
+    backdrop-filter:blur(2.4px) saturate(.93)
   }
   tbody tr.usdAsset td:first-child{
     background:linear-gradient(90deg,rgba(7,13,21,.10),rgba(7,13,21,.03));
@@ -175,7 +180,7 @@
   .rateModeActions{display:flex;justify-content:flex-end;align-items:center;gap:0;margin:10px 0 0}
   .rateCalcRow{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:12px;align-items:start;margin-top:2px}
   .rateCalcInfo{min-width:0}
-  .rateCalcRow .rateModeActions{margin:0;align-self:start;justify-content:flex-end;padding-top:2px}
+  .rateCalcRow .rateModeActions{margin:0;align-self:end;justify-content:flex-end;padding-top:0;padding-bottom:2px}
   .rateModeBtn{
     width:auto;min-width:118px;min-height:30px;padding:6px 10px;border:1px solid #334151;border-radius:8px;
     background:#101720;color:#b7c7da;font-size:11px;line-height:1.2;cursor:pointer;
@@ -437,8 +442,8 @@
     .quick{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
     .quick .mini{height:44px;padding:0;font-size:14px}
     .ghost{width:100%}
-    .topActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
-    .topActions .ghost{min-width:0;padding:0 8px;font-size:14px}
+    .topActions{display:flex;justify-content:flex-end;gap:8px;width:100%;grid-column:1/-1}
+    .topActions .ghost{min-width:0;padding:0 12px;font-size:14px;width:auto;flex:0 0 auto}
     .mobileOnly{display:block}
 
     .mobileSortBar{
@@ -457,7 +462,7 @@
 
     .mobileSortBar + .panel.tableWrap{border-top-left-radius:0;border-top-right-radius:0}
 
-    .topInfoSlot{justify-content:flex-end;margin-top:-4px}
+    .topInfoSlot{justify-content:center;grid-column:1/-1;margin-top:-2px}
     .fxInfoBtn{width:32px;height:32px}
     .fxInfoPopover{right:0;bottom:40px;width:min(330px,calc(100vw - 40px));font-size:12px;line-height:1.65}
 
@@ -558,7 +563,7 @@
     .rateCalcRow{grid-template-columns:minmax(0,1fr) auto;column-gap:10px;align-items:start;margin-top:2px}
     .rateCalcRow .rateCalcInfo{min-width:0}
     .rateModeActions{margin-top:10px}
-    .rateCalcRow .rateModeActions{margin:0;align-self:start;justify-content:flex-end}
+    .rateCalcRow .rateModeActions{margin:0;align-self:end;justify-content:flex-end;padding-bottom:2px}
     .rateModeBtn{min-width:132px;min-height:38px;padding:7px 12px;font-size:12px}
     .metric{
       min-width:0;font-size:13px;white-space:normal;
@@ -584,12 +589,12 @@
     tbody td{overflow:hidden}
     /* 手机端：资产顶部信息区保持原样；下方内容区统一轻度减淡，增强分区感 */
     tbody tr td:not(:first-child){
-      background:rgba(18,26,36,.66);
+      background:rgba(17,23,31,.52);
     }
     tbody tr.usdAsset td:not(:first-child){
-      background:rgba(10,17,25,.14);
-      -webkit-backdrop-filter:blur(2.2px) saturate(.95);
-      backdrop-filter:blur(2.2px) saturate(.95);
+      background:rgba(7,12,19,.20);
+      -webkit-backdrop-filter:blur(2.6px) saturate(.93);
+      backdrop-filter:blur(2.6px) saturate(.93);
     }
     tbody td .mobileFieldHead{min-width:0}
     tbody td:nth-child(5),tbody td:nth-child(6),tbody td:nth-child(7){min-width:0}
