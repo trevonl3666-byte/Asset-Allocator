@@ -2184,6 +2184,149 @@
     }
   }
 
+
+
+  /* balanced-content: 人民币/黄金内容区恢复少量背景透出，接近美元卡；全局 i 图标缩小并与文字基线对齐 */
+  @media (max-width:760px){
+    /* 人民币 / 黄金内容区：保留一点背景纹理，避免死黑，同时维持文字可读性 */
+    tbody tr.cnyAsset td:not(:first-child),
+    tbody tr.goldAsset td:not(:first-child){
+      background:rgba(6,10,16,.47) !important;
+      -webkit-backdrop-filter:blur(6px) saturate(.86) brightness(.92) !important;
+      backdrop-filter:blur(6px) saturate(.86) brightness(.92) !important;
+    }
+    tbody tr.cnyAsset td:nth-child(2),
+    tbody tr.cnyAsset td:nth-child(3),
+    tbody tr.goldAsset td:nth-child(2),
+    tbody tr.goldAsset td:nth-child(3){
+      background:rgba(7,11,17,.43) !important;
+    }
+    tbody tr.cnyAsset td:nth-child(4),
+    tbody tr.cnyAsset td:nth-child(6),
+    tbody tr.goldAsset td:nth-child(4),
+    tbody tr.goldAsset td:nth-child(6){
+      background:rgba(6,10,16,.50) !important;
+    }
+    tbody tr.cnyAsset td:nth-child(5),
+    tbody tr.cnyAsset td:nth-child(7),
+    tbody tr.goldAsset td:nth-child(5),
+    tbody tr.goldAsset td:nth-child(7){
+      background:rgba(6,10,16,.46) !important;
+    }
+
+    /* 内容区输入控件略微减黑，和美元内容区一致保留一点通透感 */
+    tbody tr.cnyAsset td:not(:first-child) .field,
+    tbody tr.cnyAsset td:not(:first-child) .select,
+    tbody tr.goldAsset td:not(:first-child) .field,
+    tbody tr.goldAsset td:not(:first-child) .select{
+      background:rgba(3,8,13,.78) !important;
+    }
+  }
+
+  /* 全 APP info / 感叹号图标统一缩小，并与旁边文字底部更齐 */
+  .hintWrap{
+    align-items:baseline !important;
+  }
+  .hintIcon{
+    width:18px !important;
+    height:18px !important;
+    min-width:18px !important;
+    flex:0 0 18px !important;
+    font-size:10px !important;
+    line-height:16px !important;
+    vertical-align:-2px !important;
+    transform:translateY(2px) !important;
+  }
+  .mobileFieldHead .hintWrap,
+  .thLabel .hintWrap,
+  .assetRow>.hintWrap{
+    align-self:baseline !important;
+  }
+  @media (max-width:760px){
+    .assetRow>.hintWrap .hintIcon,
+    .mobileFieldHead.tradeHead .hintIcon{
+      width:22px !important;
+      height:22px !important;
+      min-width:22px !important;
+      flex-basis:22px !important;
+      font-size:10.5px !important;
+      line-height:20px !important;
+      transform:translateY(2px) !important;
+    }
+    .mobileFieldHead .hintIcon,
+    .thLabel .hintIcon{
+      width:18px !important;
+      height:18px !important;
+      min-width:18px !important;
+      flex-basis:18px !important;
+      font-size:10px !important;
+      line-height:16px !important;
+      transform:translateY(2px) !important;
+    }
+  }
+
+
+
+  /* darkglass-final：内容区以死黑为基底，仅轻微透出背景；资产名称旁 info 底边与名称底边齐平 */
+  @media (max-width:760px){
+    tbody tr.cnyAsset td:not(:first-child),
+    tbody tr.goldAsset td:not(:first-child){
+      background:rgba(4,8,13,.82) !important;
+      -webkit-backdrop-filter:blur(7px) saturate(.58) brightness(.76) !important;
+      backdrop-filter:blur(7px) saturate(.58) brightness(.76) !important;
+      border-color:rgba(43,56,72,.88) !important;
+    }
+
+    /* 四个主要内容格仅保留极弱的底图透色，整体不高于名称区亮度 */
+    tbody tr.cnyAsset td:nth-child(2),
+    tbody tr.cnyAsset td:nth-child(3),
+    tbody tr.goldAsset td:nth-child(2),
+    tbody tr.goldAsset td:nth-child(3){
+      background:rgba(5,9,14,.80) !important;
+    }
+    tbody tr.cnyAsset td:nth-child(4),
+    tbody tr.cnyAsset td:nth-child(6),
+    tbody tr.goldAsset td:nth-child(4),
+    tbody tr.goldAsset td:nth-child(6){
+      background:rgba(4,8,13,.84) !important;
+    }
+    tbody tr.cnyAsset td:nth-child(5),
+    tbody tr.cnyAsset td:nth-child(7),
+    tbody tr.goldAsset td:nth-child(5),
+    tbody tr.goldAsset td:nth-child(7){
+      background:rgba(4,8,13,.83) !important;
+    }
+
+    tbody tr.cnyAsset td:not(:first-child) .field,
+    tbody tr.cnyAsset td:not(:first-child) .select,
+    tbody tr.cnyAsset td:not(:first-child) .mini,
+    tbody tr.goldAsset td:not(:first-child) .field,
+    tbody tr.goldAsset td:not(:first-child) .select,
+    tbody tr.goldAsset td:not(:first-child) .mini{
+      background:rgba(2,6,11,.91) !important;
+      border-color:rgba(46,61,79,.92) !important;
+      -webkit-backdrop-filter:blur(3px) saturate(.45) !important;
+      backdrop-filter:blur(3px) saturate(.45) !important;
+    }
+
+    /* 资产名称旁 i：20px 高，名称行高 30px；顶部下移 10px => 两者底边同线 */
+    .assetRow>.hintWrap{
+      align-self:flex-start !important;
+      margin-top:10px !important;
+      line-height:20px !important;
+    }
+    .assetRow>.hintWrap .hintIcon{
+      width:20px !important;
+      height:20px !important;
+      min-width:20px !important;
+      flex:0 0 20px !important;
+      font-size:9.5px !important;
+      line-height:18px !important;
+      transform:none !important;
+      vertical-align:baseline !important;
+    }
+  }
+
 </style>
 </head>
 <body>

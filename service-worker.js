@@ -1,4 +1,4 @@
-const CACHE_NAME = "asset-allocator-main-locks-seamless-v3";
+const CACHE_NAME = "asset-allocator-main-locks-darkglass-v4";
 const CORE_ASSETS = [
   "./",
   "./index.html",
