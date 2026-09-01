@@ -4596,10 +4596,12 @@ function bindRowEvents(){
 
     const pay=Number(r.payAmount)||0;
     const fx=Number(r.fxAmount)||0;
+    // “使用当前汇率”必须使用右侧此刻由当前支付金额 / 换汇后金额算出的实时交易汇率。
+    // 只有当前金额无法形成有效报价时，才回退到行内已有值或顶部参考值。
     const implied=(fx>0 && pay>0)?pay/fx:0;
     const savedCurrent=Number(r.rowRate)||0;
     const topRate=topPairRate(payCcy,receiveCcy).rate;
-    const latestRate=savedCurrent>0?savedCurrent:(topRate>0?topRate:implied);
+    const latestRate=implied>0?implied:(savedCurrent>0?savedCurrent:topRate);
 
     if(latestRate>0){
       // 将当前行报价同步到正确的顶部货币对，而不是一律写进 USD/CNY 或 HKD/CNY。
