@@ -2024,6 +2024,166 @@
     tbody td:nth-child(3),tbody td:nth-child(6){padding-left:10px!important;padding-right:8px!important}
   }
 
+
+
+  /* 用户要求：排序比例紧凑 + 参考汇率内嵌锁 */
+  .assetSortPctInput{width:58px!important;min-width:58px!important;max-width:58px!important;padding:0 7px!important}
+  .rateLockField{position:relative;display:block;min-width:0}
+  .rateLockField>.field{min-width:0;width:100%;padding-right:42px!important}
+  .rateLockBtn{
+    position:absolute;right:10px;top:50%;transform:translateY(-50%);z-index:2;
+    width:24px;height:24px;min-height:0;padding:0;border:0;border-radius:0;
+    background:transparent;color:#8fa5bb;display:inline-flex;align-items:center;justify-content:center;
+    cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;box-shadow:none
+  }
+  .rateLockBtn svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .rateLockBtn.isLocked{color:#d9e7f5;background:transparent;border:0;box-shadow:none}
+  .rateLockBtn:hover,.rateLockBtn:active{background:transparent;border:0;box-shadow:none}
+  .rateLockBtn:focus-visible{outline:1px solid rgba(75,134,197,.65);outline-offset:2px;border-radius:3px}
+  .useCurrentRateBtn:disabled{opacity:.34!important;cursor:not-allowed!important;filter:saturate(.45);border-color:#35404c!important;color:#8190a0!important}
+  @media(max-width:760px){
+    .rateLockField>.field{padding-right:40px!important}
+    .rateLockBtn{right:9px;width:22px;height:22px}
+    .rateLockBtn svg{width:16px;height:16px}
+    .assetSortPctInput{width:56px!important;min-width:56px!important;max-width:56px!important}
+  }
+
+
+
+  /* seamless-bg-fix：保持当前人民币/黄金背景图片、位置、缩放不动，只去除产生竖痕的叠加层 */
+  @media (max-width:760px){
+    /* 整卡叠层与首列叠层叠加时会在列边界形成明显明暗竖线；关闭整卡叠层 */
+    tbody tr.cnyAsset::before,
+    tbody tr.goldAsset::before{
+      content:none !important;
+      display:none !important;
+      background:none !important;
+    }
+
+    /* 保留首列原有左侧柔和暗化，只移除右侧 64px 过渡条，避免色带竖痕 */
+    tbody tr.cnyAsset td:first-child::after,
+    tbody tr.goldAsset td:first-child::after{
+      content:none !important;
+      display:none !important;
+      background:none !important;
+      width:0 !important;
+    }
+  }
+
+
+
+  /* seamless-bg-fix-2：不换图、不移动主背景，只用同一张原图作为底层填满左侧露空区域 */
+  @media (max-width:760px){
+    tbody tr.cnyAsset td:first-child{
+      background-image:
+        linear-gradient(rgba(16,10,14,.52),rgba(16,10,14,.56)),
+        url("assets/cny-background.jpeg"),
+        url("assets/cny-background.jpeg") !important;
+      background-size:100% 100%,128% auto,cover !important;
+      background-position:0 0,-6% 27%,center 27% !important;
+      background-repeat:no-repeat,no-repeat,no-repeat !important;
+    }
+    tbody tr.goldAsset td:first-child{
+      background-image:
+        linear-gradient(rgba(15,10,2,.50),rgba(15,10,2,.56)),
+        url("assets/gold-background.jpeg"),
+        url("assets/gold-background.jpeg") !important;
+      background-size:100% 100%,132% auto,cover !important;
+      background-position:0 0,-42% 49%,center 49% !important;
+      background-repeat:no-repeat,no-repeat,no-repeat !important;
+    }
+  }
+
+
+
+  /* 内容区试验版：人民币 / 黄金内容部分向美元资产内容区靠拢；不改顶部背景图 */
+  @media (max-width:760px){
+    tbody tr.cnyAsset td:not(:first-child),
+    tbody tr.goldAsset td:not(:first-child){
+      background:rgba(9,15,23,.84) !important;
+      -webkit-backdrop-filter:blur(8px) saturate(.42) !important;
+      backdrop-filter:blur(8px) saturate(.42) !important;
+    }
+    tbody tr.cnyAsset td:not(:first-child) .field,
+    tbody tr.cnyAsset td:not(:first-child) .select,
+    tbody tr.cnyAsset td:not(:first-child) .mini,
+    tbody tr.goldAsset td:not(:first-child) .field,
+    tbody tr.goldAsset td:not(:first-child) .select,
+    tbody tr.goldAsset td:not(:first-child) .mini{
+      background:rgba(4,9,15,.88) !important;
+      -webkit-backdrop-filter:blur(3px) saturate(.65) !important;
+      backdrop-filter:blur(3px) saturate(.65) !important;
+    }
+    tbody tr.cnyAsset td:nth-child(2),
+    tbody tr.cnyAsset td:nth-child(3),
+    tbody tr.cnyAsset td:nth-child(4),
+    tbody tr.cnyAsset td:nth-child(5),
+    tbody tr.cnyAsset td:nth-child(6),
+    tbody tr.cnyAsset td:nth-child(7),
+    tbody tr.goldAsset td:nth-child(2),
+    tbody tr.goldAsset td:nth-child(3),
+    tbody tr.goldAsset td:nth-child(4),
+    tbody tr.goldAsset td:nth-child(5),
+    tbody tr.goldAsset td:nth-child(6),
+    tbody tr.goldAsset td:nth-child(7){
+      border-color:rgba(49,65,82,.70) !important;
+    }
+  }
+
+
+  /* 内容区加强版：人民币 / 黄金进一步向美元卡的深蓝黑玻璃内容区靠拢 */
+  @media (max-width:760px){
+    tbody tr.cnyAsset td:not(:first-child),
+    tbody tr.goldAsset td:not(:first-child){
+      background:rgba(6,11,18,.94) !important;
+      -webkit-backdrop-filter:blur(11px) saturate(.22) brightness(.78) !important;
+      backdrop-filter:blur(11px) saturate(.22) brightness(.78) !important;
+    }
+
+    /* 主内容四格再加一层很轻的蓝黑定色，基本压掉人民币红色和黄金黄色串色 */
+    tbody tr.cnyAsset td:nth-child(2),
+    tbody tr.cnyAsset td:nth-child(3),
+    tbody tr.cnyAsset td:nth-child(4),
+    tbody tr.cnyAsset td:nth-child(6),
+    tbody tr.goldAsset td:nth-child(2),
+    tbody tr.goldAsset td:nth-child(3),
+    tbody tr.goldAsset td:nth-child(4),
+    tbody tr.goldAsset td:nth-child(6){
+      background:linear-gradient(rgba(7,13,21,.94),rgba(7,13,21,.94)) !important;
+    }
+
+    tbody tr.cnyAsset td:nth-child(5),
+    tbody tr.cnyAsset td:nth-child(7),
+    tbody tr.goldAsset td:nth-child(5),
+    tbody tr.goldAsset td:nth-child(7){
+      background:rgba(6,11,18,.96) !important;
+    }
+
+    tbody tr.cnyAsset td:not(:first-child) .field,
+    tbody tr.cnyAsset td:not(:first-child) .select,
+    tbody tr.cnyAsset td:not(:first-child) .mini,
+    tbody tr.goldAsset td:not(:first-child) .field,
+    tbody tr.goldAsset td:not(:first-child) .select,
+    tbody tr.goldAsset td:not(:first-child) .mini{
+      background:rgba(2,7,13,.96) !important;
+      border-color:rgba(48,64,82,.92) !important;
+      -webkit-backdrop-filter:blur(4px) saturate(.35) !important;
+      backdrop-filter:blur(4px) saturate(.35) !important;
+    }
+
+    /* 分区边线和标题文字也按美元卡的冷色层次统一 */
+    tbody tr.cnyAsset td:not(:first-child),
+    tbody tr.goldAsset td:not(:first-child){
+      border-color:rgba(45,59,75,.88) !important;
+    }
+    tbody tr.cnyAsset td:not(:first-child) .mobileFieldHead,
+    tbody tr.goldAsset td:not(:first-child) .mobileFieldHead,
+    tbody tr.cnyAsset td:not(:first-child) .muted,
+    tbody tr.goldAsset td:not(:first-child) .muted{
+      color:#9fb2c7 !important;
+    }
+  }
+
 </style>
 </head>
 <body>
@@ -2047,17 +2207,26 @@
     </div>
     <div id="referenceRates" class="topFieldCell">
       <div class="topLabelRow"><label for="usdRate">USD 参考汇率</label></div>
-      <input id="usdRate" class="field calcInput" type="text" inputmode="decimal" placeholder="1 USD = ? CNY" autocomplete="off" />
+      <div class="rateLockField">
+        <input id="usdRate" class="field calcInput" type="text" inputmode="decimal" placeholder="1 USD = ? CNY" autocomplete="off" />
+        <button id="usdRateLockBtn" class="rateLockBtn" type="button" data-lock-a="USD" data-lock-b="CNY" aria-label="锁定 USD/CNY 参考汇率" title="锁定 USD/CNY 参考汇率"></button>
+      </div>
       <div class="topFieldHint" aria-hidden="true"></div>
     </div>
     <div class="topFieldCell">
       <div class="topLabelRow"><label for="hkdRate">HKD 参考汇率</label></div>
-      <input id="hkdRate" class="field calcInput" type="text" inputmode="decimal" placeholder="1 HKD = ? CNY" autocomplete="off" />
+      <div class="rateLockField">
+        <input id="hkdRate" class="field calcInput" type="text" inputmode="decimal" placeholder="1 HKD = ? CNY" autocomplete="off" />
+        <button id="hkdRateLockBtn" class="rateLockBtn" type="button" data-lock-a="HKD" data-lock-b="CNY" aria-label="锁定 HKD/CNY 参考汇率" title="锁定 HKD/CNY 参考汇率"></button>
+      </div>
       <div class="topFieldHint" aria-hidden="true"></div>
     </div>
     <div class="topFieldCell">
       <div class="topLabelRow"><label for="usdtRate">USDT 参考汇率</label></div>
-      <input id="usdtRate" class="field calcInput" type="text" inputmode="decimal" placeholder="1 USDT = ? CNY" autocomplete="off" />
+      <div class="rateLockField">
+        <input id="usdtRate" class="field calcInput" type="text" inputmode="decimal" placeholder="1 USDT = ? CNY" autocomplete="off" />
+        <button id="usdtRateLockBtn" class="rateLockBtn" type="button" data-lock-a="USDT" data-lock-b="CNY" aria-label="锁定 USDT/CNY 参考汇率" title="锁定 USDT/CNY 参考汇率"></button>
+      </div>
       <div class="topFieldHint" aria-hidden="true"></div>
     </div>
     <div class="topFieldCell">
@@ -2086,7 +2255,10 @@
           </svg>
         </button>
       </div>
-      <input id="usdHkdRate" class="field calcInput" type="text" inputmode="decimal" placeholder="1 USD = ? HKD" autocomplete="off" />
+      <div class="rateLockField">
+        <input id="usdHkdRate" class="field calcInput" type="text" inputmode="decimal" placeholder="1 USD = ? HKD" autocomplete="off" />
+        <button id="pairRateLockBtn" class="rateLockBtn" type="button" aria-label="锁定当前货币对参考汇率" title="锁定当前货币对参考汇率"></button>
+      </div>
       <div class="topFieldHint" aria-hidden="true"></div>
     </div>
     <div class="topFooterBar">
@@ -2329,6 +2501,7 @@ let state = {
   usdHkdDirection:"USD_HKD",
   autoGold:false,
   pairRateVersion:1,
+  referenceRateLocks:{},
   rows: defaults.map(x=>({...x, actualRmb:null, payAmount:null, payCcy:"CNY", fxAmount:null, rmbManual:false, fxManual:false, rowRate:null, rowRateMode:x.ccy==="CNY"?"fixed":"top", unitPrice:null, priceCcy:x.ccy, shares:null, sharesManual:false, autoFromFx:false, approxRates:{}, detailsExpanded:false}))
 };
 
@@ -2557,6 +2730,7 @@ function updateUsdHkdControl(){
     btn.title=`交换 ${base} 与 ${quote}`;
     btn.setAttribute("aria-label", btn.title);
   }
+  updateReferenceLockUi();
 }
 function topCnyRateInfo(ccy){
   if(ccy==="CNY") return {rate:1,source:"fixed"};
@@ -2657,6 +2831,46 @@ function refRateFor(row){
 }
 function pairKey(a,b){
   return [a||"CNY",b||"CNY"].sort().join("|");
+}
+function ensureReferenceRateLocks(target=state){
+  if(!target.referenceRateLocks || typeof target.referenceRateLocks!=="object" || Array.isArray(target.referenceRateLocks)) target.referenceRateLocks={};
+  return target.referenceRateLocks;
+}
+function referenceRateLockKey(a,b){ return pairKey(a,b); }
+function isReferenceRateLocked(a,b){
+  const locks=ensureReferenceRateLocks();
+  return locks[referenceRateLockKey(a,b)]===true;
+}
+function lockSvg(locked){
+  return locked
+    ? `<svg viewBox="0 0 20 20" aria-hidden="true"><rect x="4.5" y="8.5" width="11" height="8" rx="2"></rect><path d="M7 8.5V6.7a3 3 0 0 1 6 0v1.8"></path></svg>`
+    : `<svg viewBox="0 0 20 20" aria-hidden="true"><rect x="4.5" y="8.5" width="11" height="8" rx="2"></rect><path d="M13 8.5V6.8a3 3 0 0 0-5.7-1.3"></path></svg>`;
+}
+function updateReferenceLockUi(){
+  ensureReferenceRateLocks();
+  const configs=[
+    [el("usdRateLockBtn"),"USD","CNY"],
+    [el("hkdRateLockBtn"),"HKD","CNY"],
+    [el("usdtRateLockBtn"),"USDT","CNY"],
+    [el("pairRateLockBtn"),state.topPairBase||"USD",state.topPairQuote||"HKD"]
+  ];
+  configs.forEach(([btn,a,b])=>{
+    if(!btn) return;
+    const locked=isReferenceRateLocked(a,b);
+    btn.classList.toggle("isLocked",locked);
+    btn.innerHTML=lockSvg(locked);
+    btn.dataset.lockA=a; btn.dataset.lockB=b;
+    const text=`${locked?"解锁":"锁定"} ${a}/${b} 参考汇率`;
+    btn.title=text; btn.setAttribute("aria-label",text); btn.setAttribute("aria-pressed",locked?"true":"false");
+  });
+}
+function toggleReferenceRateLock(a,b){
+  const locks=ensureReferenceRateLocks();
+  const key=referenceRateLockKey(a,b);
+  locks[key]=!locks[key];
+  save();
+  render();
+  updateReferenceLockUi();
 }
 function setDirectTopCnyRate(ccy, cnyPerUnit){
   const n=Number(cnyPerUnit)||0;
@@ -2863,6 +3077,7 @@ function ensureAutoValues(r){
 function diffClass(v){ return Math.abs(v)<0.005 ? "good" : (v>0 ? "bad" : "good"); }
 function render(){
   updatePrincipalCurrencyUi();
+  updateReferenceLockUi();
   state.rows.forEach(syncSharePlan);
   state.rows.forEach(ensureAutoValues);
   const tbody=el("tbody");
@@ -2874,6 +3089,7 @@ function render(){
     const rate=refRateFor(r), fx=Number(r.fxAmount)||0;
     const receiveCcy=r.ccy||"CNY";
     const pairSame=payCcy===receiveCcy;
+    const referenceLocked=!pairSame && isReferenceRateLocked(payCcy,receiveCcy);
     // 交易汇率严格按“1 换汇后币种 = X 支付币种”计算。
     const implied=(fx>0 && payAmount>0) ? payAmount/fx : (pairSame?1:0);
     const reverse=(fx>0 && payAmount>0) ? fx/payAmount : (pairSame?1:0);
@@ -3023,7 +3239,7 @@ function render(){
                        ${reverse?`<div class="allocRateReverse">反向 1 ${payCcy} = ${num(reverse,4)} ${receiveCcy}</div>`:""}
                      </div>
                      <div class="allocRateAction">
-                       <button type="button" class="rateModeBtn useCurrentRateBtn ${rowRateMode==="current"?"active":""}" data-id="${r.id}" title="使用本资产当前货币对汇率，并同步更新顶部对应货币对">使用当前汇率</button>
+                       <button type="button" class="rateModeBtn useCurrentRateBtn ${rowRateMode==="current"?"active":""}" data-id="${r.id}" ${referenceLocked?"disabled":""} title="${referenceLocked?"顶部参考汇率已锁定，解锁后才能使用当前汇率覆盖":"使用本资产当前货币对汇率，并同步更新顶部对应货币对"}">使用当前汇率</button>
                      </div>`
                   : `<div class="allocRateResult muted">填写支付金额与换汇后金额后自动计算</div>`}
             </div>
@@ -3469,6 +3685,9 @@ function bindAssetSortItems(){
   list.querySelectorAll(".assetSortPctInput").forEach(input=>{
     input.addEventListener("pointerdown",ev=>ev.stopPropagation());
     input.addEventListener("keydown",ev=>ev.stopPropagation());
+    const selectAll=()=>requestAnimationFrame(()=>{try{input.select();}catch(_){}});
+    input.addEventListener("focus",selectAll);
+    input.addEventListener("click",selectAll);
     input.addEventListener("input",ev=>{
       const raw=ev.currentTarget.value;
       const n=plainNumber(raw);
@@ -3775,7 +3994,7 @@ function bindRowEvents(){
     const r=state.rows.find(r=>r.id===e.currentTarget.dataset.id);
     if(!r) return;
     const payCcy=r.payCcy||"CNY", receiveCcy=r.ccy||"CNY";
-    if(payCcy===receiveCcy) return;
+    if(payCcy===receiveCcy || isReferenceRateLocked(payCcy,receiveCcy)) return;
 
     const pay=Number(r.payAmount)||0;
     const fx=Number(r.fxAmount)||0;
@@ -3883,13 +4102,19 @@ function bindRowEvents(){
   });
   document.querySelectorAll(".fxCalcBtn").forEach(x=>x.onclick=e=>{
     const r=state.rows.find(r=>r.id===e.target.dataset.id);
-    const rate=refRateFor(r);
+    if(!r) return;
+    const payCcy=r.payCcy||"CNY", receiveCcy=r.ccy||"CNY";
+    if(payCcy!==receiveCcy){
+      r.rowRate=null;
+      r.rowRateMode="top";
+    }
+    const rate=topPairRate(payCcy,receiveCcy).rate;
     if(rate>0){
       r.fxAmount=(Number(r.payAmount)||0)/rate;
       r.fxManual=false;
       r.autoFromFx=false;
-      render();
     }
+    render();
   });
   bindHintInteractions();
   bindAssetPickerButtons();
@@ -4059,6 +4284,7 @@ function normalizeState(s){
   if(s.usdHkdRate===undefined || s.usdHkdRate===null) s.usdHkdRate="";
   if(s.usdUsdtRate===undefined || s.usdUsdtRate===null) s.usdUsdtRate="";
   if(s.hkdUsdtRate===undefined || s.hkdUsdtRate===null) s.hkdUsdtRate="";
+  if(!s.referenceRateLocks || typeof s.referenceRateLocks!=="object" || Array.isArray(s.referenceRateLocks)) s.referenceRateLocks={};
   if(!PAIR_CURRENCIES.includes(s.topPairBase)) s.topPairBase="USD";
   if(!PAIR_CURRENCIES.includes(s.topPairQuote)) s.topPairQuote=( ["HKD","USDT","CNY"].includes(s.usdPairQuote) ? s.usdPairQuote : "HKD" );
   if(!["HKD","USDT"].includes(s.usdPairQuote)) s.usdPairQuote="HKD";
@@ -4115,7 +4341,7 @@ function makeRows({clear=false}={}){
   }));
 }
 function reset(){
-  state={principal:100000,principalCcy:"CNY",usdRate:"",hkdRate:"",usdtRate:"",usdHkdRate:"",usdUsdtRate:"",hkdUsdtRate:"",topPairBase:"USD",topPairQuote:"HKD",usdPairQuote:"HKD",usdHkdDirection:"USD_HKD",autoGold:false,pairRateVersion:1,rows:makeRows()};
+  state={principal:100000,principalCcy:"CNY",usdRate:"",hkdRate:"",usdtRate:"",usdHkdRate:"",usdUsdtRate:"",hkdUsdtRate:"",topPairBase:"USD",topPairQuote:"HKD",usdPairQuote:"HKD",usdHkdDirection:"USD_HKD",autoGold:false,pairRateVersion:1,referenceRateLocks:{},rows:makeRows()};
   el("principal").value=state.principal;
   el("principalCcy").value=state.principalCcy;
   el("usdRate").value="";
@@ -4127,7 +4353,7 @@ function reset(){
   render();
 }
 function clearAll(){
-  state={principal:0,principalCcy:"CNY",usdRate:"",hkdRate:"",usdtRate:"",usdHkdRate:"",usdUsdtRate:"",hkdUsdtRate:"",topPairBase:"USD",topPairQuote:"HKD",usdPairQuote:"HKD",usdHkdDirection:"USD_HKD",autoGold:false,pairRateVersion:1,rows:makeRows({clear:true})};
+  state={principal:0,principalCcy:"CNY",usdRate:"",hkdRate:"",usdtRate:"",usdHkdRate:"",usdUsdtRate:"",hkdUsdtRate:"",topPairBase:"USD",topPairQuote:"HKD",usdPairQuote:"HKD",usdHkdDirection:"USD_HKD",autoGold:false,pairRateVersion:1,referenceRateLocks:{},rows:makeRows({clear:true})};
   el("principal").value="";
   el("principalCcy").value=state.principalCcy;
   el("usdRate").value="";
@@ -4150,6 +4376,14 @@ if(el("pairBaseCcy")) el("pairBaseCcy").value=state.topPairBase||"USD";
 if(el("pairQuoteCcy")) el("pairQuoteCcy").value=state.topPairQuote||"HKD";
 updateUsdHkdControl();
 updatePrincipalCurrencyUi();
+updateReferenceLockUi();
+
+document.querySelectorAll(".rateLockBtn").forEach(btn=>{
+  btn.onclick=e=>{
+    const b=e.currentTarget;
+    toggleReferenceRateLock(b.dataset.lockA,b.dataset.lockB);
+  };
+});
 
 el("principal").oninput=e=>{const n=plainNumber(e.target.value); if(n===null)return; state.principal=n; render();};
 el("principalCcy").onchange=e=>{state.principalCcy=e.target.value; render();};
