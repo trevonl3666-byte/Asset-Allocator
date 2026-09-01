@@ -246,6 +246,12 @@
   .rateModeBtn:hover{border-color:#4d6075}
   .rateModeBtn.active{background:#153c62;border-color:#2d78b7;color:#fff}
   .rateModeBtn:focus-visible{outline:2px solid #4b86c5;outline-offset:2px}
+  .useCurrentRateBtn{transition:transform .13s ease,background-color .18s ease,border-color .18s ease,color .18s ease,box-shadow .18s ease}
+  .useCurrentRateBtn.isPressing{transform:scale(.955)}
+  .useCurrentRateBtn.isApplied{
+    background:#153c62!important;border-color:#3e9cff!important;color:#fff!important;
+    box-shadow:0 0 0 3px rgba(62,156,255,.13),0 0 16px rgba(62,156,255,.16)
+  }
   .rateModeFixed{margin:0 0 8px;color:var(--muted);font-size:11px;line-height:1.4}
   .metric{font-size:13px;line-height:1.55;white-space:nowrap}
   .metric b{font-size:14px}
@@ -4589,10 +4595,18 @@ function bindRowEvents(){
   });
 
   document.querySelectorAll(".useCurrentRateBtn").forEach(x=>x.onclick=e=>{
-    const r=state.rows.find(r=>r.id===e.currentTarget.dataset.id);
+    const clickedBtn=e.currentTarget;
+    const rowId=clickedBtn.dataset.id;
+    const r=state.rows.find(r=>r.id===rowId);
     if(!r) return;
     const payCcy=r.payCcy||"CNY", receiveCcy=r.ccy||"CNY";
     if(payCcy===receiveCcy || isReferenceRateLocked(payCcy,receiveCcy)) return;
+
+    // 立即给按压反馈；成功写回顶部参考汇率后再给一次“已应用”确认反馈。
+    clickedBtn.classList.remove("isApplied");
+    clickedBtn.classList.add("isPressing");
+    setTimeout(()=>clickedBtn.classList.remove("isPressing"),150);
+    try{ if(navigator.vibrate) navigator.vibrate(10); }catch(_){}
 
     const pay=Number(r.payAmount)||0;
     const fx=Number(r.fxAmount)||0;
@@ -4637,6 +4651,16 @@ function bindRowEvents(){
 
     render();
     requestAnimationFrame(()=>{
+      const feedbackBtn=document.querySelector(`.useCurrentRateBtn[data-id="${r.id}"]`);
+      if(feedbackBtn && latestRate>0){
+        const originalText="使用当前汇率";
+        feedbackBtn.classList.add("isApplied");
+        feedbackBtn.textContent="已应用";
+        setTimeout(()=>{
+          const liveBtn=document.querySelector(`.useCurrentRateBtn[data-id="${r.id}"]`);
+          if(liveBtn){ liveBtn.classList.remove("isApplied"); liveBtn.textContent=originalText; }
+        },720);
+      }
       const input=document.querySelector(`.rowRateInput[data-id="${r.id}"]`);
       if(input && !input.disabled){ try{input.focus(); input.select();}catch(_){} }
     });
