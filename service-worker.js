@@ -1,10 +1,12 @@
-const CACHE_NAME = "asset-allocator-main-locks-darkglass-v4";
+const CACHE_NAME = "asset-allocator-receipt-v10";
 const CORE_ASSETS = [
   "./",
   "./index.html",
   "./assets/usd-background.png",
   "./assets/cny-background.jpeg",
   "./assets/gold-background.jpeg",
+  "./assets/hkd-background.png",
+  "./assets/printer.wav",
   "./manifest.json",
   "./icons/apple-touch-icon.png",
   "./icons/favicon-32.png",

@@ -2423,6 +2423,171 @@
     }
   }
 
+
+
+
+
+  /* HKD 背景：使用用户指定的港币图。名称区保持清晰；内容区延续当前深色玻璃 + 轻微透底逻辑。 */
+  tbody tr.hkdAsset{
+    background-image:linear-gradient(rgba(8,8,7,.08),rgba(8,8,7,.08)),url("assets/hkd-background.png");
+    background-size:cover;background-position:center 42%;background-repeat:no-repeat;
+  }
+  tbody tr.hkdAsset td{
+    background:rgba(10,17,25,.12);
+    -webkit-backdrop-filter:blur(1.8px) saturate(.97);
+    backdrop-filter:blur(1.8px) saturate(.97);
+  }
+  tbody tr.hkdAsset td:first-child{
+    background:linear-gradient(90deg,rgba(7,13,21,.20),rgba(7,13,21,.035));
+    -webkit-backdrop-filter:none;backdrop-filter:none;
+  }
+  tbody tr.hkdAsset td:not(:first-child){
+    background:rgba(4,8,13,.82) !important;
+    -webkit-backdrop-filter:blur(7px) saturate(.58) brightness(.76) !important;
+    backdrop-filter:blur(7px) saturate(.58) brightness(.76) !important;
+    border-color:rgba(43,56,72,.88) !important;
+  }
+  tbody tr.hkdAsset td:not(:first-child) .field,
+  tbody tr.hkdAsset td:not(:first-child) .select,
+  tbody tr.hkdAsset td:not(:first-child) .mini,
+  tbody tr.hkdAsset td:not(:first-child) .rateModeBtn{
+    background:rgba(2,6,11,.91) !important;
+    border-color:rgba(46,61,79,.92) !important;
+    -webkit-backdrop-filter:blur(3px) saturate(.45) !important;
+    backdrop-filter:blur(3px) saturate(.45) !important;
+  }
+  tbody tr.hkdAsset.reorderDragging td{background:rgba(17,27,38,.82)}
+
+  @media (max-width:760px){
+    tbody tr.hkdAsset{
+      position:relative !important;isolation:isolate !important;
+      background-image:url("assets/hkd-background.png") !important;
+      background-size:cover !important;
+      background-position:center 44% !important;
+      background-repeat:no-repeat !important;
+    }
+    /* 名称区：同图双层覆盖，避免露空和竖痕；右侧狮子区域保持可见。 */
+    tbody tr.hkdAsset td:first-child{
+      position:relative !important;overflow:hidden !important;isolation:isolate !important;
+      background-image:
+        linear-gradient(rgba(12,10,8,.36),rgba(12,10,8,.43)),
+        url("assets/hkd-background.png"),
+        url("assets/hkd-background.png") !important;
+      background-size:100% 100%,cover,cover !important;
+      background-position:0 0,center 44%,center 44% !important;
+      background-repeat:no-repeat,no-repeat,no-repeat !important;
+      filter:saturate(.92) brightness(.92) !important;
+      box-shadow:inset 0 0 0 9999px rgba(8,10,12,.03) !important;
+    }
+    tbody tr.hkdAsset td:first-child::before,
+    tbody tr.hkdAsset td:first-child::after{content:none !important;display:none !important;background:none !important;width:0 !important}
+    tbody tr.hkdAsset td:not(:first-child){
+      background:rgba(4,8,13,.82) !important;
+      -webkit-backdrop-filter:blur(7px) saturate(.58) brightness(.76) !important;
+      backdrop-filter:blur(7px) saturate(.58) brightness(.76) !important;
+      border-color:rgba(43,56,72,.88) !important;
+    }
+    tbody tr.hkdAsset td:nth-child(2),tbody tr.hkdAsset td:nth-child(3){background:rgba(5,9,14,.80) !important}
+    tbody tr.hkdAsset td:nth-child(4),tbody tr.hkdAsset td:nth-child(6){background:rgba(4,8,13,.84) !important}
+    tbody tr.hkdAsset td:nth-child(5),tbody tr.hkdAsset td:nth-child(7){background:rgba(4,8,13,.83) !important}
+    tbody tr.hkdAsset td:not(:first-child) .field,
+    tbody tr.hkdAsset td:not(:first-child) .select,
+    tbody tr.hkdAsset td:not(:first-child) .mini,
+    tbody tr.hkdAsset td:not(:first-child) .rateModeBtn{
+      background:rgba(2,6,11,.91) !important;
+      border-color:rgba(46,61,79,.92) !important;
+      -webkit-backdrop-filter:blur(3px) saturate(.45) !important;
+      backdrop-filter:blur(3px) saturate(.45) !important;
+    }
+  }
+
+  /* 打印发票 / 热敏小票 */
+  .printInvoiceBtn{
+    margin-top:10px;width:100%;height:38px;padding:0 12px;border:1px solid #37506a;border-radius:9px;
+    background:#152230;color:#e9f3ff;font-size:12px;font-weight:760;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:7px
+  }
+  .printInvoiceBtn:hover{border-color:#4e6c8b;background:#192a3b}
+  .printInvoiceBtn:active{transform:translateY(1px)}
+  .printInvoiceBtn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+  .receiptModal{display:none}
+  .receiptModal[aria-hidden="false"]{display:block}
+  .receiptBackdrop{position:fixed;inset:0;z-index:2147483300;background:rgba(0,0,0,.78);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+  .receiptStage{
+    position:fixed;z-index:2147483301;inset:0;overflow:auto;overscroll-behavior:contain;
+    display:flex;justify-content:center;align-items:flex-start;padding:calc(36px + env(safe-area-inset-top)) 14px calc(30px + env(safe-area-inset-bottom));
+  }
+  .receiptScene{width:min(360px,calc(100vw - 28px));display:flex;flex-direction:column;align-items:center;position:relative}
+  .receiptClose{
+    position:absolute;right:-2px;top:-27px;width:34px;height:34px;border:1px solid #405165;border-radius:999px;
+    background:#111a24;color:#e7f1fb;font-size:20px;line-height:1;display:grid;place-items:center;cursor:pointer;z-index:9
+  }
+  .printerShell{width:94%;height:64px;position:relative;z-index:5;filter:drop-shadow(0 12px 24px rgba(0,0,0,.55))}
+  .printerBody{
+    position:absolute;inset:7px 0 0;border:1px solid #65717b;border-radius:13px 13px 8px 8px;
+    background:linear-gradient(180deg,#d9dde0 0%,#aeb5ba 48%,#858d94 52%,#bdc3c7 100%);
+    box-shadow:inset 0 2px 0 rgba(255,255,255,.72),inset 0 -3px 6px rgba(0,0,0,.28)
+  }
+  .printerBody::before{content:"";position:absolute;left:8%;right:8%;top:20px;height:14px;border-radius:5px;background:#25292d;box-shadow:inset 0 3px 7px #000}
+  .printerSlot{position:absolute;left:12%;right:12%;bottom:2px;height:11px;border-radius:0 0 7px 7px;background:#080a0b;box-shadow:0 3px 7px rgba(0,0,0,.6)}
+  .printerLed{position:absolute;right:13px;top:15px;width:5px;height:5px;border-radius:50%;background:#5ee88a;box-shadow:0 0 7px rgba(94,232,138,.75)}
+
+  .receiptViewport{width:86%;position:relative;z-index:2;overflow:hidden;margin-top:-10px;max-height:0;transition:max-height 5.4s cubic-bezier(.16,.74,.24,1)}
+  .receiptScene.isPrinting .receiptViewport{max-height:1450px}
+  .receiptPaper{
+    width:100%;background:#f8f4e9;color:#151515;position:relative;transform:translateY(-26px);opacity:.98;
+    box-shadow:0 16px 42px rgba(0,0,0,.46);font-family:"SFMono-Regular",ui-monospace,Menlo,Consolas,monospace;
+    border-left:1px solid rgba(0,0,0,.08);border-right:1px solid rgba(0,0,0,.08)
+  }
+  .receiptScene.isPrinting .receiptPaper{animation:receiptFeed 5.4s cubic-bezier(.16,.74,.24,1) forwards}
+  @keyframes receiptFeed{0%{transform:translateY(-42px)}100%{transform:translateY(0)}}
+  .receiptPaper::after{
+    content:"";display:block;height:13px;margin-top:1px;background:
+      linear-gradient(135deg,transparent 0 7px,#f8f4e9 7px 14px) 0 0/14px 14px repeat-x;
+    transform:translateY(10px)
+  }
+  .receiptTop{padding:19px 17px 11px;text-align:center;border-bottom:1px dashed #777}
+  .receiptBrand{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;font-size:17px;font-weight:850;letter-spacing:.1px}
+  .receiptMeta{margin-top:5px;font-size:9px;color:#555;line-height:1.45}
+  .receiptAssets{padding:7px 10px 4px}
+  .receiptAsset{
+    min-height:64px;margin:6px 0;border:1px solid rgba(0,0,0,.14);border-radius:7px;overflow:hidden;position:relative;
+    background-color:#e9e6dd;background-repeat:no-repeat;background-size:cover;background-position:center;
+  }
+  .receiptAsset::before{content:"";position:absolute;inset:0;background:rgba(249,246,237,.72)}
+  /* v9：美元小票使用用户提供的美元图，图本身轻微提亮，并降低背景存在感。 */
+  .receiptAsset.usd::before{background:rgba(249,246,237,.80)}
+  .receiptAsset.gold::before{background:rgba(249,246,237,.68)}
+  .receiptAsset.cny::before{background:rgba(249,246,237,.75)}
+  .receiptAsset.hkd::before{background:rgba(249,246,237,.73)}
+  /* v5：只改人民币/黄金小票卡片的上下边线，不改变任何资产背景图 */
+  .receiptAsset.cny{border-top-color:#5b292b;border-bottom-color:#5b292b}
+  .receiptAsset.gold{border-top-color:#6e480d;border-bottom-color:#6e480d}
+  .receiptAssetInner{position:relative;z-index:1;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 10px;align-items:center;padding:9px 10px}
+  .receiptAssetName{font-size:14px;font-weight:900;line-height:1.05}
+  .receiptAssetDesc{font-size:8.5px;color:#4d4d4d;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .receiptAssetPct{font-size:16px;font-weight:900;text-align:right}
+  .receiptAssetFee{grid-column:1/-1;border-top:1px dashed rgba(0,0,0,.32);padding-top:5px;display:flex;justify-content:space-between;font-size:10px;font-weight:700}
+  .receiptTotals{margin:4px 16px 0;padding:10px 0 13px;border-top:1px dashed #666;border-bottom:1px dashed #666}
+  .receiptTotalRow{display:flex;justify-content:space-between;gap:10px;font-size:10px;line-height:1.8}
+  .receiptTotalRow.grand{font-size:13px;font-weight:900;margin-top:2px}
+  .receiptFoot{padding:10px 16px 20px;text-align:center;font-size:8.5px;line-height:1.55;color:#444}
+  .receiptBarcode{height:27px;width:78%;margin:7px auto 4px;background:repeating-linear-gradient(90deg,#111 0 1px,transparent 1px 3px,#111 3px 5px,transparent 5px 7px,#111 7px 8px,transparent 8px 11px)}
+  .receiptStatus{height:25px;margin-top:18px;color:#c9d8e7;font-size:11px;display:flex;align-items:center;justify-content:center}
+  .receiptStatus::before{content:"";width:7px;height:7px;border-radius:50%;background:#74a9da;margin-right:7px;opacity:0}
+  .receiptScene.isPrinting .receiptStatus::before{opacity:1;animation:printerBlink .42s steps(1,end) infinite}
+  @keyframes printerBlink{50%{opacity:.2}}
+  .receiptActions{display:flex;gap:8px;width:86%;margin-top:5px;opacity:0;transform:translateY(6px);pointer-events:none;transition:.28s ease}
+  .receiptScene.isDone .receiptActions{opacity:1;transform:none;pointer-events:auto}
+  .receiptActionBtn{flex:1;height:41px;border:1px solid #3b5168;border-radius:10px;background:#142130;color:#eff7ff;font-size:12px;font-weight:760;cursor:pointer}
+  .receiptActionBtn.primary{background:#1769aa;border-color:#2d7ec0}
+  body.receiptOpen{overflow:hidden}
+  @media(max-width:760px){
+    .summary .card:first-child .printInvoiceBtn{height:36px;font-size:11px}
+    .receiptStage{padding-top:calc(48px + env(safe-area-inset-top))}
+  }
+
 </style>
 </head>
 <body>
@@ -2576,7 +2741,7 @@
   </div>
 
   <div class="summary">
-    <div class="card"><div class="k">实际交易总额（CNY）</div><div class="v" id="cardActual">¥100,000.00</div><div class="s">使用各行“实际人民币”求和。</div></div>
+    <div class="card"><div class="k">实际交易总额（CNY）</div><div class="v" id="cardActual">¥100,000.00</div><div class="s">使用各行“实际人民币”求和。</div><button id="printInvoiceBtn" class="printInvoiceBtn" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z"/></svg><span>打印发票</span></button></div>
     <div class="card"><div class="k">目标配置差额</div><div class="v" id="cardAlloc">¥0.00</div><div class="s">实际总额 − 目标本金；各行也会单独显示差额。</div></div>
     <div class="card"><div class="k">换汇成本差额（CNY，可选）</div><div class="v" id="cardFx">—</div><div class="s">仅统计已填写参考汇率的交易；未填参考汇率不会参与计算。</div></div>
     <div class="card"><div class="k">USD 相关交易汇率</div><div class="v" id="cardUsd">—</div><div class="s" id="cardUsdSub">填写 USD 实际外币金额后计算。</div></div>
@@ -2605,6 +2770,23 @@
 </div>
 
 
+
+
+<div id="receiptModal" class="receiptModal" aria-hidden="true">
+  <div class="receiptBackdrop" data-receipt-close="1"></div>
+  <div class="receiptStage" role="dialog" aria-modal="true" aria-label="资产配置打印小票">
+    <div id="receiptScene" class="receiptScene">
+      <button id="receiptCloseBtn" class="receiptClose" type="button" aria-label="关闭">×</button>
+      <div class="printerShell" aria-hidden="true"><div class="printerBody"><span class="printerLed"></span></div><div class="printerSlot"></div></div>
+      <div class="receiptViewport"><article id="receiptPaper" class="receiptPaper"></article></div>
+      <div id="receiptStatus" class="receiptStatus">准备打印</div>
+      <div class="receiptActions">
+        <button id="receiptSaveBtn" class="receiptActionBtn primary" type="button">保存小票图片</button>
+        <button id="receiptAgainBtn" class="receiptActionBtn" type="button">重新打印</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div id="assetPickerModal" class="assetPickerModal" aria-hidden="true">
   <div class="assetPickerBackdrop" data-asset-picker-close="1"></div>
@@ -2792,6 +2974,163 @@ function displayNumber(n){
   if(!Number.isFinite(Number(n))) return "";
   return String(Math.round(Number(n)*100000000)/100000000);
 }
+
+
+const receiptAssetImages={
+  usd:"assets/usd-receipt-background.png",
+  cny:"assets/cny-background.jpeg",
+  hkd:"assets/hkd-background.png",
+  gold:"assets/gold-background.jpeg"
+};
+let receiptPrintTimer=null;
+const receiptPrinterAudio=new Audio("assets/printer.wav");
+receiptPrinterAudio.preload="auto";
+receiptPrinterAudio.volume=.72;
+function receiptAssetKind(r){
+  if((r.productKey==="SGOL") || /黄金/i.test(String(r.desc||""))) return "gold";
+  if((r.ccy||"")==="HKD" || r.productKey==="03032" || /恒生科技/i.test(String(r.desc||""))) return "hkd";
+  if((r.ccy||"")==="CNY") return "cny";
+  return "usd";
+}
+function receiptNativeAmount(r){
+  const ccy=r.ccy||"CNY";
+  const actualRmb=Number(r.actualRmb)||0;
+  const payAmount=Number(r.payAmount)||0;
+  const fxAmount=Number(r.fxAmount)||0;
+  const payCcy=r.payCcy||"CNY";
+  if(ccy==="CNY") return actualRmb;
+  // 换汇后金额就是资产本币金额，优先使用用户当前页面里的实际值。
+  if(fxAmount>0) return fxAmount;
+  // 如果支付币种已经与资产币种相同，则直接使用实际支付金额。
+  if(payCcy===ccy && payAmount>0) return payAmount;
+  // 最后才从人民币等值换算，确保小票始终能显示资产本币金额。
+  const converted=convertCurrency(r,actualRmb,"CNY",ccy,true);
+  return Number(converted)||0;
+}
+function receiptCcyLabel(ccy){ return ccy==="CNY"?"RMB":ccy; }
+function receiptAmountText(amount,ccy){
+  const label=receiptCcyLabel(ccy||"CNY");
+  return `${label} ${num(Number(amount)||0,2)}`;
+}
+function receiptRows(){
+  state.rows.forEach(syncSharePlan);
+  state.rows.forEach(ensureAutoValues);
+  return state.rows.filter(r=>(Number(r.pct)||0)>0).map(r=>({
+    id:r.id,name:r.name,desc:r.desc||"",pct:Number(r.pct)||0,
+    fee:Number(r.actualRmb)||0,target:targetOf(r)||0,kind:receiptAssetKind(r),
+    assetCcy:r.ccy||"CNY",assetAmount:receiptNativeAmount(r)
+  }));
+}
+function receiptNowText(){
+  try{return new Intl.DateTimeFormat("zh-CN",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).format(new Date());}
+  catch(_){return new Date().toLocaleString();}
+}
+function receiptHtml(rows){
+  const total=rows.reduce((s,r)=>s+r.fee,0);
+  const ratio=rows.reduce((s,r)=>s+r.pct,0);
+  const items=rows.map(r=>`<section class="receiptAsset ${r.kind}" style="background-image:url('${receiptAssetImages[r.kind]}')">
+    <div class="receiptAssetInner"><div><div class="receiptAssetName">${r.name}</div><div class="receiptAssetDesc">${r.desc}</div></div><div class="receiptAssetPct">${Number(r.pct.toFixed(4))}%</div><div class="receiptAssetFee"><span>资产金额</span><span>${receiptAmountText(r.assetAmount,r.assetCcy)}</span></div></div></section>`).join("");
+  return `<header class="receiptTop"><div class="receiptBrand">ASSET ALLOCATION RECEIPT</div><div class="receiptMeta">资产配置小票 · ${receiptNowText()}<br>仅记录目标比例大于 0% 的资产</div></header>
+    <div class="receiptAssets">${items||'<div style="padding:18px;text-align:center;font-size:11px">暂无比例大于 0% 的资产</div>'}</div>
+    <div class="receiptTotals"><div class="receiptTotalRow"><span>记录资产</span><span>${rows.length} 项</span></div><div class="receiptTotalRow"><span>配置比例合计</span><span>${Number(ratio.toFixed(4))}%</span></div><div class="receiptTotalRow grand"><span>人民币总计</span><span>${money(total)}</span></div></div>
+    <footer class="receiptFoot"><div class="receiptBarcode"></div><div>Your Asset Allocation Advisor</div><div>此小票按当前页面配置即时生成</div></footer>`;
+}
+function stopReceiptSound(){
+  try{receiptPrinterAudio.pause();receiptPrinterAudio.currentTime=0;}catch(_){}
+}
+function startReceiptSound(){
+  stopReceiptSound();
+  try{
+    receiptPrinterAudio.currentTime=0;
+    const playPromise=receiptPrinterAudio.play();
+    if(playPromise&&typeof playPromise.catch==="function") playPromise.catch(()=>{});
+  }catch(_){ /* 浏览器禁止自动音频时，打印动画仍继续 */ }
+}
+function runReceiptPrint(){
+  const scene=el("receiptScene"),paper=el("receiptPaper"),status=el("receiptStatus");
+  if(!scene||!paper) return;
+  const rows=receiptRows();
+  paper.innerHTML=receiptHtml(rows);
+  scene.classList.remove("isPrinting","isDone");
+  void scene.offsetWidth;
+  status.textContent="正在打印…";
+  scene.classList.add("isPrinting");
+  startReceiptSound();
+  if(receiptPrintTimer) clearTimeout(receiptPrintTimer);
+  receiptPrintTimer=setTimeout(()=>{
+    stopReceiptSound();scene.classList.add("isDone");status.textContent=`打印完成 · ${rows.length} 项资产`;
+  },5400);
+}
+function openReceipt(){
+  const modal=el("receiptModal");if(!modal)return;
+  modal.setAttribute("aria-hidden","false");document.body.classList.add("receiptOpen");
+  runReceiptPrint();
+}
+function closeReceipt(){
+  stopReceiptSound();if(receiptPrintTimer){clearTimeout(receiptPrintTimer);receiptPrintTimer=null;}
+  el("receiptModal")?.setAttribute("aria-hidden","true");document.body.classList.remove("receiptOpen");
+  el("receiptScene")?.classList.remove("isPrinting","isDone");
+}
+function loadReceiptImage(src){
+  return new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=reject;img.src=src;});
+}
+function canvasMoney(n){return money(n);}
+async function buildReceiptCanvas(){
+  const rows=receiptRows();
+  const W=760,rowH=132,topH=180,totalsH=180,footH=150,H=topH+rows.length*rowH+totalsH+footH;
+  const canvas=document.createElement("canvas");canvas.width=W;canvas.height=H;
+  const ctx=canvas.getContext("2d");ctx.fillStyle="#f8f4e9";ctx.fillRect(0,0,W,H);
+  ctx.fillStyle="#151515";ctx.textAlign="center";ctx.font="900 31px -apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif";ctx.fillText("ASSET ALLOCATION RECEIPT",W/2,55);
+  ctx.font="18px -apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif";ctx.fillStyle="#4f4f4f";ctx.fillText("资产配置小票",W/2,91);ctx.font="15px monospace";ctx.fillText(receiptNowText(),W/2,120);ctx.fillText("仅记录目标比例大于 0% 的资产",W/2,145);
+  ctx.strokeStyle="#686868";ctx.setLineDash([8,7]);ctx.beginPath();ctx.moveTo(42,165);ctx.lineTo(W-42,165);ctx.stroke();ctx.setLineDash([]);
+  const imgs={};await Promise.all(Object.entries(receiptAssetImages).map(async([k,src])=>{try{imgs[k]=await loadReceiptImage(src)}catch(_){imgs[k]=null}}));
+  let y=topH;
+  for(const r of rows){
+    const x=34,w=W-68,h=rowH-14;ctx.save();ctx.beginPath();ctx.roundRect?.(x,y+4,w,h,14);if(!ctx.roundRect){ctx.rect(x,y+4,w,h)}ctx.clip();
+    const img=imgs[r.kind];if(img){const scale=Math.max(w/img.width,h/img.height),dw=img.width*scale,dh=img.height*scale;ctx.globalAlpha=r.kind==="usd"?.20:.28;ctx.drawImage(img,x+(w-dw)/2,y+4+(h-dh)/2,dw,dh);ctx.globalAlpha=1;}
+    ctx.fillStyle=r.kind==="usd"?"rgba(248,244,233,.80)":"rgba(248,244,233,.72)";ctx.fillRect(x,y+4,w,h);ctx.restore();
+    ctx.strokeStyle="rgba(0,0,0,.18)";ctx.lineWidth=1;ctx.strokeRect(x,y+4,w,h);
+    if(r.kind==="cny"||r.kind==="gold"){
+      ctx.strokeStyle=r.kind==="cny"?"#5b292b":"#6e480d";
+      ctx.lineWidth=2;
+      ctx.beginPath();
+      ctx.moveTo(x+1,y+5);ctx.lineTo(x+w-1,y+5);
+      ctx.moveTo(x+1,y+h+3);ctx.lineTo(x+w-1,y+h+3);
+      ctx.stroke();
+      ctx.lineWidth=1;
+    }
+    ctx.fillStyle="#121212";ctx.textAlign="left";ctx.font="900 29px -apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif";ctx.fillText(r.name,x+22,y+43);
+    ctx.font="16px -apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif";ctx.fillStyle="#464646";ctx.fillText(r.desc,x+22,y+69);
+    ctx.textAlign="right";ctx.fillStyle="#111";ctx.font="900 31px monospace";ctx.fillText(`${Number(r.pct.toFixed(4))}%`,x+w-22,y+46);
+    ctx.strokeStyle="rgba(0,0,0,.35)";ctx.setLineDash([5,5]);ctx.beginPath();ctx.moveTo(x+22,y+85);ctx.lineTo(x+w-22,y+85);ctx.stroke();ctx.setLineDash([]);
+    ctx.textAlign="left";ctx.font="700 18px sans-serif";ctx.fillStyle="#222";ctx.fillText("资产金额",x+22,y+112);ctx.textAlign="right";ctx.font="800 19px monospace";ctx.fillText(receiptAmountText(r.assetAmount,r.assetCcy),x+w-22,y+112);y+=rowH;
+  }
+  const ratio=rows.reduce((s,r)=>s+r.pct,0),total=rows.reduce((s,r)=>s+r.fee,0);y+=10;
+  ctx.strokeStyle="#666";ctx.setLineDash([8,7]);ctx.beginPath();ctx.moveTo(42,y);ctx.lineTo(W-42,y);ctx.stroke();ctx.setLineDash([]);
+  ctx.textAlign="left";ctx.fillStyle="#222";ctx.font="20px monospace";ctx.fillText("记录资产",52,y+43);ctx.textAlign="right";ctx.fillText(`${rows.length} 项`,W-52,y+43);
+  ctx.textAlign="left";ctx.fillText("配置比例合计",52,y+78);ctx.textAlign="right";ctx.fillText(`${Number(ratio.toFixed(4))}%`,W-52,y+78);
+  ctx.textAlign="left";ctx.font="900 24px sans-serif";ctx.fillText("人民币总计",52,y+124);ctx.textAlign="right";ctx.font="900 27px monospace";ctx.fillText(canvasMoney(total),W-52,y+124);
+  y+=145;ctx.strokeStyle="#666";ctx.setLineDash([8,7]);ctx.beginPath();ctx.moveTo(42,y);ctx.lineTo(W-42,y);ctx.stroke();ctx.setLineDash([]);
+  // 简易条码
+  let bx=130,by=y+35;ctx.fillStyle="#111";for(let i=0;i<110;i++){const bw=(i%5===0?4:(i%3===0?2:1))*2;if(i%2===0)ctx.fillRect(bx,by,bw,48);bx+=bw+2;if(bx>W-130)break;}
+  ctx.textAlign="center";ctx.font="16px sans-serif";ctx.fillStyle="#444";ctx.fillText("Your Asset Allocation Advisor",W/2,y+105);ctx.font="14px sans-serif";ctx.fillText("此小票按当前页面配置即时生成",W/2,y+132);
+  return canvas;
+}
+async function saveReceiptImage(){
+  const btn=el("receiptSaveBtn");if(btn){btn.disabled=true;btn.textContent="正在生成…";}
+  try{
+    const canvas=await buildReceiptCanvas();
+    const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/png",1));
+    const file=new File([blob],`资产配置小票-${new Date().toISOString().slice(0,10)}.png`,{type:"image/png"});
+    if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({files:[file],title:"资产配置小票"});
+    }else{
+      const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+    }
+  }catch(err){console.error(err);alert("小票图片生成失败，请重试。");}
+  finally{if(btn){btn.disabled=false;btn.textContent="保存小票图片";}}
+}
+
 let activeCalcInput=null;
 let restoringAnyFocus=false;
 let calcViewportRAF=0;
@@ -3344,8 +3683,10 @@ function render(){
     const row = document.createElement("tr");
     row.dataset.rowId=r.id;
     const isGoldAsset=(r.productKey==="SGOL") || /黄金/i.test(String(r.desc||"")) || /黄金/i.test(String(r.group||""));
-    const isCnyThemeAsset=((r.ccy||"")==="CNY") || (r.productKey==="03032") || /恒生科技/i.test(String(r.desc||"")) || /恒生科技/i.test(String(r.name||""));
+    const isHkdThemeAsset=((r.ccy||"")==="HKD") || (r.productKey==="03032") || /恒生科技/i.test(String(r.desc||"")) || /恒生科技/i.test(String(r.name||""));
+    const isCnyThemeAsset=((r.ccy||"")==="CNY");
     if(isGoldAsset) row.classList.add("goldAsset");
+    else if(isHkdThemeAsset) row.classList.add("hkdAsset");
     else if(isCnyThemeAsset) row.classList.add("cnyAsset");
     else if((r.ccy||"")==="USD") row.classList.add("usdAsset");
     if(!r.detailsExpanded) row.classList.add("assetDetailsCollapsed");
@@ -4623,6 +4964,14 @@ document.querySelectorAll(".rateLockBtn").forEach(btn=>{
     toggleReferenceRateLock(b.dataset.lockA,b.dataset.lockB);
   };
 });
+
+
+el("printInvoiceBtn").onclick=openReceipt;
+el("receiptCloseBtn").onclick=closeReceipt;
+el("receiptModal").addEventListener("click",e=>{if(e.target?.dataset?.receiptClose)closeReceipt();});
+el("receiptAgainBtn").onclick=runReceiptPrint;
+el("receiptSaveBtn").onclick=saveReceiptImage;
+document.addEventListener("keydown",e=>{if(e.key==="Escape" && el("receiptModal")?.getAttribute("aria-hidden")==="false") closeReceipt();});
 
 el("principal").oninput=e=>{const n=plainNumber(e.target.value); if(n===null)return; state.principal=n; render();};
 el("principalCcy").onchange=e=>{state.principalCcy=e.target.value; render();};
