@@ -1,4 +1,4 @@
-const CACHE_NAME = "asset-allocator-receipt-v10";
+const CACHE_NAME = "asset-allocator-receipt-v13";
 const CORE_ASSETS = [
   "./",
   "./index.html",

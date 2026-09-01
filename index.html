@@ -3614,6 +3614,15 @@ function syncSharePlan(r){
   }
   const shares=Math.max(0,Math.floor(Number(r.shares)||0));
   r.ccy=r.priceCcy||r.ccy;
+
+  // 用户手动填写“换汇后金额”后，必须以手动金额优先。
+  // 不能在 render() / syncSharePlan() 时又被“单股金额 × 股数”覆盖，
+  // 否则右侧“计算交易汇率”会继续使用旧金额。
+  if(r.fxManual){
+    r.autoFromFx=false;
+    return;
+  }
+
   r.fxAmount=price*shares;
   r.fxManual=false;
   r.autoFromFx=shares>0;
@@ -4269,15 +4278,22 @@ function bindAssetSortItems(){
     input.addEventListener("focus",selectAll);
     input.addEventListener("click",selectAll);
     input.addEventListener("input",ev=>{
-      const raw=ev.currentTarget.value;
+      const inputEl=ev.currentTarget;
+      const raw=inputEl.value;
       const n=plainNumber(raw);
       if(n===null) return;
-      const r=state.rows.find(row=>row.id===ev.currentTarget.dataset.id);
+      const r=state.rows.find(row=>row.id===inputEl.dataset.id);
       if(!r) return;
+
+      // 排序弹窗里的比例就是正式目标比例：输入时立刻同步到下方资产卡，
+      // 并让目标金额、配置差额、汇总等所有依赖比例的结果同步重算。
       r.pct=Math.max(0,n);
       ratioEditBase=null;
       render();
-      ev.currentTarget.value=raw;
+
+      // render() 只重绘主资产列表，排序弹窗本身保持原地；
+      // 恢复用户正在输入的原始文本与选区，避免键盘输入过程中跳动。
+      inputEl.value=raw;
     });
   });
 }
@@ -4540,7 +4556,9 @@ function bindRowEvents(){
       const r=state.rows.find(r=>r.id===e.target.dataset.id);
       r.fxAmount=n;
       r.fxManual=true;
-      if(r.autoFromFx) syncPaymentFromFx(r);
+      // 手动修改换汇后金额后立即脱离“单价 × 股数”的自动覆盖，
+      // 让计算交易汇率实时使用当前输入值。
+      r.autoFromFx=false;
     });
   });
   document.querySelectorAll(".ccyInput").forEach(x=>x.onchange=e=>{
@@ -4630,6 +4648,8 @@ function bindRowEvents(){
       r.unitPrice=String(raw).trim()===""?null:n;
       r.priceCcy=r.priceCcy||r.ccy;
       r.sharesManual=false;
+      // 重新修改单股金额时，恢复“单价 × 股数”自动生成换汇后金额。
+      r.fxManual=false;
       if(n>0){
         r.ccy=r.priceCcy;
         r.rowRate=null;
@@ -4658,6 +4678,8 @@ function bindRowEvents(){
       }
       r.shares=Math.max(0,Math.floor(n));
       r.sharesManual=true;
+      // 重新修改股数时，恢复“单价 × 股数”自动生成换汇后金额。
+      r.fxManual=false;
       syncSharePlan(r);
     });
   });
@@ -4665,6 +4687,7 @@ function bindRowEvents(){
     const r=state.rows.find(r=>r.id===e.target.dataset.id);
     r.priceCcy=e.target.value;
     r.ccy=e.target.value;
+    r.fxManual=false;
     r.rowRate=null;
     r.rowRateMode=(r.payCcy||"CNY")===r.ccy?"fixed":"top";
     r.sharesManual=false;
@@ -4921,7 +4944,9 @@ function makeRows({clear=false}={}){
   }));
 }
 function reset(){
-  state={principal:100000,principalCcy:"CNY",usdRate:"",hkdRate:"",usdtRate:"",usdHkdRate:"",usdUsdtRate:"",hkdUsdtRate:"",topPairBase:"USD",topPairQuote:"HKD",usdPairQuote:"HKD",usdHkdDirection:"USD_HKD",autoGold:false,pairRateVersion:1,referenceRateLocks:{},rows:makeRows()};
+  // 恢复默认配置时保留当前所有参考汇率锁定状态。
+  const preservedLocks={...ensureReferenceRateLocks()};
+  state={principal:100000,principalCcy:"CNY",usdRate:"",hkdRate:"",usdtRate:"",usdHkdRate:"",usdUsdtRate:"",hkdUsdtRate:"",topPairBase:"USD",topPairQuote:"HKD",usdPairQuote:"HKD",usdHkdDirection:"USD_HKD",autoGold:false,pairRateVersion:1,referenceRateLocks:preservedLocks,rows:makeRows()};
   el("principal").value=state.principal;
   el("principalCcy").value=state.principalCcy;
   el("usdRate").value="";
@@ -4931,8 +4956,11 @@ function reset(){
   if(el("pairQuoteCcy")) el("pairQuoteCcy").value=state.topPairQuote;
   updateUsdHkdControl();
   render();
+  updateReferenceLockUi();
 }
 function clearAll(){
+  const hasLockedReferenceRate=Object.values(ensureReferenceRateLocks()).some(Boolean);
+  if(hasLockedReferenceRate && !window.confirm("目前存有已锁定的参考汇率，是否确定清零所有配置！")) return;
   state={principal:0,principalCcy:"CNY",usdRate:"",hkdRate:"",usdtRate:"",usdHkdRate:"",usdUsdtRate:"",hkdUsdtRate:"",topPairBase:"USD",topPairQuote:"HKD",usdPairQuote:"HKD",usdHkdDirection:"USD_HKD",autoGold:false,pairRateVersion:1,referenceRateLocks:{},rows:makeRows({clear:true})};
   el("principal").value="";
   el("principalCcy").value=state.principalCcy;
@@ -4944,6 +4972,7 @@ function clearAll(){
   updateUsdHkdControl();
   ratioEditBase=null;
   render();
+  updateReferenceLockUi();
 }
 load();
 state.autoGold=false;
