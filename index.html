@@ -2327,6 +2327,102 @@
     }
   }
 
+
+
+  /* info-unified：全 APP info 图标按文字层级统一比例，并始终与文字底边对齐 */
+  .hintWrap{
+    display:inline-flex !important;
+    align-items:flex-end !important;
+    vertical-align:bottom !important;
+    line-height:inherit !important;
+  }
+  .hintIcon{
+    box-sizing:border-box !important;
+    width:16px !important;
+    height:16px !important;
+    min-width:16px !important;
+    flex:0 0 16px !important;
+    font-size:9px !important;
+    line-height:14px !important;
+    margin:0 !important;
+    transform:none !important;
+    vertical-align:bottom !important;
+  }
+  .thLabel,
+  .mobileFieldHead,
+  .allocFlipTitle{
+    align-items:flex-end !important;
+  }
+  .thLabel .hintWrap,
+  .mobileFieldHead .hintWrap,
+  .allocFlipTitle > .hintWrap{
+    align-self:flex-end !important;
+    margin:0 !important;
+  }
+
+  @media (max-width:760px){
+    /* 资产名称：21px / 30px 行高，对应 20px 图标；两者底边严格同线 */
+    .assetRow>.hintWrap{
+      align-self:flex-start !important;
+      height:30px !important;
+      margin:0 !important;
+      display:inline-flex !important;
+      align-items:flex-end !important;
+      line-height:30px !important;
+    }
+    .assetRow>.hintWrap .hintIcon{
+      width:20px !important;
+      height:20px !important;
+      min-width:20px !important;
+      flex:0 0 20px !important;
+      font-size:9.5px !important;
+      line-height:18px !important;
+      margin:0 !important;
+      transform:none !important;
+    }
+
+    /* 普通字段标题：12–13px 字号统一配 16px 图标，并与标题底边对齐 */
+    .mobileFieldHead{
+      align-items:flex-end !important;
+    }
+    .mobileFieldHead .hintWrap,
+    .mobileFieldHead.tradeHead .hintWrap,
+    .allocFlipTitle > .hintWrap{
+      align-self:flex-end !important;
+      height:16px !important;
+      margin:0 !important;
+      line-height:16px !important;
+    }
+    .mobileFieldHead .hintIcon,
+    .mobileFieldHead.tradeHead .hintIcon,
+    .allocFlipTitle > .hintWrap .hintIcon{
+      width:16px !important;
+      height:16px !important;
+      min-width:16px !important;
+      flex:0 0 16px !important;
+      font-size:8.5px !important;
+      line-height:14px !important;
+      margin:0 !important;
+      transform:none !important;
+    }
+
+    /* 表头/更小文字：再缩一档，保持相同比例逻辑 */
+    .thLabel .hintWrap{
+      height:15px !important;
+      line-height:15px !important;
+    }
+    .thLabel .hintIcon{
+      width:15px !important;
+      height:15px !important;
+      min-width:15px !important;
+      flex:0 0 15px !important;
+      font-size:8px !important;
+      line-height:13px !important;
+      margin:0 !important;
+      transform:none !important;
+    }
+  }
+
 </style>
 </head>
 <body>
