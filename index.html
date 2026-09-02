@@ -2590,71 +2590,6 @@
     .summary .card:first-child .printInvoiceBtn{height:36px;font-size:11px}
     .receiptStage{padding-top:calc(48px + env(safe-area-inset-top))}
   }
-
-
-
-  /* v16：资产卡片 ↔ 饼状图视图；动效参考用户提供的三个视频 */
-  .assetViewActions{display:flex;align-items:center;gap:8px;margin-left:auto}
-  .assetViewToggleBtn{
-    width:34px;height:34px;padding:0;border:0;background:transparent;color:#e9f3ff;
-    display:inline-flex;align-items:center;justify-content:center;cursor:pointer;border-radius:9px;
-    -webkit-tap-highlight-color:transparent;touch-action:manipulation
-  }
-  .assetViewToggleBtn svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round}
-  .assetViewToggleBtn:active{transform:scale(.92)}
-  .assetViewToggleBtn[aria-pressed="true"]{color:#64b5ff}
-  .pieAssetPanel{
-    display:none;position:relative;overflow:hidden;border:1px solid var(--line);border-radius:0 0 14px 14px;
-    background:linear-gradient(180deg,#0f1721,#0a1017);min-height:510px;padding:20px 16px 22px;
-  }
-  .pieAssetPanel.isVisible{display:block}
-  .pieViewTitle{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:4px}
-  .pieViewTitle strong{font-size:17px;color:#eef6ff}
-  .pieViewTitle span{font-size:11px;color:#8195aa}
-  .pieChartWrap{position:relative;width:min(78vw,310px);aspect-ratio:1;margin:14px auto 4px;filter:drop-shadow(0 14px 22px rgba(0,0,0,.28))}
-  .pieChartSvg{display:block;width:100%;height:100%;overflow:visible}
-  .pieSlice{cursor:pointer;transform-box:fill-box;transform-origin:center;transition:transform 360ms cubic-bezier(.2,.85,.22,1),filter 260ms ease,opacity 260ms ease;outline:none}
-  .pieSlice:hover,.pieSlice:focus-visible{filter:brightness(1.14)}
-  .pieSlice.isSelected{filter:brightness(1.16) drop-shadow(0 6px 8px rgba(0,0,0,.28))}
-  .pieCenter{
-    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:84px;height:84px;border-radius:50%;
-    background:rgba(8,14,21,.94);border:1px solid #34475a;display:flex;flex-direction:column;align-items:center;justify-content:center;
-    pointer-events:none;box-shadow:0 8px 20px rgba(0,0,0,.28)
-  }
-  .pieCenter strong{font-size:18px;line-height:1;color:#f1f7ff}.pieCenter span{font-size:9px;color:#8ca0b4;margin-top:5px}
-  .pieLegend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 9px;margin:8px 0 13px}
-  .pieLegendItem{border:1px solid #283747;background:#0c141d;border-radius:9px;padding:8px 9px;display:flex;align-items:center;gap:7px;min-width:0;cursor:pointer}
-  .pieLegendDot{width:8px;height:8px;border-radius:50%;flex:0 0 8px}.pieLegendText{min-width:0;flex:1}.pieLegendText b{font-size:11px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pieLegendText span{font-size:9px;color:#8ea0b5}.pieLegendPct{font-size:11px;font-weight:800}
-  .pieDetailCard{
-    position:relative;overflow:hidden;border:1px solid #314151;border-radius:13px;min-height:116px;padding:14px;
-    background-color:#101822;background-size:cover;background-position:center;isolation:isolate;
-    transition:opacity 250ms ease,transform 330ms cubic-bezier(.2,.84,.22,1)
-  }
-  .pieDetailCard::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(6,11,17,.88),rgba(6,11,17,.70) 52%,rgba(6,11,17,.56));backdrop-filter:blur(2px)}
-  .pieDetailTop{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.pieDetailName{font-size:22px;font-weight:850}.pieDetailDesc{font-size:11px;color:#a3b5c8;margin-top:3px}.pieDetailPct{font-size:23px;font-weight:900}
-  .pieDetailGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;margin-top:13px;padding-top:10px;border-top:1px solid rgba(133,157,181,.25)}
-  .pieDetailGrid div span{display:block;color:#8fa3b8;font-size:9px}.pieDetailGrid div b{display:block;color:#f1f7ff;font-size:12px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .pieEmpty{text-align:center;color:#8da1b5;padding:90px 12px 60px;font-size:12px}
-  .pieMorphGhost{position:fixed;z-index:2147482000;pointer-events:none;overflow:hidden;border:1px solid #344253;border-radius:16px;background:#101822;box-shadow:0 18px 42px rgba(0,0,0,.36);transform-origin:center;will-change:transform,opacity,filter}
-  .pieMorphGhostInner{width:100%;height:100%;background:linear-gradient(135deg,rgba(31,47,65,.9),rgba(8,14,21,.96));display:flex;align-items:flex-start;padding:12px;color:#eef6ff;font-weight:800;font-size:14px}
-  body.assetViewAnimating{overflow-x:hidden}
-  @media (max-width:760px){
-    .mobileSortBar{display:flex;align-items:center}
-    .assetViewActions{gap:5px}
-    .pieAssetPanel{border-top:0;min-height:500px;padding:15px 12px 18px}
-    .pieChartWrap{width:min(76vw,292px);margin-top:10px}
-    .pieLegend{grid-template-columns:repeat(2,minmax(0,1fr))}
-    body.pieViewMode .panel.tableWrap{display:none!important}
-    body.pieViewMode .pieAssetPanel{display:block}
-    body.pieViewMode .mobileSortBar{border-bottom-left-radius:0;border-bottom-right-radius:0}
-  }
-  @media (min-width:761px){
-    .desktopAssetViewBtn{display:inline-flex!important}
-    body.pieViewMode .panel.tableWrap{display:none!important}
-    body.pieViewMode .pieAssetPanel{display:block;border-radius:14px}
-  }
-  @media (prefers-reduced-motion:reduce){.pieSlice,.pieDetailCard{transition:none!important}}
-
 </style>
 </head>
 <body>
@@ -2749,9 +2684,7 @@
 
   <div class="mobileSortBar mobileOnly" aria-label="资产排序工具">
     <span class="assetHeadLabel"><span>资产</span><span class="muted">（拖动排序）</span></span>
-    <span class="assetViewActions"><button id="assetViewToggleBtn" class="assetViewToggleBtn" type="button" aria-label="切换为饼状图视图" aria-pressed="false" title="切换资产展示视图">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M14 3.2A7.8 7.8 0 0 1 20.8 10H14z"/></svg>
-    </button>    <button id="openAssetSortBtn" class="mobileSortIconBtn" type="button" aria-label="打开资产拖动排序窗口" title="调整资产顺序">
+    <span class="assetViewActions"><button id="openAssetSortBtn" class="mobileSortIconBtn" type="button" aria-label="打开资产拖动排序窗口" title="调整资产顺序">
       <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADUAAABACAYAAAC6CT8CAAAEAklEQVR4nO2bz4scRRiGn296ksUYExIUQSOR1RBURERv3ryYk6AGvOkhf4ERRMWriKD+DUJICIiQi2jOQUH3oCAeorsbRTwmxs3uOsSZeT3U1zvdvT3T070/6IJ+YRimuubrfrq6vuquettoIEkGJJmikZmpSaz9iDvvjsvKe22JWxpo1o7NTJKOAK8Dp4DfgctmdivdXvcgMnHvBc4CT3rci2a2Jikxs1HduPPsuCfJJD0q6RfltSzptG+vdWYzcU9K+qkQ92dJj3u9pCpWE6jEvy/5Dm9Kuu3fkvRVQ6g07oVC3Fv+e0XSqV0HS693SQckXZd0V9KapHVJdyT9K+lPSUez9WvEPeQHP/B46/65LWkkaVXSaa/br4pbtxMmwJjtfdEAkc9cdXQPcLCkvA/cAU4CVyU9YWbDKrAmGWtaK9RKOgXNSi4p2AkC2FNVYDtKw/uoPrAOPEQAe3oWWCxQMAF7kAD2zDSwmKAggG0CDwDfSHq2DCw2KAjJaBO4nwD2nINtJalYoMaF3ynYMeBrSc+b2SgdI2OAGgOHCBkymyVTsOPAFUknAEnqtRlKwALwF/AZcJjtYH1gDXgYeNPvO1sNBd5KZvYO8C5wn5dlwXrACHgkW9B6STpuZh8DHwBHvPg/YEgASoDv0/qV91EtkPC+YmYfShoAnxTqXAEueaIYxQAFIDMb+3PVp5J+AF4jtNq3wOee/czMqu94W6axt9g14Fp2Q/YBNTYo0hYjfwOdm8uIDgqg6tE+iuxXVx1ULOqgYlEHFYs6qFjUQcWiDioWdVCxqIOKRR1ULOqgYlFuNkkTG83WdNOemDL2WDkonzsbZst8Knfv/UG7qD7kbDQHgTeAFwlrP1+Y2VWfPIymxfp+yZmkA8Bl4JXM9nOSPjKz973FdmIr2Df1gcTXTM8SgP5m0q8MeE/Sgpm9LQkiAMv2qRcIl1iPvHPlH+C8X6LnJZU5XlqlLNRvTGw6xTprwFuSDjNJJK0F6wEj71cXgOuEFe9hoV5CsNKcAxaBAW2G8jRuZnYTeBlYJaytFsF6wAYRpPceTNZ8zOxX4CXgBtPBWq+tg/TlxcTMlglgq4TlxyJY65U78xmwFQLYMhGCbbucMmCrRApW2kcyYDeAM8AK5X2slZra8UtabJ4+1jTNV/2vVtyZ2awEbFaLDQnjVxMNCA6WolIvUtm2qapM0QWwM4QWO8rERnOXYIxaMrMN9znMNZb5k0FiZhsEG86Cx8vG/c7M1r3e7o6RGf/4Y5KWlNeSgll+J2b7RW032/+oYO6vFbfuaxE9H6gXCDaaRcJA/aWZDbQ7r0W8SrBs/+FxN5vGrXMApWdsXoP9jLjTXmCpHbfRgajlrxr9D5VWzp3Vem1aAAAAAElFTkSuQmCC" alt="" aria-hidden="true" />
     </button></span>
   </div>
@@ -2760,7 +2693,7 @@
     <table>
       <thead>
         <tr>
-          <th><span class="assetHeadInline"><span class="assetHeadLabel"><span>资产</span><span class="muted" style="font-weight:400">（拖动排序）</span></span><button id="openAssetSortBtnDesktop" class="assetHeadSortBtn" type="button" aria-label="打开资产拖动排序窗口" title="调整资产顺序"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADUAAABACAYAAAC6CT8CAAAEAklEQVR4nO2bz4scRRiGn296ksUYExIUQSOR1RBURERv3ryYk6AGvOkhf4ERRMWriKD+DUJICIiQi2jOQUH3oCAeorsbRTwmxs3uOsSZeT3U1zvdvT3T070/6IJ+YRimuubrfrq6vuquettoIEkGJJmikZmpSaz9iDvvjsvKe22JWxpo1o7NTJKOAK8Dp4DfgctmdivdXvcgMnHvBc4CT3rci2a2Jikxs1HduPPsuCfJJD0q6RfltSzptG+vdWYzcU9K+qkQ92dJj3u9pCpWE6jEvy/5Dm9Kuu3fkvRVQ6g07oVC3Fv+e0XSqV0HS693SQckXZd0V9KapHVJdyT9K+lPSUez9WvEPeQHP/B46/65LWkkaVXSaa/br4pbtxMmwJjtfdEAkc9cdXQPcLCkvA/cAU4CVyU9YWbDKrAmGWtaK9RKOgXNSi4p2AkC2FNVYDtKw/uoPrAOPEQAe3oWWCxQMAF7kAD2zDSwmKAggG0CDwDfSHq2DCw2KAjJaBO4nwD2nINtJalYoMaF3ynYMeBrSc+b2SgdI2OAGgOHCBkymyVTsOPAFUknAEnqtRlKwALwF/AZcJjtYH1gDXgYeNPvO1sNBd5KZvYO8C5wn5dlwXrACHgkW9B6STpuZh8DHwBHvPg/YEgASoDv0/qV91EtkPC+YmYfShoAnxTqXAEueaIYxQAFIDMb+3PVp5J+AF4jtNq3wOee/czMqu94W6axt9g14Fp2Q/YBNTYo0hYjfwOdm8uIDgqg6tE+iuxXVx1ULOqgYlEHFYs6qFjUQcWiDioWdVCxqIOKRR1ULOqgYlFuNkkTG83WdNOemDL2WDkonzsbZst8Knfv/UG7qD7kbDQHgTeAFwlrP1+Y2VWfPIymxfp+yZmkA8Bl4JXM9nOSPjKz973FdmIr2Df1gcTXTM8SgP5m0q8MeE/Sgpm9LQkiAMv2qRcIl1iPvHPlH+C8X6LnJZU5XlqlLNRvTGw6xTprwFuSDjNJJK0F6wEj71cXgOuEFe9hoV5CsNKcAxaBAW2G8jRuZnYTeBlYJawtFsF6wAYRpPceTNZ8zOxX4CXgBtPBWq+tg/TlxcTMlglgq4TlxyJY65U78xmwFQLYMhGCbbucMmCrRApW2kcyYDeAM8AK5X2slZra8UtabJ4+1jTNV/2vVtyZ2awEbFaLDQnjVxMNCA6WolIvUtm2qapM0QWwM4QWO8rERnOXYIxaMrMN9znMNZb5k0FiZhsEG86Cx8vG/c7M1r3e7o6RGf/4Y5KWlNeSgll+J2b7RW032/+oYO6vFbfuaxE9H6gXCDaaRcJA/aWZDbQ7r0W8SrBs/+FxN5vGrXMApWdsXoP9jLjTXmCpHbfRgajlrxr9D5VWzp3Vem1aAAAAAElFTkSuQmCC" alt="" aria-hidden="true" /></button><button id="assetViewToggleBtnDesktop" class="assetViewToggleBtn desktopAssetViewBtn" style="display:none" type="button" aria-label="切换为饼状图视图" aria-pressed="false" title="切换资产展示视图"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M14 3.2A7.8 7.8 0 0 1 20.8 10H14z"/></svg></button></span></th>
+          <th><span class="assetHeadInline"><span class="assetHeadLabel"><span>资产</span><span class="muted" style="font-weight:400">（拖动排序）</span></span><button id="openAssetSortBtnDesktop" class="assetHeadSortBtn" type="button" aria-label="打开资产拖动排序窗口" title="调整资产顺序"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADUAAABACAYAAAC6CT8CAAAEAklEQVR4nO2bz4scRRiGn296ksUYExIUQSOR1RBURERv3ryYk6AGvOkhf4ERRMWriKD+DUJICIiQi2jOQUH3oCAeorsbRTwmxs3uOsSZeT3U1zvdvT3T070/6IJ+YRimuubrfrq6vuquettoIEkGJJmikZmpSaz9iDvvjsvKe22JWxpo1o7NTJKOAK8Dp4DfgctmdivdXvcgMnHvBc4CT3rci2a2Jikxs1HduPPsuCfJJD0q6RfltSzptG+vdWYzcU9K+qkQ92dJj3u9pCpWE6jEvy/5Dm9Kuu3fkvRVQ6g07oVC3Fv+e0XSqV0HS693SQckXZd0V9KapHVJdyT9K+lPSUez9WvEPeQHP/B46/65LWkkaVXSaa/br4pbtxMmwJjtfdEAkc9cdXQPcLCkvA/cAU4CVyU9YWbDKrAmGWtaK9RKOgXNSi4p2AkC2FNVYDtKw/uoPrAOPEQAe3oWWCxQMAF7kAD2zDSwmKAggG0CDwDfSHq2DCw2KAjJaBO4nwD2nINtJalYoMaF3ynYMeBrSc+b2SgdI2OAGgOHCBkymyVTsOPAFUknAEnqtRlKwALwF/AZcJjtYH1gDXgYeNPvO1sNBd5KZvYO8C5wn5dlwXrACHgkW9B6STpuZh8DHwBHvPg/YEgASoDv0/qV91EtkPC+YmYfShoAnxTqXAEueaIYxQAFIDMb+3PVp5J+AF4jtNq3wOee/czMqu94W6axt9g14Fp2Q/YBNTYo0hYjfwOdm8uIDgqg6tE+iuxXVx1ULOqgYlEHFYs6qFjUQcWiDioWdVCxqIOKRR1ULOqgYlFuNkkTG83WdNOemDL2WDkonzsbZst8Knfv/UG7qD7kbDQHgTeAFwlrP1+Y2VWfPIymxfp+yZmkA8Bl4JXM9nOSPjKz973FdmIr2Df1gcTXTM8SgP5m0q8MeE/Sgpm9LQkiAMv2qRcIl1iPvHPlH+C8X6LnJZU5XlqlLNRvTGw6xTprwFuSDjNJJK0F6wEj71cXgOuEFe9hoV5CsNKcAxaBAW2G8jRuZnYTeBlYJawtFsF6wAYRpPceTNZ8zOxX4CXgBtPBWq+tg/TlxcTMlglgq4TlxyJY65U78xmwFQLYMhGCbbucMmCrRApW2kcyYDeAM8AK5X2slZra8UtabJ4+1jTNV/2vVtyZ2awEbFaLDQnjVxMNCA6WolIvUtm2qapM0QWwM4QWO8rERnOXYIxaMrMN9znMNZb5k0FiZhsEG86Cx8vG/c7M1r3e7o6RGf/4Y5KWlNeSgll+J2b7RW032/+oYO6vFbfuaxE9H6gXCDaaRcJA/aWZDbQ7r0W8SrBs/+FxN5vGrXMApWdsXoP9jLjTXmCpHbfRgajlrxr9D5VWzp3Vem1aAAAAAElFTkSuQmCC" alt="" aria-hidden="true" /></button></span></th>
           <th>
             <span class="thLabel">
               <span>目标比例</span>
@@ -2808,13 +2741,7 @@
       </tfoot>
     </table>
   </div>
-
-  <section id="pieAssetPanel" class="pieAssetPanel" aria-label="资产饼状图视图">
-    <div class="pieViewTitle"><strong>资产配置</strong><span>点击扇区查看资产</span></div>
-    <div id="pieViewBody"></div>
-  </section>
-
-  <div class="summary">
+<div class="summary">
     <div class="card"><div class="k">实际交易总额（CNY）</div><div class="v" id="cardActual">¥100,000.00</div><div class="s">使用各行“实际人民币”求和。</div><button id="printInvoiceBtn" class="printInvoiceBtn" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z"/></svg><span>打印发票</span></button></div>
     <div class="card"><div class="k">目标配置差额</div><div class="v" id="cardAlloc">¥0.00</div><div class="s">实际总额 − 目标本金；各行也会单独显示差额。</div></div>
     <div class="card"><div class="k">换汇成本差额（CNY，可选）</div><div class="v" id="cardFx">—</div><div class="s">仅统计已填写参考汇率的交易；未填参考汇率不会参与计算。</div></div>
@@ -3951,7 +3878,6 @@ function render(){
   bindRowEvents();
   bindRowReorder();
   updateTotals();
-  if(assetViewMode==="pie") renderPieView();
   save();
 }
 function rerenderKeepTyping(e, apply){
@@ -4543,8 +4469,10 @@ function bindRowEvents(){
       r.diffFlipped=toFlipped;
       save();
 
+      let activeAnim=null;
       const finish=()=>{
         inner.classList.toggle("isFlipped",toFlipped);
+        if(activeAnim){ try{activeAnim.cancel()}catch(_){} activeAnim=null; }
         shell.classList.remove("isAnimating");
         btn.setAttribute("aria-label",toFlipped?`返回 ${r.name} 配置差额`:`查看 ${r.name} 计算交易汇率`);
         btn.title=toFlipped?"翻转返回配置差额":"翻转查看计算交易汇率";
@@ -4554,32 +4482,24 @@ function bindRowEvents(){
       if(!inner.animate){ finish(); return; }
 
       shell.classList.add("isAnimating");
-      // 动画期间先保持原来的 CSS 最终态，由 WAAPI 完整接管视觉；结束后才写入最终 class。
-      inner.classList.toggle("isFlipped",fromFlipped);
+      /* v18.6：关键修复。
+         返回时如果保留 .isFlipped，CSS 的 transform:rotateY(180deg)!important 会压过 WAAPI，
+         导致 Safari/Chromium 实际画面停在 180°，直到结束才瞬间切回 0°。
+         因此动画开始前统一移除最终态 class，让 WAAPI 在两个方向都真正接管 transform。
+         第一关键帧会立即保持当前视觉角度，不产生可见跳变；结束后再写回最终 class。 */
+      inner.classList.remove("isFlipped");
 
-      const from=fromFlipped?180:0;
-      const to=toFlipped?180:0;
-      const delta=to-from;
-      /*
-        v18.2：固定执行参考视频翻面；完全删掉上一版自定义弹跳/压暗处理，
-        直接按参考视频的手感重写：
-        - 原地扑克牌式翻面
-        - 只有 Y 轴翻转
-        - 90° 附近快速收成细边，再从背面翻出
-        - 使用线性 keyframe 节点控制节奏，避免多余花活
-      */
-      const anim=inner.animate([
-        {transform:`rotateY(${from + delta*0.00}deg)`,offset:0.00},
-        {transform:`rotateY(${from + delta*0.08}deg)`,offset:0.16},
-        {transform:`rotateY(${from + delta*0.18}deg)`,offset:0.28},
-        {transform:`rotateY(${from + delta*0.34}deg)`,offset:0.40},
-        {transform:`rotateY(${from + delta*0.62}deg)`,offset:0.60},
-        {transform:`rotateY(${from + delta*0.78}deg)`,offset:0.72},
-        {transform:`rotateY(${from + delta*0.90}deg)`,offset:0.84},
-        {transform:`rotateY(${to}deg)`,offset:1.00}
-      ],{duration:440,easing:"linear",fill:"none"});
+      /* 正向 0→180；返回 180→0。两边使用完全相同的节奏和 90° 侧边过程。 */
+      const forward=[0,14,32,61,90,112,140,162,180];
+      const backward=[180,162,140,112,90,61,32,14,0];
+      const angles=fromFlipped?backward:forward;
+      const offsets=[0,.13,.25,.38,.50,.62,.75,.87,1];
+      const anim=inner.animate(
+        angles.map((angle,i)=>({transform:`rotateY(${angle}deg)`,offset:offsets[i]})),
+        {duration:440,easing:"cubic-bezier(.34,.03,.22,1)",fill:"forwards"}
+      );
+      activeAnim=anim;
       anim.onfinish=finish;
-      anim.oncancel=finish;
     };
   });
   document.querySelectorAll(".assetDetailsToggle").forEach(btn=>{
@@ -5259,100 +5179,6 @@ if(el("mobileTopBtn")){
 }
 
 
-// v16：资产卡片 / 饼状图双视图。默认浮层卡片；切换时用真实卡片位置做汇聚 / 散开过渡。
-let assetViewMode="cards";
-let pieSelectedId=null;
-let pieMorphing=false;
-const piePalette=["#5aa9e6","#7768d8","#d79555","#cf6d7b","#e7a250","#8d6bc4","#4ea6a0","#79a8d8","#b8789a"];
-function pieRows(){return state.rows.filter(r=>Number(r.pct)>0)}
-function pieAssetKindForView(r){
-  if((r.productKey==="SGOL")||/黄金/i.test(String(r.desc||""))) return "gold";
-  if((r.ccy||"")==="HKD"||r.productKey==="03032") return "hkd";
-  if((r.ccy||"")==="CNY") return "cny";
-  return "usd";
-}
-function pieAssetBg(r){
-  const k=pieAssetKindForView(r);
-  if(typeof receiptAssetImages!=="undefined" && receiptAssetImages[k]) return receiptAssetImages[k];
-  return "";
-}
-function polar(cx,cy,r,a){const q=(a-90)*Math.PI/180;return{x:cx+r*Math.cos(q),y:cy+r*Math.sin(q)}}
-function piePath(cx,cy,r,start,end,inner=48){
-  const p1=polar(cx,cy,r,end),p2=polar(cx,cy,r,start),q1=polar(cx,cy,inner,start),q2=polar(cx,cy,inner,end);
-  const large=(end-start)>180?1:0;
-  return `M ${p1.x} ${p1.y} A ${r} ${r} 0 ${large} 0 ${p2.x} ${p2.y} L ${q1.x} ${q1.y} A ${inner} ${inner} 0 ${large} 1 ${q2.x} ${q2.y} Z`;
-}
-function renderPieView(){
-  const body=el("pieViewBody"); if(!body) return;
-  const rows=pieRows();
-  if(!rows.length){body.innerHTML='<div class="pieEmpty">暂无目标比例大于 0% 的资产</div>';return;}
-  if(!rows.some(r=>r.id===pieSelectedId)) pieSelectedId=rows[0].id;
-  const total=rows.reduce((s,r)=>s+Math.max(0,Number(r.pct)||0),0)||1;
-  let angle=0;
-  const paths=[];
-  rows.forEach((r,i)=>{
-    const sweep=(Math.max(0,Number(r.pct)||0)/total)*360;
-    const start=angle,end=angle+sweep,mid=(start+end)/2;angle=end;
-    const off=polar(0,0,r.id===pieSelectedId?8:0,mid+90);
-    paths.push(`<path class="pieSlice ${r.id===pieSelectedId?"isSelected":""}" data-id="${r.id}" tabindex="0" d="${piePath(150,150,126,start,end,52)}" fill="${piePalette[i%piePalette.length]}" stroke="rgba(8,14,21,.72)" stroke-width="2" style="transform:translate(${off.x}px,${off.y}px)"><title>${r.name} ${Number(r.pct)}%</title></path>`);
-  });
-  const selected=rows.find(r=>r.id===pieSelectedId)||rows[0];
-  const target=targetOf(selected), actual=Number(selected.actualRmb)||0;
-  const diff=target!==null?actual-target:0;
-  const bg=pieAssetBg(selected);
-  const legend=rows.map((r,i)=>`<button class="pieLegendItem" type="button" data-id="${r.id}"><span class="pieLegendDot" style="background:${piePalette[i%piePalette.length]}"></span><span class="pieLegendText"><b>${r.name}</b><span>${r.desc||""}</span></span><span class="pieLegendPct">${Number(r.pct)}%</span></button>`).join("");
-  body.innerHTML=`<div class="pieChartWrap"><svg class="pieChartSvg" viewBox="0 0 300 300" aria-label="资产目标比例饼状图">${paths.join("")}</svg><div class="pieCenter"><strong>${Number(total.toFixed(2))}%</strong><span>目标比例合计</span></div></div><div class="pieLegend">${legend}</div><article class="pieDetailCard" style="${bg?`background-image:url('${bg}')`:""}"><div class="pieDetailTop"><div><div class="pieDetailName">${selected.name}</div><div class="pieDetailDesc">${selected.desc||""}</div></div><div class="pieDetailPct">${Number(selected.pct)}%</div></div><div class="pieDetailGrid"><div><span>目标金额（CNY）</span><b>${target===null?"—":money(target)}</b></div><div><span>实际人民币</span><b>${money(actual)}</b></div><div><span>资产币种</span><b>${selected.ccy==="CNY"?"RMB":selected.ccy}</b></div><div><span>配置差额</span><b>${target===null?"—":`${diff>=0?"+":""}${money(diff)}`}</b></div></div></article>`;
-  body.querySelectorAll(".pieSlice,.pieLegendItem").forEach(n=>{
-    n.addEventListener("click",()=>selectPieAsset(n.dataset.id));
-    n.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();selectPieAsset(n.dataset.id)}});
-  });
-}
-function selectPieAsset(id){
-  if(!id||pieSelectedId===id) return;
-  const card=el("pieViewBody")?.querySelector(".pieDetailCard");
-  if(card){card.style.opacity="0";card.style.transform="translateY(8px) scale(.985)"}
-  pieSelectedId=id;
-  setTimeout(()=>{renderPieView();const c=el("pieViewBody")?.querySelector(".pieDetailCard");if(c){c.animate([{opacity:0,transform:"translateY(10px) scale(.985)"},{opacity:1,transform:"none"}],{duration:340,easing:"cubic-bezier(.2,.82,.22,1)"})}},110);
-  if(navigator.vibrate) try{navigator.vibrate(8)}catch(_){}
-}
-function updateAssetViewButtons(){
-  const pie=assetViewMode==="pie";
-  [el("assetViewToggleBtn"),el("assetViewToggleBtnDesktop")].filter(Boolean).forEach(b=>{b.setAttribute("aria-pressed",String(pie));b.setAttribute("aria-label",pie?"切换回浮层卡片视图":"切换为饼状图视图");b.title=pie?"返回浮层卡片":"切换为饼状图"});
-  document.querySelectorAll(".assetHeadLabel .muted").forEach(n=>{n.textContent=pie?"（饼状图）":"（拖动排序）"});
-}
-function ghostForRow(row,rect){
-  const g=document.createElement("div");g.className="pieMorphGhost";g.style.left=rect.left+"px";g.style.top=rect.top+"px";g.style.width=rect.width+"px";g.style.height=Math.min(rect.height,190)+"px";
-  const name=row.querySelector(".assetName")?.textContent||"资产";g.innerHTML=`<div class="pieMorphGhostInner">${name}</div>`;document.body.appendChild(g);return g;
-}
-function piePanelCenter(){const p=el("pieAssetPanel")?.getBoundingClientRect();return p?{x:p.left+p.width/2,y:p.top+Math.min(190,p.height*.34)}:{x:innerWidth/2,y:innerHeight/2}}
-async function switchAssetView(){
-  if(pieMorphing) return; pieMorphing=true;document.body.classList.add("assetViewAnimating");
-  const reduced=window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
-  const table=document.querySelector(".panel.tableWrap"), panel=el("pieAssetPanel");
-  if(assetViewMode==="cards"){
-    const rows=[...document.querySelectorAll("#tbody tr[data-row-id]")].filter(r=>r.getBoundingClientRect().bottom>0);
-    const visible=rows.slice(0,Math.min(rows.length,7));
-    const ghosts=visible.map(r=>({g:ghostForRow(r,r.getBoundingClientRect()),rect:r.getBoundingClientRect(),id:r.dataset.rowId}));
-    panel?.classList.add("isVisible"); if(panel){panel.style.visibility="hidden";panel.style.display="block"}
-    renderPieView();const center=piePanelCenter();
-    if(!reduced){
-      const anims=ghosts.map((o,i)=>{const cx=o.rect.left+o.rect.width/2,cy=o.rect.top+Math.min(o.rect.height,190)/2,dx=center.x-cx,dy=center.y-cy;return o.g.animate([{transform:"translate(0,0) scale(1)",opacity:1,filter:"blur(0px)"},{transform:`translate(${dx*.58}px,${dy*.58}px) scale(.44) rotate(${(i%2?1:-1)*2}deg)`,opacity:.72,offset:.62},{transform:`translate(${dx}px,${dy}px) scale(.07) rotate(${(i%2?1:-1)*5}deg)`,opacity:0,filter:"blur(1.2px)"}],{duration:700+i*34,easing:"cubic-bezier(.22,.72,.18,1)",fill:"forwards"}).finished.catch(()=>{})});
-      await Promise.all(anims);
-    }
-    ghosts.forEach(o=>o.g.remove());assetViewMode="pie";document.body.classList.add("pieViewMode");if(table)table.style.display="none";if(panel){panel.style.visibility="";panel.style.display="";panel.classList.add("isVisible")}
-    renderPieView();const slices=[...panel.querySelectorAll(".pieSlice")];if(!reduced)slices.forEach((sl,i)=>sl.animate([{transform:`translate(${(i%2?1:-1)*(70+i*7)}px,${(i%3-1)*(62+i*5)}px) scale(.12) rotate(${(i-3)*9}deg)`,opacity:0},{transform:sl.style.transform||"translate(0px,0px) scale(1)",opacity:1}],{duration:520+i*45,easing:"cubic-bezier(.2,.82,.22,1)",fill:"none"}));
-  }else{
-    const slices=[...panel.querySelectorAll(".pieSlice")];if(!reduced)await Promise.all(slices.map((sl,i)=>sl.animate([{transform:sl.style.transform||"translate(0px,0px)",opacity:1},{transform:`translate(${(i%2?1:-1)*(78+i*8)}px,${(i%3-1)*(74+i*6)}px) scale(.18) rotate(${(i-3)*11}deg)`,opacity:0}],{duration:430+i*38,easing:"cubic-bezier(.42,0,.72,.34)",fill:"forwards"}).finished.catch(()=>{})));
-    assetViewMode="cards";document.body.classList.remove("pieViewMode");if(table){table.style.display="";table.style.visibility="hidden"}panel?.classList.remove("isVisible");
-    const center=piePanelCenter();const rows=[...document.querySelectorAll("#tbody tr[data-row-id]")].slice(0,7);const ghosts=rows.map(r=>{const rect=r.getBoundingClientRect();const fake={left:center.x-rect.width*.04,top:center.y-60,width:rect.width,height:Math.min(rect.height,190)};const g=ghostForRow(r,fake);return{g,rect,fake}});
-    if(!reduced)await Promise.all(ghosts.map((o,i)=>{const dx=o.rect.left-o.fake.left,dy=o.rect.top-o.fake.top;return o.g.animate([{transform:"scale(.07)",opacity:0},{transform:`translate(${dx*.55}px,${dy*.55}px) scale(.50)`,opacity:.72,offset:.55},{transform:`translate(${dx}px,${dy}px) scale(1)`,opacity:1}],{duration:630+i*34,easing:"cubic-bezier(.16,.78,.22,1)",fill:"forwards"}).finished.catch(()=>{})}));
-    ghosts.forEach(o=>o.g.remove());if(table)table.style.visibility="";
-  }
-  updateAssetViewButtons();document.body.classList.remove("assetViewAnimating");pieMorphing=false;if(navigator.vibrate)try{navigator.vibrate(10)}catch(_){}
-}
-[el("assetViewToggleBtn"),el("assetViewToggleBtnDesktop")].filter(Boolean).forEach(b=>b.onclick=e=>{e.preventDefault();switchAssetView()});
-updateAssetViewButtons();
-
 el("fillFxBtn").onclick=()=>{
   state.rows.forEach(r=>{
     const payCcy=r.payCcy||"CNY", recvCcy=r.ccy||"CNY";
@@ -5386,7 +5212,7 @@ if ("serviceWorker" in navigator) {
     try {
       const registration = await navigator.serviceWorker.register("./service-worker.js", { scope: "./", updateViaCache: "none" });
       await registration.update();
-      // v18.1: let a newly activated worker take control immediately; reload only once if control changes.
+      // v18.7: force-refresh worker; pie-chart view removed; verified flip retained.
       let reloaded = false;
       navigator.serviceWorker.addEventListener("controllerchange", () => {
         if (reloaded) return;
