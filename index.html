@@ -5385,10 +5385,20 @@ window.addEventListener("orientationchange",closeGlobalHint,{passive:true});
 window.addEventListener("scroll",()=>{ if(globalHintPopover && !window.matchMedia("(max-width:760px)").matches) closeGlobalHint(); },{passive:true,capture:true});
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./service-worker.js", { scope: "./" })
-      .then(registration => registration.update())
-      .catch(error => console.warn("Service Worker registration failed:", error));
+  window.addEventListener("load", async () => {
+    try {
+      const registration = await navigator.serviceWorker.register("./service-worker.js", { scope: "./", updateViaCache: "none" });
+      await registration.update();
+      // v18.1: let a newly activated worker take control immediately; reload only once if control changes.
+      let reloaded = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (reloaded) return;
+        reloaded = true;
+        window.location.reload();
+      });
+    } catch (error) {
+      console.warn("Service Worker registration failed:", error);
+    }
   });
 }
 </script>
