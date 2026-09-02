@@ -1548,9 +1548,6 @@
     -webkit-touch-callout:none !important;
     -webkit-tap-highlight-color:transparent !important;
   }
-  @media (prefers-reduced-motion:reduce){
-    .allocFlipInner{transition:none !important}
-  }
 
 
   /* v69：页面固定，不允许双击缩放或横向晃动 */
@@ -4546,7 +4543,6 @@ function bindRowEvents(){
       r.diffFlipped=toFlipped;
       save();
 
-      const reduced=window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       const finish=()=>{
         inner.classList.toggle("isFlipped",toFlipped);
         shell.classList.remove("isAnimating");
@@ -4554,7 +4550,8 @@ function bindRowEvents(){
         btn.title=toFlipped?"翻转返回配置差额":"翻转查看计算交易汇率";
       };
 
-      if(reduced || !inner.animate){ finish(); return; }
+      // v18.2：这个翻卡是功能反馈，不再受系统“减少动态效果”影响；始终执行视频参考翻面。
+      if(!inner.animate){ finish(); return; }
 
       shell.classList.add("isAnimating");
       // 动画期间先保持原来的 CSS 最终态，由 WAAPI 完整接管视觉；结束后才写入最终 class。
@@ -4564,7 +4561,7 @@ function bindRowEvents(){
       const to=toFlipped?180:0;
       const delta=to-from;
       /*
-        v18：完全删掉上一版自定义弹跳/压暗处理，
+        v18.2：固定执行参考视频翻面；完全删掉上一版自定义弹跳/压暗处理，
         直接按参考视频的手感重写：
         - 原地扑克牌式翻面
         - 只有 Y 轴翻转

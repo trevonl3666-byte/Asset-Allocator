@@ -1,4 +1,4 @@
-const CACHE_NAME = "asset-allocator-v18-1-force-refresh-20260902-0909";
+const CACHE_NAME = "asset-allocator-v18-2-force-video-flip-20260902-1";
 const APP_SHELL = [
   "./",
   "./index.html",
