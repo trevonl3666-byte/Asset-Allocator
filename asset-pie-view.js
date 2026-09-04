@@ -18,7 +18,6 @@
     if (!doc || !doc.getElementById('tbody')) return;
     if (doc.getElementById('assetPieViewBtn')) return;
 
-    doc.documentElement.classList.add('assetPiePreview');
     injectStyles(doc);
 
     const sortBar = doc.querySelector('.mobileSortBar');
@@ -45,6 +44,7 @@
       assets: [],
       geometry: [],
       selection: new Map(),
+      petalNodes: new Map(),
       selectionRaf: 0,
       selectionLast: 0,
       chartRotation: { value: 0, velocity: 0, target: 0, dragging: false },
@@ -54,10 +54,12 @@
       dataRaf: 0,
       dataTransition: null,
       dataTimer: 0,
+      dataDirty: true,
       detailTimer: 0,
       morphing: false,
       ringOrder: [],
       reduceMotion: win.matchMedia('(prefers-reduced-motion: reduce)').matches,
+      compactMotion: win.matchMedia('(max-width: 760px)').matches || (win.navigator.hardwareConcurrency || 8) <= 4,
     };
     installPieSwipe(doc, stage, state);
     installDetailSwipe(doc, stage, state);
@@ -98,6 +100,7 @@
     }
 
     function scheduleDataRefresh() {
+      state.dataDirty = true;
       if (state.mode !== 'pie') return;
       win.clearTimeout(state.dataTimer);
       state.dataTimer = win.setTimeout(() => {
@@ -110,6 +113,7 @@
       renderPie(doc, stage, state, immediate);
       updateSummary(doc, stage);
       if (state.selectedId) renderDetail(doc, stage, state, state.selectedId);
+      state.dataDirty = false;
     }
 
     toggle.addEventListener('click', () => {
@@ -163,9 +167,15 @@
       );
     });
 
-    refresh();
-    win.scrollTo(0, 0);
-    doc.body.classList.add('ready');
+    // Prepare the hidden SVG only when the browser is genuinely idle. This
+    // keeps the source page's first render untouched while making the first
+    // mobile switch as cheap as subsequent switches on supporting browsers.
+    if (typeof win.requestIdleCallback === 'function') {
+      win.requestIdleCallback(() => {
+        if (state.mode === 'cards' && state.dataDirty) refresh();
+      });
+    }
+
   }
 
   function parseNumber(value) {
@@ -181,27 +191,11 @@
     const style = doc.createElement('style');
     style.id = 'assetPiePreviewStyles';
     style.textContent = `
-      html.assetPiePreview body{background:#070d13;min-height:100svh}
-      html.assetPiePreview .wrap{max-width:430px;padding:14px 5px 48px}
-      html.assetPiePreview h1,
-      html.assetPiePreview .sub,
-      html.assetPiePreview .panel.top,
-      html.assetPiePreview .notice,
-      html.assetPiePreview .summary,
-      html.assetPiePreview .formula,
-      html.assetPiePreview .mobileDock,
-      html.assetPiePreview .footer{display:none!important}
-      html.assetPiePreview .mobileSortBar{display:flex!important;margin:0 0 7px;padding:11px 8px 10px;border:1px solid #2a3949;border-radius:15px 15px 0 0;background:linear-gradient(180deg,#111c27,#0d161f);position:sticky;top:0;z-index:80;box-shadow:0 10px 28px rgba(0,0,0,.22)}
-      html.assetPiePreview .assetViewActions{display:inline-flex;align-items:center;gap:8px}
-      html.assetPiePreview .assetPieViewBtn{width:42px;height:42px;padding:6px;border:1px solid #33465a;border-radius:13px;background:#111a24;color:#99adc2;transition:background-color .2s ease,border-color .2s ease,color .2s ease,transform .16s ease}
-      html.assetPiePreview .assetPieViewBtn:active{transform:scale(.94)}
-      html.assetPiePreview .assetPieViewBtn[aria-pressed="true"]{border-color:#168cff;background:#0d1c2b;color:#2d9cff;box-shadow:0 0 0 1px rgba(45,156,255,.12) inset}
-      html.assetPiePreview .assetPieViewBtn svg{display:block;width:100%;height:100%;fill:currentColor;stroke:currentColor;stroke-width:1.25;stroke-linejoin:round}
-      html.assetPiePreview .tableWrap{margin:0;border-radius:0 0 15px 15px;overflow:visible}
-      html.assetPiePreview body.assetPieMode .tableWrap{display:none!important}
-      html.assetPiePreview body.assetPieBusy{overflow:hidden}
-      html.assetPiePreview body.assetPieMorphingIn #assetPieStage,
-      html.assetPiePreview body.assetPieMorphingOut #assetPieStage{position:fixed;left:5px;right:5px;top:71px;z-index:72;max-width:420px;margin:0 auto}
+      .assetPieViewBtn{margin-right:8px;color:#99adc2;transition:color .16s ease,opacity .16s ease,transform .16s ease}
+      .assetPieViewBtn:active{transform:scale(.94)}
+      .assetPieViewBtn[aria-pressed="true"]{color:#2d9cff}
+      .assetPieViewBtn svg{display:block;width:20px;height:20px;fill:currentColor;stroke:currentColor;stroke-width:1.25;stroke-linejoin:round}
+      body.assetPieMode #assetPieStage + .tableWrap{display:none!important}
 
       #assetPieStage{margin:0;border:1px solid #2a3949;border-radius:0 0 22px 22px;background:radial-gradient(circle at 52% 34%,rgba(23,40,54,.44),rgba(7,13,19,.96) 67%),#071018;overflow:hidden;box-shadow:0 18px 44px rgba(0,0,0,.3)}
       #assetPieStage[hidden]{display:none!important}
@@ -406,6 +400,7 @@
     }
     if (!state.assets.some((asset) => asset.pct > 0)) {
       layer.querySelectorAll('.assetPetal').forEach((group) => group.remove());
+      state.petalNodes.clear();
       let empty = layer.querySelector('.pieEmptyState');
       if (!empty) {
         empty = svgElement(doc, 'text', { class: 'pieEmptyState', x: '180', y: '198' });
@@ -424,6 +419,7 @@
     for (const item of drawOrder) {
       const group = ordered.find((entry) => entry.id === item.asset.id).node;
       updatePetalGroup(doc, group, item, state);
+      cachePetalNodes(state, item.asset.id, group);
       layer.append(group);
       if (!state.selection.has(item.asset.id)) state.selection.set(item.asset.id, { value: 0, velocity: 0 });
     }
@@ -431,9 +427,29 @@
       if (!activeIds.has(entry.id)) {
         entry.node.remove();
         state.selection.delete(entry.id);
+        state.petalNodes.delete(entry.id);
       }
     }
     applyBubbleField(stage, state);
+  }
+
+  function cachePetalNodes(state, id, group) {
+    state.petalNodes.set(id, {
+      group,
+      shapePaths: [
+        group.querySelector('clipPath path'),
+        group.querySelector('.petalDepthWall'),
+        group.querySelector('.petalDepthTint'),
+        group.querySelector('.petalTexture'),
+        group.querySelector('.petalShade'),
+        group.querySelector('.petalEdge'),
+        group.querySelector('.petalHighlight'),
+        group.querySelector('.petalHit'),
+      ].filter(Boolean),
+      depthWall: group.querySelector('.petalDepthWall'),
+      depthTint: group.querySelector('.petalDepthTint'),
+      label: group.querySelector('.petalLabel'),
+    });
   }
 
   function createPetalGroup(doc, stage, state, id) {
@@ -647,8 +663,9 @@
     const selectedStrength = selectedGeometry ? Math.max(0, state.selection.get(selectedGeometry.asset.id)?.value || 0) : 0;
     const selectedCenter = selectedGeometry ? point(cx, cy, 98, selectedGeometry.mid) : { x: cx, y: cy };
     for (const item of state.geometry) {
-      const group = stage.querySelector(`.assetPetal[data-id="${CSS.escape(item.asset.id)}"]`);
-      if (!group) continue;
+      const nodes = state.petalNodes.get(item.asset.id);
+      if (!nodes) continue;
+      const group = nodes.group;
       const own = Math.max(0, state.selection.get(item.asset.id)?.value || 0);
       const isSelected = Boolean(selectedGeometry && selectedGeometry.asset.id === item.asset.id);
       const centerDelta = selectedGeometry ? signedCircularDelta(item.mid, selectedGeometry.mid) : 0;
@@ -662,7 +679,7 @@
       const innerMotion = model.innerSlidePose(relative, response, isSelected);
       const path = bubblePetalPath(cx, cy, profile.innerRadius, model.referenceOuterRadius(), item.start, item.end, model.repulsiveGapChannel(item.allocationTotal, response), profile.sideBend, isSelected ? own : 0, innerMotion, model.referenceInnerBoundary(item.asset.name));
       const anchor = placement || point(cx, cy, profile.labelRadius, item.mid);
-      group.querySelectorAll('path').forEach((node) => {
+      nodes.shapePaths.forEach((node) => {
         node.setAttribute('d', path);
         node.removeAttribute('transform');
       });
@@ -682,8 +699,8 @@
       const pivot = { x: anchor.x, y: anchor.y };
       const localAngle = item.mid * 180 / Math.PI;
       const depth = model.selectedDepthPose(own, state.reduceMotion);
-      const depthWall = group.querySelector('.petalDepthWall');
-      const depthTint = group.querySelector('.petalDepthTint');
+      const depthWall = nodes.depthWall;
+      const depthTint = nodes.depthTint;
       // The face lifts straight upward in screen space.  Its backing remains
       // directly below it, so the exposed rim always reads as vertical depth
       // instead of a second petal sliding radially out of the pie.
@@ -700,7 +717,7 @@
         depthTint.style.opacity = depth.lipOpacity.toFixed(3);
       }
       group.setAttribute('transform', `translate(${tx.toFixed(3)} ${ty.toFixed(3)}) translate(${pivot.x.toFixed(3)} ${pivot.y.toFixed(3)}) rotate(${localAngle.toFixed(3)}) scale(${pose.scaleRadial.toFixed(4)} ${pose.scaleTangent.toFixed(4)}) rotate(${(-localAngle).toFixed(3)}) translate(${(-pivot.x).toFixed(3)} ${(-pivot.y).toFixed(3)})`);
-      const label = group.querySelector('.petalLabel');
+      const label = nodes.label;
       if (label) {
         const labelX = label.dataset.labelX;
         const labelY = label.dataset.labelY;
@@ -1309,7 +1326,63 @@
     });
   }
 
+  async function morphToPieCompact(doc, stage, tableWrap, toggle, state, refresh) {
+    state.morphing = true;
+    if (state.dataDirty || !state.assets.length) refresh();
+    stage.hidden = false;
+    doc.body.classList.add('assetPieMode');
+    const animation = stage.animate(
+      state.reduceMotion
+        ? [{ opacity: 0 }, { opacity: 1 }]
+        : [
+          { opacity: 0, transform: 'translateY(8px) scale(.992)' },
+          { opacity: 1, transform: 'translateY(0) scale(1)' },
+        ],
+      { duration: state.reduceMotion ? 100 : 220, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'both' },
+    );
+    await animation.finished.catch(() => {});
+    animation.cancel();
+    tableWrap.style.opacity = '';
+    state.mode = 'pie';
+    state.morphing = false;
+    toggle.setAttribute('aria-pressed', 'true');
+    toggle.setAttribute('aria-label', '切换回资产卡片视图');
+  }
+
+  async function morphToCardsCompact(doc, stage, tableWrap, toggle, state) {
+    state.morphing = true;
+    clearTimeout(state.detailTimer);
+    if (state.selectionRaf) cancelAnimationFrame(state.selectionRaf);
+    state.selectionRaf = 0;
+    const animation = stage.animate(
+      state.reduceMotion
+        ? [{ opacity: 1 }, { opacity: 0 }]
+        : [
+          { opacity: 1, transform: 'translateY(0) scale(1)' },
+          { opacity: 0, transform: 'translateY(6px) scale(.994)' },
+        ],
+      { duration: state.reduceMotion ? 90 : 170, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'both' },
+    );
+    await animation.finished.catch(() => {});
+    animation.cancel();
+    doc.body.classList.remove('assetPieMode');
+    tableWrap.style.opacity = '';
+    stage.hidden = true;
+    state.mode = 'cards';
+    state.morphing = false;
+    state.selectedId = null;
+    state.chartRotation.value = 0;
+    state.chartRotation.target = 0;
+    state.chartRotation.velocity = 0;
+    stage.classList.remove('hasSelection');
+    for (const spring of state.selection.values()) { spring.value = 0; spring.velocity = 0; }
+    closeDetail(stage, state);
+    toggle.setAttribute('aria-pressed', 'false');
+    toggle.setAttribute('aria-label', '切换为资产配置饼状图');
+  }
+
   async function morphToPie(doc, win, stage, tableWrap, toggle, state, refresh) {
+    if (state.compactMotion) return morphToPieCompact(doc, stage, tableWrap, toggle, state, refresh);
     state.morphing = true;
     doc.body.classList.add('assetPieBusy', 'assetPieMorphingIn');
     refresh();
@@ -1379,10 +1452,10 @@
     state.morphing = false;
     toggle.setAttribute('aria-pressed', 'true');
     toggle.setAttribute('aria-label', '切换回资产卡片视图');
-    win.scrollTo({ top: 0, behavior: 'auto' });
   }
 
   async function morphToCards(doc, win, stage, tableWrap, toggle, state) {
+    if (state.compactMotion) return morphToCardsCompact(doc, stage, tableWrap, toggle, state);
     state.morphing = true;
     doc.body.classList.add('assetPieBusy', 'assetPieMorphingOut');
     const sourceShapes = new Map([...stage.querySelectorAll('.assetPetal')].map((group) => {
@@ -1394,7 +1467,6 @@
     closeDetail(stage, state);
     stage.classList.remove('hasSelection');
     const sourceRects = new Map([...sourceShapes].map(([id, shape]) => [id, shape.rect]));
-    win.scrollTo({ top: 0, behavior: 'auto' });
     doc.body.classList.remove('assetPieMode');
     tableWrap.style.opacity = '0';
     const rows = [...doc.querySelectorAll('#tbody tr[data-row-id]')];
@@ -1467,7 +1539,6 @@
     doc.body.classList.remove('assetPieBusy', 'assetPieMorphingOut');
     toggle.setAttribute('aria-pressed', 'false');
     toggle.setAttribute('aria-label', '切换为资产配置饼状图');
-    win.scrollTo({ top: 0, behavior: 'auto' });
   }
 
   function createProxies(doc, assets, rects, baseRects = rects) {
