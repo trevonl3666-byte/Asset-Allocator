@@ -1,8 +1,14 @@
-const CACHE_NAME = "asset-allocator-v18-7-no-pie-pwa-20260902-1";
+const CACHE_NAME = "asset-allocator-v19-pie-single-organic-depth-54-20260904";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./manifest.json",
+  "./asset-pie-motion-model.js",
+  "./asset-pie-view.js",
+  "./assets/usd-background.png",
+  "./assets/gold-background.jpeg",
+  "./assets/cny-background.jpeg",
+  "./assets/hkd-background.png",
   "./icons/apple-touch-icon.png",
   "./icons/favicon-32.png",
   "./icons/icon-192.png",
