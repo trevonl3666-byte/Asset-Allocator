@@ -198,8 +198,8 @@
       body.assetPieMode #assetPieStage + .tableWrap{display:none!important}
 
       #assetPieStage{margin:0;border:1px solid #2a3949;border-radius:0 0 22px 22px;background:radial-gradient(circle at 52% 34%,rgba(23,40,54,.44),rgba(7,13,19,.96) 67%),#071018;overflow:hidden;box-shadow:0 18px 44px rgba(0,0,0,.3)}
-      #assetPieStage[hidden]{display:none!important}
-      .assetPieViewport{position:relative;height:min(116vw,500px);min-height:438px;max-height:500px;padding:5px 0 0;touch-action:pan-y;transition:height 440ms cubic-bezier(.22,1,.36,1),min-height 440ms cubic-bezier(.22,1,.36,1),max-height 440ms cubic-bezier(.22,1,.36,1)}
+      #assetPieStage[hidden]{display:block!important;position:fixed!important;left:-200vw!important;top:0!important;width:calc(100vw - 10px)!important;visibility:hidden!important;pointer-events:none!important;contain:strict!important}
+      .assetPieViewport{position:relative;height:min(116vw,500px);min-height:438px;max-height:500px;padding:5px 0 0;touch-action:none;overscroll-behavior:contain;transition:height 440ms cubic-bezier(.22,1,.36,1),min-height 440ms cubic-bezier(.22,1,.36,1),max-height 440ms cubic-bezier(.22,1,.36,1)}
       #assetPieSvg{display:block;width:100%;height:100%;overflow:visible;transform-origin:50% 46%;transition:transform 440ms cubic-bezier(.22,1,.36,1);will-change:transform}
       #assetPieStage.hasSelection .assetPieViewport{height:min(116vw,500px);min-height:438px;max-height:500px}
       #assetPieStage.hasSelection #assetPieSvg{transform:none}
@@ -234,6 +234,10 @@
       .petalDesc,.petalShares{font-weight:520;fill:#aebfd1}
       .pieInstruction{margin:-6px 0 19px;text-align:center;color:#64798d;font-size:13px;letter-spacing:.015em}
       .assetPieDetail{margin:0 12px 16px;transform-origin:50% 0;position:relative;touch-action:pan-y}
+      @media (max-width:900px){
+        body,body *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+        input,textarea,[contenteditable="true"],[contenteditable="true"] *{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+      }
       .assetPieDetail[hidden]{display:none!important}
       .assetPieDetail::before{content:"";position:absolute;left:var(--detail-anchor,50%);top:-8px;width:16px;height:16px;transform:translateX(-50%) rotate(45deg);border-left:1px solid #31465b;border-top:1px solid #31465b;background:#0d1721;z-index:1}
       .assetPieDetail table{min-width:0!important;width:100%;border-collapse:separate;border-spacing:0;position:relative;z-index:2}
@@ -254,6 +258,8 @@
       .assetMorphIdentity strong{font-size:11px;font-weight:800;line-height:1.05;letter-spacing:.01em}
       .assetMorphIdentity span{font-size:16px;font-weight:850;line-height:1}
       .assetMorphIdentity small{font-size:9px;font-weight:650;line-height:1.1;color:#dbe8f3}
+      .assetMorphProxy.isLightweight{contain:strict;backface-visibility:hidden;transform-style:flat;will-change:opacity,transform}
+      .assetMorphProxy.isLightweight .assetMorphIdentity{opacity:1}
       @media(max-width:390px){
         .assetPieViewport{min-height:420px;height:113vw}
         .pieSummary button{padding:0 11px;font-size:13px}
@@ -1326,48 +1332,157 @@
     });
   }
 
+  function lightweightMorphFrames(base, start, center, target, assetId, reverse = false) {
+    return [0, .12, .28, .46, .58, .72, .84, .94, 1].map((progress) => {
+      const weights = model.continuousMorphWeights(progress);
+      const rect = blendedMorphRect(start, center, target, weights, assetId, reverse);
+      const opacity = progress < .94 ? 1 : Math.max(0, 1 - (progress - .94) / .06);
+      const frame = transformRectFrame(base, rect, opacity, '28%', progress);
+      delete frame.borderRadius;
+      return frame;
+    });
+  }
+
   async function morphToPieCompact(doc, stage, tableWrap, toggle, state, refresh) {
     state.morphing = true;
+    if (state.reduceMotion) {
+      if (state.dataDirty || !state.assets.length) refresh();
+      stage.hidden = false;
+      doc.body.classList.add('assetPieMode');
+      state.mode = 'pie';
+      state.morphing = false;
+      toggle.setAttribute('aria-pressed', 'true');
+      toggle.setAttribute('aria-label', '切换回资产卡片视图');
+      return;
+    }
+    doc.body.classList.add('assetPieBusy', 'assetPieMorphingIn');
     if (state.dataDirty || !state.assets.length) refresh();
+    const rows = [...doc.querySelectorAll('#tbody tr[data-row-id]')];
+    const rowRects = new Map(rows.map((row) => [row.dataset.rowId, row.getBoundingClientRect()]));
     stage.hidden = false;
+    stage.style.opacity = '0';
+    const targetRects = new Map([...stage.querySelectorAll('.assetPetal')].map((group) => {
+      const rect = group.querySelector('.petalEdge')?.getBoundingClientRect() || group.getBoundingClientRect();
+      return [group.dataset.id, rect];
+    }));
+    const chartRect = stage.querySelector('#assetPieSvg')?.getBoundingClientRect();
+    const aggregateRect = centerAggregateRect(chartRect);
+    const proxies = createLightweightProxies(doc, state.assets, rowRects, rowRects);
+    const duration = state.reduceMotion ? 140 : model.MOTION.viewMorphMs;
+    const petals = [...stage.querySelectorAll('.assetPetal')];
+    petals.forEach((petal) => { petal.style.opacity = '0'; });
+    tableWrap.style.opacity = '0';
+    const animations = proxies.map((proxy, index) => {
+      const target = targetRects.get(proxy.dataset.id);
+      const start = rowRects.get(proxy.dataset.id);
+      if (!target || !start) return null;
+      return proxy.animate(
+        lightweightMorphFrames(proxyBaseRect(proxy), start, aggregateRect, target, proxy.dataset.id),
+        { duration, delay: state.reduceMotion ? 0 : index * 2, easing: 'linear', fill: 'forwards' },
+      );
+    }).filter(Boolean);
+    const petalAnimations = petals.map((petal, index) => petal.animate([
+      { opacity: 0 },
+      { opacity: 0, offset: .90 },
+      { opacity: 1, offset: 1 },
+    ], { duration, delay: state.reduceMotion ? 0 : index * 2, easing: 'linear', fill: 'forwards' }));
+    const stageAnimation = stage.animate([
+      { opacity: 0 },
+      { opacity: .42, offset: .28 },
+      { opacity: 1, offset: .52 },
+      { opacity: 1 },
+    ], { duration, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'forwards' });
+    await Promise.allSettled([...animations, ...petalAnimations, stageAnimation].map((animation) => animation.finished));
+    proxies.forEach((proxy) => proxy.remove());
+    stageAnimation.cancel();
+    stage.style.opacity = '';
+    petals.forEach((petal) => { petal.style.opacity = ''; });
+    petalAnimations.forEach((animation) => animation.cancel());
     doc.body.classList.add('assetPieMode');
-    const animation = stage.animate(
-      state.reduceMotion
-        ? [{ opacity: 0 }, { opacity: 1 }]
-        : [
-          { opacity: 0, transform: 'translateY(8px) scale(.992)' },
-          { opacity: 1, transform: 'translateY(0) scale(1)' },
-        ],
-      { duration: state.reduceMotion ? 100 : 220, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'both' },
-    );
-    await animation.finished.catch(() => {});
-    animation.cancel();
     tableWrap.style.opacity = '';
     state.mode = 'pie';
     state.morphing = false;
+    doc.body.classList.remove('assetPieBusy', 'assetPieMorphingIn');
     toggle.setAttribute('aria-pressed', 'true');
     toggle.setAttribute('aria-label', '切换回资产卡片视图');
   }
 
   async function morphToCardsCompact(doc, stage, tableWrap, toggle, state) {
     state.morphing = true;
+    if (state.reduceMotion) {
+      clearTimeout(state.detailTimer);
+      if (state.selectionRaf) cancelAnimationFrame(state.selectionRaf);
+      state.selectionRaf = 0;
+      doc.body.classList.remove('assetPieMode');
+      stage.hidden = true;
+      state.mode = 'cards';
+      state.morphing = false;
+      state.selectedId = null;
+      state.chartRotation.value = 0;
+      state.chartRotation.target = 0;
+      state.chartRotation.velocity = 0;
+      stage.classList.remove('hasSelection');
+      for (const spring of state.selection.values()) { spring.value = 0; spring.velocity = 0; }
+      closeDetail(stage, state);
+      toggle.setAttribute('aria-pressed', 'false');
+      toggle.setAttribute('aria-label', '切换为资产配置饼状图');
+      return;
+    }
+    doc.body.classList.add('assetPieBusy', 'assetPieMorphingOut');
+    const sourceRects = new Map([...stage.querySelectorAll('.assetPetal')].map((group) => {
+      const rect = group.querySelector('.petalEdge')?.getBoundingClientRect() || group.getBoundingClientRect();
+      return [group.dataset.id, rect];
+    }));
     clearTimeout(state.detailTimer);
     if (state.selectionRaf) cancelAnimationFrame(state.selectionRaf);
     state.selectionRaf = 0;
-    const animation = stage.animate(
-      state.reduceMotion
-        ? [{ opacity: 1 }, { opacity: 0 }]
-        : [
-          { opacity: 1, transform: 'translateY(0) scale(1)' },
-          { opacity: 0, transform: 'translateY(6px) scale(.994)' },
-        ],
-      { duration: state.reduceMotion ? 90 : 170, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'both' },
-    );
-    await animation.finished.catch(() => {});
-    animation.cancel();
+    state.selectedId = null;
+    closeDetail(stage, state);
+    stage.classList.remove('hasSelection');
     doc.body.classList.remove('assetPieMode');
+    tableWrap.style.opacity = '0';
+    const rows = [...doc.querySelectorAll('#tbody tr[data-row-id]')];
+    const targetRects = new Map(rows.map((row) => [row.dataset.rowId, row.getBoundingClientRect()]));
+    tableWrap.style.visibility = 'hidden';
+    const assets = orderAssetsByIds(readRows(doc), state.ringOrder);
+    const chartRect = stage.querySelector('#assetPieSvg')?.getBoundingClientRect();
+    const aggregateRect = centerAggregateRect(chartRect);
+    const proxies = createLightweightProxies(doc, assets, sourceRects, targetRects);
+    const duration = state.reduceMotion ? 140 : model.MOTION.viewMorphMs;
+    const animations = proxies.map((proxy, index) => {
+      const start = sourceRects.get(proxy.dataset.id);
+      const target = targetRects.get(proxy.dataset.id);
+      if (!start || !target) return null;
+      return proxy.animate(
+        lightweightMorphFrames(proxyBaseRect(proxy), start, aggregateRect, target, proxy.dataset.id, true),
+        { duration, delay: state.reduceMotion ? 0 : index * 2, easing: 'linear', fill: 'forwards' },
+      );
+    }).filter(Boolean);
+    const petals = [...stage.querySelectorAll('.assetPetal')];
+    const petalAnimations = petals.map((petal, index) => petal.animate([
+      { opacity: 1 },
+      { opacity: 0, offset: .09 },
+      { opacity: 0 },
+    ], { duration, delay: state.reduceMotion ? 0 : index * 2, easing: 'linear', fill: 'forwards' }));
+    const stageAnimation = stage.animate([
+      { opacity: 1 },
+      { opacity: 1, offset: .38 },
+      { opacity: .28, offset: .58 },
+      { opacity: 0 },
+    ], { duration, easing: 'linear', fill: 'forwards' });
+    const tableAnimation = tableWrap.animate([
+      { opacity: 0 },
+      { opacity: 0, offset: .94 },
+      { opacity: 1 },
+    ], { duration, easing: 'linear', fill: 'forwards' });
+    await Promise.allSettled([...animations, ...petalAnimations, stageAnimation, tableAnimation].map((animation) => animation.finished));
+    proxies.forEach((proxy) => proxy.remove());
+    stageAnimation.cancel();
+    tableAnimation.cancel();
+    tableWrap.style.visibility = '';
     tableWrap.style.opacity = '';
     stage.hidden = true;
+    petalAnimations.forEach((animation) => animation.cancel());
     state.mode = 'cards';
     state.morphing = false;
     state.selectedId = null;
@@ -1377,6 +1492,7 @@
     stage.classList.remove('hasSelection');
     for (const spring of state.selection.values()) { spring.value = 0; spring.velocity = 0; }
     closeDetail(stage, state);
+    doc.body.classList.remove('assetPieBusy', 'assetPieMorphingOut');
     toggle.setAttribute('aria-pressed', 'false');
     toggle.setAttribute('aria-label', '切换为资产配置饼状图');
   }
@@ -1572,6 +1688,39 @@
       amount.textContent = formatMoney(asset.amount);
       identity.append(code, percentage, amount);
       proxy.append(table, identity);
+      doc.body.append(proxy);
+      return proxy;
+    }).filter(Boolean);
+  }
+
+  function createLightweightProxies(doc, assets, rects, baseRects = rects) {
+    return assets.map((asset) => {
+      const rect = rects.get(asset.id);
+      const base = baseRects.get(asset.id) || rect;
+      if (!rect || !base) return null;
+      // Keep the raster surface near the aggregate-bubble size. The proxy can
+      // still match a full card through compositor scaling, without asking the
+      // browser to repaint seven full-card texture layers during every morph.
+      const rasterWidth = 104;
+      const rasterHeight = 104;
+      const proxy = doc.createElement('div');
+      proxy.className = 'assetMorphProxy isLightweight';
+      proxy.dataset.id = asset.id;
+      proxy.dataset.baseWidth = String(rasterWidth);
+      proxy.dataset.baseHeight = String(rasterHeight);
+      proxy.style.cssText = `width:${rasterWidth}px;height:${rasterHeight}px;border-radius:28%`;
+      proxy.style.backgroundImage = `linear-gradient(rgba(5,11,17,.54),rgba(5,11,17,.72)),url("${TEXTURES[asset.texture] || TEXTURES.usd}")`;
+      proxy.setAttribute('aria-hidden', 'true');
+      const identity = doc.createElement('div');
+      identity.className = 'assetMorphIdentity';
+      const code = doc.createElement('strong');
+      code.textContent = asset.name;
+      const percentage = doc.createElement('span');
+      percentage.textContent = `${trimNumber(asset.pct)}%`;
+      const amount = doc.createElement('small');
+      amount.textContent = formatMoney(asset.amount);
+      identity.append(code, percentage, amount);
+      proxy.append(identity);
       doc.body.append(proxy);
       return proxy;
     }).filter(Boolean);
