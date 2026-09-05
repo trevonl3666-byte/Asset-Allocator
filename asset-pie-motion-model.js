@@ -267,11 +267,14 @@
     const fallback = petalBodyProfile(spanRadians);
     const preset = REFERENCE_PETAL_PROFILES[String(assetName || '').toUpperCase()];
     if (!preset) return { ...fallback, outerRadius: REFERENCE_OUTER_RADIUS, baseOffset: 0 };
+    const degrees = Math.max(0, Number(spanRadians) || 0) * 180 / Math.PI;
+    const tinyPetal = smoothStep((22 - degrees) / 10);
+    const innerRadius = preset.innerRadius + 40 * tinyPetal;
     return {
-      innerRadius: preset.innerRadius,
+      innerRadius,
       outerRadius: REFERENCE_OUTER_RADIUS,
       baseOffset: 0,
-      labelRadius: preset.innerRadius + (REFERENCE_OUTER_RADIUS - preset.innerRadius) * preset.labelFactor,
+      labelRadius: innerRadius + (REFERENCE_OUTER_RADIUS - innerRadius) * preset.labelFactor,
       sideBend: fallback.sideBend,
     };
   }

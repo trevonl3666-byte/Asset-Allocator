@@ -1,4 +1,4 @@
-const CACHE_NAME = "asset-allocator-v26-mobile-essential-motion-performance-20260904";
+const CACHE_NAME = "asset-allocator-v29-mobile-compositor-parity-20260905";
 const APP_SHELL = [
   "./",
   "./index.html",

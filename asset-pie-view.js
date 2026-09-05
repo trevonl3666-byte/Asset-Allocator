@@ -48,7 +48,9 @@
       selection: new Map(),
       petalNodes: new Map(),
       selectionRaf: 0,
+      selectionAnimating: false,
       selectionLast: 0,
+      rotationRaf: 0,
       chartRotation: { value: 0, velocity: 0, target: 0, dragging: false },
       drag: null,
       suppressClickUntil: 0,
@@ -206,9 +208,8 @@
       #assetPieStage{margin:0;border:1px solid #2a3949;border-radius:0 0 22px 22px;background:radial-gradient(circle at 52% 34%,rgba(23,40,54,.44),rgba(7,13,19,.96) 67%),#071018;overflow:hidden;box-shadow:0 18px 44px rgba(0,0,0,.3)}
       #assetPieStage[hidden]{display:block!important;position:fixed!important;left:-200vw!important;top:0!important;width:calc(100vw - 10px)!important;visibility:hidden!important;pointer-events:none!important;contain:strict!important}
       .assetPieViewport{position:relative;height:min(116vw,500px);min-height:438px;max-height:500px;padding:5px 0 0;touch-action:none;overscroll-behavior:contain;transition:height 440ms cubic-bezier(.22,1,.36,1),min-height 440ms cubic-bezier(.22,1,.36,1),max-height 440ms cubic-bezier(.22,1,.36,1)}
-      #assetPieSvg{display:block;width:100%;height:100%;overflow:visible;transform-origin:50% 46%;transition:transform 440ms cubic-bezier(.22,1,.36,1);will-change:transform}
+      #assetPieSvg{display:block;width:100%;height:100%;overflow:visible;transform-origin:50% 45.581%;transition:none;will-change:transform;backface-visibility:hidden;-webkit-backface-visibility:hidden;transform-style:flat}
       #assetPieStage.hasSelection .assetPieViewport{height:min(116vw,500px);min-height:438px;max-height:500px}
-      #assetPieStage.hasSelection #assetPieSvg{transform:none}
       .assetPetal{cursor:pointer;outline:none;transform-box:view-box;transform-origin:center;will-change:transform}
       .assetPetal .petalDepthWall{opacity:0;pointer-events:none;stroke:var(--petal-accent,#6aaee3);stroke-width:1.15;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke;filter:brightness(.64) saturate(1.12) drop-shadow(0 8px 7px rgba(0,0,0,.7));will-change:transform,opacity}
       .assetPetal .petalDepthTint{fill:#5b9dcc;opacity:0;pointer-events:none;stroke:color-mix(in srgb,var(--petal-accent,#8ecaff) 58%,white);stroke-width:.95;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke;filter:brightness(1.08) saturate(1.12) drop-shadow(0 4px 5px rgba(0,0,0,.42));will-change:transform,opacity}
@@ -223,6 +224,7 @@
       .assetPetal.isSelected .petalEdge{stroke:color-mix(in srgb,var(--petal-accent,#8ecaff) 68%,white);stroke-width:1.75;stroke-linejoin:round}
       .assetPetal.isSelected .petalHighlight{stroke:rgba(237,248,255,.9);stroke-width:1.2}
       .petalLabel{pointer-events:all;fill:#eef6ff;text-anchor:middle;paint-order:stroke;stroke:rgba(3,8,13,.34);stroke-width:1.4px;stroke-linejoin:round;font-variant-numeric:tabular-nums;user-select:none;-webkit-user-select:none}
+      .assetPieViewport.isRotating .petalLabel{opacity:.18!important;pointer-events:none}
       .petalLabel text{pointer-events:none}
       .petalPctHit{fill:transparent;stroke:transparent;stroke-width:1;pointer-events:all;cursor:text}
       .petalPctHit:focus-visible{fill:rgba(36,145,255,.12);stroke:#79bdff;stroke-width:1.5;outline:none}
@@ -446,7 +448,13 @@
   }
 
   function cachePetalNodes(state, id, group) {
-    if (state.petalNodes.get(id)?.group === group) return;
+    const cached = state.petalNodes.get(id);
+    if (cached?.group === group) {
+      // updatePetalGroup replaces the live label when values change. Keep the
+      // cached pointer current so its counter-rotation is applied after drag.
+      cached.label = group.querySelector('.petalLabel');
+      return;
+    }
     state.petalNodes.set(id, {
       group,
       shapePaths: [
@@ -676,10 +684,30 @@
     const cx = 180;
     const cy = 196;
     const now = performance.now();
-    const refreshContours = forceContours || !state.compactMotion || !state.lastContourAt || now - state.lastContourAt >= 60;
     const rotationValue = state.chartRotation.value;
+    const rotationActive = state.chartRotation.dragging
+      || Math.abs(state.chartRotation.target - rotationValue) > .015
+      || Math.abs(state.chartRotation.velocity) > .04;
+    const motionActive = rotationActive || state.selectionAnimating;
+    stage.querySelector('.assetPieViewport')?.classList.toggle('isRotating', state.compactMotion && motionActive);
+    const refreshContours = forceContours
+      || !state.compactMotion
+      || (!(state.compactMotion && motionActive) && (!state.lastContourAt || now - state.lastContourAt >= 60));
+    const svg = stage.querySelector('#assetPieSvg');
     const rotator = stage.querySelector('.pieRotator');
-    if (rotator) rotator.setAttribute('transform', `rotate(${rotationValue.toFixed(3)} ${cx} ${cy})`);
+    if (state.compactMotion && !forceContours) {
+      // Keep the textured chart as one cached compositor layer while a phone
+      // gesture or spring is moving. Mutating an SVG <g> transform makes iOS
+      // repaint every filtered texture; rotating the outer SVG stays on the
+      // compositor and matches the desktop motion without dropping frames.
+      if (svg) svg.style.transform = `translateZ(0) rotate(${rotationValue.toFixed(3)}deg)`;
+      if (rotator?.hasAttribute('transform')) rotator.removeAttribute('transform');
+    } else {
+      // Commit once after compact motion settles so labels and geometry return
+      // to their normal SVG coordinate system with no visible handoff jump.
+      if (rotator) rotator.setAttribute('transform', `rotate(${rotationValue.toFixed(3)} ${cx} ${cy})`);
+      if (svg) svg.style.transform = '';
+    }
     const selectedGeometry = state.geometry.find((item) => item.asset.id === state.selectedId);
     const selectedStrength = selectedGeometry ? Math.max(0, state.selection.get(selectedGeometry.asset.id)?.value || 0) : 0;
     const selectedCenter = selectedGeometry ? point(cx, cy, 98, selectedGeometry.mid) : { x: cx, y: cy };
@@ -698,6 +726,17 @@
       const profile = model.referencePetalProfile(item.asset.name, item.span);
       const placement = model.referenceLabelPlacement(item.asset.name);
       const anchor = placement || point(cx, cy, profile.labelRadius, item.mid);
+      const label = nodes.label;
+      if (label && !(state.compactMotion && motionActive)) {
+        const labelX = label.dataset.labelX;
+        const labelY = label.dataset.labelY;
+        label.setAttribute('transform', `translate(${labelX} ${labelY}) rotate(${(-rotationValue).toFixed(3)})`);
+      }
+      group.classList.toggle('isSelected', isSelected);
+      // While the user or the settling spring rotates on a phone, keep the
+      // seven petals as one GPU-composited surface. Per-petal path/transform
+      // writes during this phase force Safari to repaint every texture layer.
+      if (state.compactMotion && motionActive && !forceContours) continue;
       if (refreshContours || !nodes.path) {
         const innerMotion = model.innerSlidePose(relative, response, isSelected);
         const path = bubblePetalPath(cx, cy, profile.innerRadius, model.referenceOuterRadius(), item.start, item.end, model.repulsiveGapChannel(item.allocationTotal, response), profile.sideBend, isSelected ? own : 0, innerMotion, model.referenceInnerBoundary(item.asset.name), model.referenceInnerJoinRadius(item.asset.name, item.span));
@@ -743,13 +782,6 @@
         depthTint.style.opacity = depth.lipOpacity.toFixed(3);
       }
       group.setAttribute('transform', `translate(${tx.toFixed(3)} ${ty.toFixed(3)}) translate(${pivot.x.toFixed(3)} ${pivot.y.toFixed(3)}) rotate(${localAngle.toFixed(3)}) scale(${pose.scaleRadial.toFixed(4)} ${pose.scaleTangent.toFixed(4)}) rotate(${(-localAngle).toFixed(3)}) translate(${(-pivot.x).toFixed(3)} ${(-pivot.y).toFixed(3)})`);
-      const label = nodes.label;
-      if (label) {
-        const labelX = label.dataset.labelX;
-        const labelY = label.dataset.labelY;
-        label.setAttribute('transform', `translate(${labelX} ${labelY}) rotate(${(-rotationValue).toFixed(3)})`);
-      }
-      group.classList.toggle('isSelected', isSelected);
     }
     if (refreshContours) state.lastContourAt = now;
   }
@@ -805,7 +837,7 @@
       state.chartRotation.value = drag.startRotation + drag.accumulatedDegrees;
       state.chartRotation.velocity = incrementalDegrees / dt;
       state.chartRotation.velocity = Math.max(-720, Math.min(720, state.chartRotation.velocity));
-      applyBubbleField(stage, state);
+      scheduleCompactRotationFrame(stage, state);
       const bottomAsset = assetAtBottom(state);
       if (bottomAsset && bottomAsset.asset.id !== state.selectedId) {
         selectAsset(doc, stage, state, bottomAsset.asset.id, { preserveRotation: true, detailDelay: 70 });
@@ -835,6 +867,18 @@
     };
     viewport.addEventListener('pointerup', (event) => finish(event));
     viewport.addEventListener('pointercancel', (event) => finish(event, true));
+  }
+
+  function scheduleCompactRotationFrame(stage, state) {
+    if (!state.compactMotion) {
+      applyBubbleField(stage, state);
+      return;
+    }
+    if (state.rotationRaf) return;
+    state.rotationRaf = requestAnimationFrame(() => {
+      state.rotationRaf = 0;
+      applyBubbleField(stage, state);
+    });
   }
 
   function installDetailSwipe(doc, stage, state) {
@@ -1011,6 +1055,7 @@
 
   function startSelectionSpring(stage, state) {
     if (state.selectionRaf) return;
+    state.selectionAnimating = true;
     state.selectionLast = performance.now();
     const tick = (now) => {
       const dt = Math.min(.032, Math.max(.001, (now - state.selectionLast) / 1000));
@@ -1048,6 +1093,8 @@
           applyBubbleField(stage, state);
         }
         state.selectionRaf = 0;
+        state.selectionAnimating = false;
+        if (state.compactMotion) applyBubbleField(stage, state, true);
       }
     };
     state.selectionRaf = requestAnimationFrame(tick);
@@ -1369,10 +1416,10 @@
     return [0, .10, .20, .32, .46, .58, .68, .76, .84, .90, .96, 1].map((progress) => {
       const weights = model.continuousMorphWeights(progress);
       const rect = blendedMorphRect(start, center, target, weights, assetId, reverse);
-      const shapeProgress = model.clamp01((progress - .54) / .42);
+      const shapeProgress = model.clamp01((progress - (reverse ? .46 : .54)) / (reverse ? .44 : .42));
       const easedShape = shapeProgress * shapeProgress * (3 - 2 * shapeProgress);
       const opacity = reverse
-        ? (progress < .14 ? model.clamp01(progress / .14) : progress < .90 ? 1 : Math.max(0, 1 - (progress - .90) / .10))
+        ? (progress < .14 ? model.clamp01(progress / .14) : progress < .82 ? 1 : Math.max(0, 1 - (progress - .82) / .18))
         : (progress < .82 ? 1 : Math.max(0, 1 - (progress - .82) / .18));
       const clipPath = reverse
         ? interpolatePolygonClip(petalClip, roundedClip, easedShape)
@@ -1509,6 +1556,7 @@
       return;
     }
     doc.body.classList.add('assetPieBusy', 'assetPieMorphingOut');
+    const stageRect = stage.getBoundingClientRect();
     const sourceShapes = new Map([...stage.querySelectorAll('.assetPetal')].map((group) => {
       const rect = group.querySelector('.petalEdge')?.getBoundingClientRect() || group.getBoundingClientRect();
       const clip = state.compactMorphClips.get(group.dataset.id) || samplePetalMorphShape(group, rect, COMPACT_MORPH_POINTS);
@@ -1520,11 +1568,20 @@
     state.selectedId = null;
     closeDetail(stage, state);
     stage.classList.remove('hasSelection');
+    Object.assign(stage.style, {
+      position: 'fixed',
+      left: `${stageRect.left}px`,
+      top: `${stageRect.top}px`,
+      width: `${stageRect.width}px`,
+      height: `${stageRect.height}px`,
+      margin: '0',
+      zIndex: '2147482000',
+      pointerEvents: 'none',
+    });
     doc.body.classList.remove('assetPieMode');
     tableWrap.style.opacity = '0';
     const rows = [...doc.querySelectorAll('#tbody tr[data-row-id]')];
     const targetRects = new Map(rows.map((row) => [row.dataset.rowId, row.getBoundingClientRect()]));
-    tableWrap.style.visibility = 'hidden';
     const assets = orderAssetsByIds(readRows(doc), state.ringOrder);
     const chartRect = stage.querySelector('#assetPieSvg')?.getBoundingClientRect();
     const aggregateRect = centerAggregateRect(chartRect);
@@ -1559,17 +1616,20 @@
     ], { duration, easing: 'linear', fill: 'forwards' });
     const tableAnimation = tableWrap.animate([
       { opacity: 0 },
-      { opacity: 0, offset: .84 },
-      { opacity: .35, offset: .92 },
+      { opacity: 0, offset: .70 },
+      { opacity: .18, offset: .79 },
+      { opacity: .62, offset: .91 },
       { opacity: 1 },
     ], { duration, easing: 'linear', fill: 'forwards' });
     await Promise.allSettled([...animations, ...identityAnimations, ...petalAnimations, stageAnimation, tableAnimation].map((animation) => animation.finished));
     proxies.forEach((proxy) => proxy.remove());
     stageAnimation.cancel();
     tableAnimation.cancel();
-    tableWrap.style.visibility = '';
     tableWrap.style.opacity = '';
     stage.hidden = true;
+    for (const property of ['position', 'left', 'top', 'width', 'height', 'margin', 'zIndex', 'pointerEvents']) {
+      stage.style[property] = '';
+    }
     petalAnimations.forEach((animation) => animation.cancel());
     identityAnimations.forEach((animation) => animation.cancel());
     state.mode = 'cards';
