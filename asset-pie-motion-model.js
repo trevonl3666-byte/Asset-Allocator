@@ -126,6 +126,100 @@
     };
   }
 
+  function petalLayout(values) {
+    const visual = petalVisualPercentages(values);
+    const activeIndices = visual.raw.map((value, index) => value > 1e-6 ? index : -1).filter((index) => index >= 0);
+    const activeCount = activeIndices.length;
+    const startAngle = referenceStartAngleDegrees() * Math.PI / 180;
+    if (!activeCount) return visual.raw.map(() => ({ start: startAngle, end: startAngle, mid: startAngle, span: 0, sparse: true, allocationTotal: visual.total }));
+    if (activeCount >= 5) {
+      let cursor = startAngle;
+      return visual.visible.map((percentage) => {
+        const span = percentage / 100 * Math.PI * 2;
+        const start = cursor;
+        const end = cursor + span;
+        cursor = end;
+        return { start, end, mid: start + span / 2, span, sparse: false, allocationTotal: visual.total };
+      });
+    }
+    const slot = Math.PI * 2 / activeCount;
+    const firstMid = activeCount === 4 ? -Math.PI * .75 : -Math.PI / 2;
+    const activeWeights = activeIndices.map((index) => Math.pow(visual.raw[index], .62));
+    const largestWeight = Math.max(...activeWeights, 1e-6);
+    const activeRank = new Map(activeIndices.map((index, rank) => [index, rank]));
+    return visual.raw.map((value, index) => {
+      if (value <= 1e-6) return { start: firstMid, end: firstMid, mid: firstMid, span: 0, sparse: true, allocationTotal: visual.total };
+      const rank = activeRank.get(index);
+      const mid = firstMid + rank * slot;
+      const relativeWeight = Math.sqrt(activeWeights[rank] / largestWeight);
+      const fullness = activeCount === 1 ? .78 : .68 + .22 * relativeWeight;
+      const span = slot * Math.min(.90, fullness);
+      return { start: mid - span / 2, end: mid + span / 2, mid, span, sparse: true, allocationTotal: visual.total };
+    });
+  }
+
+  function shortestAngleDelta(from, to) {
+    let delta = (Number(to) || 0) - (Number(from) || 0);
+    while (delta > Math.PI) delta -= Math.PI * 2;
+    while (delta < -Math.PI) delta += Math.PI * 2;
+    return delta;
+  }
+
+  function transitionPetalLayout(fromValues, toValues, progress) {
+    const t = clamp01(progress);
+    const from = petalLayout(fromValues);
+    const to = petalLayout(toValues);
+    if (t === 0) return from;
+    if (t === 1) return to;
+    const fromCount = from.filter((item) => item.span > 0).length;
+    const toCount = to.filter((item) => item.span > 0).length;
+    if (fromCount === toCount) return petalLayout(interpolateAmounts(fromValues, toValues, t));
+    const shrink = smoothStep(t / .46);
+    const move = smoothStep((t - .48) / .28);
+    const grow = smoothStep((t - .74) / .26);
+    const targetActive = to.map((item, index) => item.span > 0 ? index : -1).filter((index) => index >= 0);
+    const alignedTargetMids = to.map((item) => item.mid);
+    if (targetActive.length) {
+      const firstIndex = targetActive[0];
+      const firstTarget = to[firstIndex].mid;
+      const firstSource = from[firstIndex].span > 0 ? from[firstIndex].mid : firstTarget;
+      const alignedFirst = firstTarget + Math.round((firstSource - firstTarget) / (Math.PI * 2)) * Math.PI * 2;
+      for (const index of targetActive) alignedTargetMids[index] = alignedFirst + (to[index].mid - firstTarget);
+    }
+    return from.map((fromItem, index) => {
+      const toItem = to[index] || fromItem;
+      const survives = fromItem.span > 0 && toItem.span > 0;
+      const fromMid = fromItem.span > 0 ? fromItem.mid : toItem.mid;
+      const toMid = toItem.span > 0 ? alignedTargetMids[index] : fromMid;
+      const mid = fromMid + (toMid - fromMid) * move;
+      let span;
+      if (survives) {
+        const contracted = Math.min(fromItem.span, toItem.span) * .58;
+        const shrinking = fromItem.span + (contracted - fromItem.span) * shrink;
+        span = shrinking + (toItem.span - shrinking) * grow;
+      } else if (fromItem.span > 0) {
+        span = fromItem.span * (1 - smoothStep(t / .48));
+      } else {
+        span = toItem.span * smoothStep((t - .76) / .24);
+      }
+      return {
+        start: mid - span / 2,
+        end: mid + span / 2,
+        mid,
+        span,
+        sparse: fromItem.sparse || toItem.sparse,
+        allocationTotal: fromItem.allocationTotal + (toItem.allocationTotal - fromItem.allocationTotal) * t,
+      };
+    });
+  }
+
+  function transitionLabelOpacity(progress) {
+    const t = clamp01(progress);
+    if (t <= .34) return 1 - smoothStep(t / .34);
+    if (t < .72) return 0;
+    return smoothStep((t - .72) / .28);
+  }
+
   function petalBodyProfile(spanRadians) {
     const degrees = Math.max(0, Number(spanRadians) || 0) * 180 / Math.PI;
     const raw = Math.max(0, Math.min(1, (degrees - 10) / 50));
@@ -188,6 +282,12 @@
 
   function referenceInnerBoundary(assetName) {
     return String(assetName || '').toUpperCase() === 'VOO' ? 'organic' : 'bubble';
+  }
+
+  function referenceInnerJoinRadius(assetName, spanRadians) {
+    if (String(assetName || '').toUpperCase() !== 'VOO') return 14.5;
+    const degrees = Math.max(0, Number(spanRadians) || 0) * 180 / Math.PI;
+    return 20 + 7 * smoothStep((degrees - 85) / 105);
   }
 
   function referenceStartAngleDegrees() {
@@ -507,10 +607,14 @@
     rotationTargetFor,
     geometryPercentages,
     petalVisualPercentages,
+    petalLayout,
+    transitionPetalLayout,
+    transitionLabelOpacity,
     petalBodyProfile,
     referencePetalProfile,
     referenceOuterRadius,
     referenceInnerBoundary,
+    referenceInnerJoinRadius,
     referenceLabelPlacement,
     referenceStartAngleDegrees,
     referenceLabelScale,

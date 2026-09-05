@@ -1,4 +1,4 @@
-const CACHE_NAME = "asset-allocator-v23-pie-touch-isolated-single-organic-depth-54-20260904";
+const CACHE_NAME = "asset-allocator-v26-mobile-essential-motion-performance-20260904";
 const APP_SHELL = [
   "./",
   "./index.html",

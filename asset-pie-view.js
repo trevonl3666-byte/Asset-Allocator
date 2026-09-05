@@ -4,6 +4,7 @@
   const model = window.AssetPieMotion;
   const NS = 'http://www.w3.org/2000/svg';
   const APP_ROOT = './';
+  const COMPACT_MORPH_POINTS = 18;
   const TEXTURES = {
     usd: `${APP_ROOT}assets/usd-background.png`,
     gold: `${APP_ROOT}assets/gold-background.jpeg`,
@@ -37,6 +38,7 @@
     const stage = buildStage(doc);
     tableWrap.before(stage);
 
+    const compactMotion = win.matchMedia('(max-width: 760px)').matches || (win.navigator.hardwareConcurrency || 8) <= 4;
     const state = {
       mode: 'cards',
       selectedId: null,
@@ -58,8 +60,10 @@
       detailTimer: 0,
       morphing: false,
       ringOrder: [],
-      reduceMotion: win.matchMedia('(prefers-reduced-motion: reduce)').matches,
-      compactMotion: win.matchMedia('(max-width: 760px)').matches || (win.navigator.hardwareConcurrency || 8) <= 4,
+      lastContourAt: 0,
+      compactMorphClips: new Map(),
+      reduceMotion: win.matchMedia('(prefers-reduced-motion: reduce)').matches && !compactMotion,
+      compactMotion,
     };
     installPieSwipe(doc, stage, state);
     installDetailSwipe(doc, stage, state);
@@ -167,14 +171,16 @@
       );
     });
 
-    // Prepare the hidden SVG only when the browser is genuinely idle. This
-    // keeps the source page's first render untouched while making the first
-    // mobile switch as cheap as subsequent switches on supporting browsers.
+    // Prepare the hidden SVG after first paint so the first tap only starts
+    // compositor work. Safari has no requestIdleCallback on several iOS
+    // versions, so it needs the short timeout fallback as well.
+    const prepareHiddenPie = () => {
+      if (state.mode === 'cards' && state.dataDirty) refresh();
+      if (state.mode === 'cards' && state.compactMotion) cacheCompactMorphClips(stage, state);
+    };
     if (typeof win.requestIdleCallback === 'function') {
-      win.requestIdleCallback(() => {
-        if (state.mode === 'cards' && state.dataDirty) refresh();
-      });
-    }
+      win.requestIdleCallback(prepareHiddenPie, { timeout: 420 });
+    } else win.setTimeout(prepareHiddenPie, 140);
 
   }
 
@@ -306,30 +312,29 @@
     return node;
   }
 
-  function geometryFor(assets) {
-    const normalized = model.petalVisualPercentages(assets.map((asset) => asset.pct));
-    let cursor = model.referenceStartAngleDegrees() * Math.PI / 180;
-    return assets.map((asset, index) => {
-      const span = normalized.visible[index] / 100 * Math.PI * 2;
-      const start = cursor;
-      const end = cursor + span;
-      cursor = end;
-      return { asset, start, end, mid: start + span / 2, span, allocationTotal: normalized.total };
-    });
+  function geometryFor(assets, transition = null) {
+    const layout = transition
+      ? model.transitionPetalLayout(
+        assets.map((asset) => transition.fromById.get(asset.id)?.pct || 0),
+        assets.map((asset) => transition.toById.get(asset.id)?.pct || 0),
+        transition.clock ?? transition.raw,
+      )
+      : model.petalLayout(assets.map((asset) => asset.pct));
+    return assets.map((asset, index) => ({ asset, ...layout[index] }));
   }
 
   function point(cx, cy, radius, angle) {
     return { x: cx + Math.cos(angle) * radius, y: cy + Math.sin(angle) * radius };
   }
 
-  function bubblePetalPath(cx, cy, innerRadius, outerRadius, start, end, channel = 1, sideBend = 0, capResponse = 0, innerMotion = { angle: 0, radius: 0 }, innerBoundary = 'bubble') {
+  function bubblePetalPath(cx, cy, innerRadius, outerRadius, start, end, channel = 1, sideBend = 0, capResponse = 0, innerMotion = { angle: 0, radius: 0 }, innerBoundary = 'bubble', joinRadius = 14.5) {
     const span = Math.max(0, end - start);
     if (span < 0.006) return '';
     const gap = Math.min(span * 0.44, (0.09 * channel));
     const a0 = start + gap / 2;
     const a1 = end - gap / 2;
     const available = Math.max(0.004, a1 - a0);
-    const corner = Math.min(14.5 * channel, (outerRadius - innerRadius) * .22);
+    const corner = Math.min(joinRadius * channel, (outerRadius - innerRadius) * (innerBoundary === 'organic' ? .30 : .22));
     const outerCornerAngle = Math.min(corner / outerRadius, available * .23);
     const innerAngleShift = Number(innerMotion?.angle) || 0;
     const innerRadiusShift = Number(innerMotion?.radius) || 0;
@@ -372,8 +377,9 @@
       const c2 = { x: pB.x - (pC.x - pA.x) / 6, y: pB.y - (pC.y - pA.y) / 6 };
       outerCommands.push(`C${f(c1.x)},${f(c1.y)} ${f(c2.x)},${f(c2.y)} ${f(pB.x)},${f(pB.y)}`);
     }
-    const smoothDeparture = { x: p6.x + (p6.x - endControl.x) * .22, y: p6.y + (p6.y - endControl.y) * .22 };
-    const smoothArrival = { x: p1.x + (p1.x - startControl.x) * .22, y: p1.y + (p1.y - startControl.y) * .22 };
+    const organicHandle = innerBoundary === 'organic' ? .46 : .22;
+    const smoothDeparture = { x: p6.x + (p6.x - endControl.x) * organicHandle, y: p6.y + (p6.y - endControl.y) * organicHandle };
+    const smoothArrival = { x: p1.x + (p1.x - startControl.x) * organicHandle, y: p1.y + (p1.y - startControl.y) * organicHandle };
     const innerCommands = innerBoundary === 'organic'
       ? [`C${f(smoothDeparture.x)},${f(smoothDeparture.y)} ${f(smoothArrival.x)},${f(smoothArrival.y)} ${f(p1.x)},${f(p1.y)}`]
       : [
@@ -392,9 +398,9 @@
     ].join(' ');
   }
 
-  function renderPie(doc, stage, state) {
+  function renderPie(doc, stage, state, forceContours = false) {
     const layer = stage.querySelector('.petalLayer');
-    const geometry = geometryFor(state.assets);
+    const geometry = geometryFor(state.assets, state.dataTransition);
     state.geometry = geometry;
     if (state.dataTransition && state.selectedId) {
       const selectedGeometry = geometry.find((item) => item.asset.id === state.selectedId);
@@ -436,10 +442,11 @@
         state.petalNodes.delete(entry.id);
       }
     }
-    applyBubbleField(stage, state);
+    applyBubbleField(stage, state, forceContours);
   }
 
   function cachePetalNodes(state, id, group) {
+    if (state.petalNodes.get(id)?.group === group) return;
     state.petalNodes.set(id, {
       group,
       shapePaths: [
@@ -455,6 +462,7 @@
       depthWall: group.querySelector('.petalDepthWall'),
       depthTint: group.querySelector('.petalDepthTint'),
       label: group.querySelector('.petalLabel'),
+      path: group.querySelector('.petalEdge')?.getAttribute('d') || '',
     });
   }
 
@@ -485,12 +493,13 @@
       const ratioPoint = ratioRect && event.clientX >= ratioRect.left && event.clientX <= ratioRect.right && event.clientY >= ratioRect.top && event.clientY <= ratioRect.bottom;
       if (event.target.closest('.petalPctHit') || ratioPoint) {
         const selectedId = group.dataset.id;
-        if (state.selectedId !== selectedId) selectAsset(doc, stage, state, selectedId, { detailDelay: 80 });
+        if (state.selectedId !== selectedId) selectAsset(doc, stage, state, selectedId, { rotateToBottom: true, detailDelay: 80 });
         clearTimeout(state.inlineRatioTimer);
         state.inlineRatioTimer = setTimeout(() => openInlineRatioEditor(doc, stage, state, selectedId), state.reduceMotion ? 0 : 360);
         return;
       }
-      selectAsset(doc, stage, state, model.reduceSelection(state.selectedId, group.dataset.id));
+      const nextId = model.reduceSelection(state.selectedId, group.dataset.id);
+      selectAsset(doc, stage, state, nextId, { rotateToBottom: Boolean(nextId) });
     });
     group.addEventListener('focus', () => { state.focusedAssetId = group.dataset.id; });
     group.addEventListener('keydown', (event) => {
@@ -498,12 +507,13 @@
       event.preventDefault();
       if (event.target.closest('.petalPctHit')) {
         const selectedId = group.dataset.id;
-        if (state.selectedId !== selectedId) selectAsset(doc, stage, state, selectedId, { detailDelay: 80 });
+        if (state.selectedId !== selectedId) selectAsset(doc, stage, state, selectedId, { rotateToBottom: true, detailDelay: 80 });
         clearTimeout(state.inlineRatioTimer);
         state.inlineRatioTimer = setTimeout(() => openInlineRatioEditor(doc, stage, state, selectedId), state.reduceMotion ? 0 : 360);
         return;
       }
-      selectAsset(doc, stage, state, model.reduceSelection(state.selectedId, group.dataset.id));
+      const nextId = model.reduceSelection(state.selectedId, group.dataset.id);
+      selectAsset(doc, stage, state, nextId, { rotateToBottom: Boolean(nextId) });
     });
     return group;
   }
@@ -526,7 +536,7 @@
       event.preventDefault();
       event.stopPropagation();
       const id = item.asset.id;
-      if (state.selectedId !== id) selectAsset(doc, stage, state, id, { detailDelay: 80 });
+      if (state.selectedId !== id) selectAsset(doc, stage, state, id, { rotateToBottom: true, detailDelay: 80 });
       clearTimeout(state.inlineRatioTimer);
       state.inlineRatioTimer = setTimeout(() => openInlineRatioEditor(doc, stage, state, id), state.reduceMotion ? 0 : 360);
     };
@@ -542,14 +552,18 @@
     const placement = model.referenceLabelPlacement(item.asset.name);
     const radius = profile.labelRadius;
     const anchor = point(180, 196, radius, item.mid);
-    const useLockedPlacement = Math.abs((Number(item.allocationTotal) || 0) - 100) < .01;
+    const useLockedPlacement = !item.sparse && Math.abs((Number(item.allocationTotal) || 0) - 100) < .01;
     const location = useLockedPlacement && placement ? placement : anchor;
+    const transition = state.dataTransition;
+    const fromCount = transition ? [...transition.fromById.values()].filter((asset) => asset.pct > 1e-6).length : 0;
+    const toCount = transition ? [...transition.toById.values()].filter((asset) => asset.pct > 1e-6).length : 0;
+    const layoutOpacity = transition && fromCount !== toCount ? model.transitionLabelOpacity(transition.clock ?? transition.raw) : 1;
     const group = svgElement(doc, 'g', {
       class: 'petalLabel',
       transform: `translate(${location.x} ${location.y})`,
       'data-label-x': String(location.x),
       'data-label-y': String(location.y),
-      opacity: String(degrees <= 3 ? 0 : degrees < 8 ? (degrees - 3) / 5 : 1),
+      opacity: String((degrees <= 3 ? 0 : degrees < 8 ? (degrees - 3) / 5 : 1) * layoutOpacity),
     });
     const scale = useLockedPlacement && placement ? placement.scale : model.referenceLabelScale(item.asset.name, degrees);
     const compact = degrees <= 16;
@@ -558,7 +572,6 @@
     const pctY = compact ? 12 : medium ? 5 : -2;
     const amountY = medium ? 24 : 20;
     appendLabelText(doc, group, 'petalCode', item.asset.name, codeY, 17 * scale);
-    const transition = state.dataTransition;
     const from = transition?.fromById.get(item.asset.id);
     const to = transition?.toById.get(item.asset.id);
     appendRollingText(doc, group, 'petalPct', `${trimNumber(item.asset.pct)}%`, from ? `${trimNumber(from.pct)}%` : null, to ? `${trimNumber(to.pct)}%` : null, pctY, 25 * scale, transition?.raw ?? 1, from && to && to.pct < from.pct ? -1 : 1);
@@ -659,9 +672,11 @@
     return delta;
   }
 
-  function applyBubbleField(stage, state) {
+  function applyBubbleField(stage, state, forceContours = false) {
     const cx = 180;
     const cy = 196;
+    const now = performance.now();
+    const refreshContours = forceContours || !state.compactMotion || !state.lastContourAt || now - state.lastContourAt >= 60;
     const rotationValue = state.chartRotation.value;
     const rotator = stage.querySelector('.pieRotator');
     if (rotator) rotator.setAttribute('transform', `rotate(${rotationValue.toFixed(3)} ${cx} ${cy})`);
@@ -682,13 +697,18 @@
         : model.bubbleInteractionPose(relative, response, isSelected);
       const profile = model.referencePetalProfile(item.asset.name, item.span);
       const placement = model.referenceLabelPlacement(item.asset.name);
-      const innerMotion = model.innerSlidePose(relative, response, isSelected);
-      const path = bubblePetalPath(cx, cy, profile.innerRadius, model.referenceOuterRadius(), item.start, item.end, model.repulsiveGapChannel(item.allocationTotal, response), profile.sideBend, isSelected ? own : 0, innerMotion, model.referenceInnerBoundary(item.asset.name));
       const anchor = placement || point(cx, cy, profile.labelRadius, item.mid);
-      nodes.shapePaths.forEach((node) => {
-        node.setAttribute('d', path);
-        node.removeAttribute('transform');
-      });
+      if (refreshContours || !nodes.path) {
+        const innerMotion = model.innerSlidePose(relative, response, isSelected);
+        const path = bubblePetalPath(cx, cy, profile.innerRadius, model.referenceOuterRadius(), item.start, item.end, model.repulsiveGapChannel(item.allocationTotal, response), profile.sideBend, isSelected ? own : 0, innerMotion, model.referenceInnerBoundary(item.asset.name), model.referenceInnerJoinRadius(item.asset.name, item.span));
+        if (path !== nodes.path) {
+          nodes.shapePaths.forEach((node) => {
+            node.setAttribute('d', path);
+            node.removeAttribute('transform');
+          });
+          nodes.path = path;
+        }
+      }
       const radialX = Math.cos(item.mid);
       const radialY = Math.sin(item.mid);
       const tangentX = -radialY;
@@ -731,6 +751,7 @@
       }
       group.classList.toggle('isSelected', isSelected);
     }
+    if (refreshContours) state.lastContourAt = now;
   }
 
   function installPieSwipe(doc, stage, state) {
@@ -1173,11 +1194,12 @@
     const start = performance.now();
     const duration = state.reduceMotion ? 140 : model.MOTION.dataMs;
     const selected = state.selectedId;
-    state.dataTransition = { fromById: new Map(from.map((asset) => [asset.id, asset])), toById: new Map(to.map((asset) => [asset.id, asset])), raw: 0 };
+    state.dataTransition = { fromById: new Map(from.map((asset) => [asset.id, asset])), toById: new Map(to.map((asset) => [asset.id, asset])), raw: 0, clock: 0 };
     const tick = (now) => {
       const raw = Math.min(1, (now - start) / duration);
       const progress = state.reduceMotion ? raw : cubicBezierProgress(raw, .22, 1, .36, 1);
       state.dataTransition.raw = progress;
+      state.dataTransition.clock = raw;
       state.assets = from.map((asset, index) => ({
         ...asset,
         pct: asset.pct + (to[index].pct - asset.pct) * progress,
@@ -1196,7 +1218,7 @@
           stage.classList.remove('hasSelection');
           closeDetail(stage, state);
         }
-        renderPie(doc, stage, state);
+        renderPie(doc, stage, state, true);
         state.dataRaf = 0;
         if (state.selectedId) renderDetail(doc, stage, state, state.selectedId);
         const selectedAsset = finalAssets.find((asset) => asset.id === selected);
@@ -1259,6 +1281,17 @@
     const first = points[0];
     const startAngle = Math.atan2(first.y - 50, first.x - 50);
     return { petal: polygonClip(points), rounded: roundedProxyClip(pointCount, startAngle) };
+  }
+
+  function cacheCompactMorphClips(stage, state) {
+    if (!state.compactMotion) return;
+    for (const group of stage.querySelectorAll('.assetPetal')) {
+      const edge = group.querySelector('.petalEdge');
+      if (!edge?.getAttribute('d')) continue;
+      const rect = edge.getBoundingClientRect();
+      if (!rect.width || !rect.height) continue;
+      state.compactMorphClips.set(group.dataset.id, samplePetalMorphShape(group, rect, COMPACT_MORPH_POINTS));
+    }
   }
 
   function roundedProxyClip(pointCount, startAngle) {
@@ -1332,14 +1365,48 @@
     });
   }
 
-  function lightweightMorphFrames(base, start, center, target, assetId, reverse = false) {
-    return [0, .12, .28, .46, .58, .72, .84, .94, 1].map((progress) => {
+  function lightweightMorphFrames(base, start, center, target, assetId, roundedClip, petalClip, reverse = false) {
+    return [0, .10, .20, .32, .46, .58, .68, .76, .84, .90, .96, 1].map((progress) => {
       const weights = model.continuousMorphWeights(progress);
       const rect = blendedMorphRect(start, center, target, weights, assetId, reverse);
-      const opacity = progress < .94 ? 1 : Math.max(0, 1 - (progress - .94) / .06);
-      const frame = transformRectFrame(base, rect, opacity, '28%', progress);
+      const shapeProgress = model.clamp01((progress - .54) / .42);
+      const easedShape = shapeProgress * shapeProgress * (3 - 2 * shapeProgress);
+      const opacity = reverse
+        ? (progress < .14 ? model.clamp01(progress / .14) : progress < .90 ? 1 : Math.max(0, 1 - (progress - .90) / .10))
+        : (progress < .82 ? 1 : Math.max(0, 1 - (progress - .82) / .18));
+      const clipPath = reverse
+        ? interpolatePolygonClip(petalClip, roundedClip, easedShape)
+        : interpolatePolygonClip(roundedClip, petalClip, easedShape);
+      const frame = transformRectFrame(base, rect, opacity, '28%', progress, clipPath);
       delete frame.borderRadius;
       return frame;
+    });
+  }
+
+  function lightweightIdentityFrames(reverse = false) {
+    if (reverse) return [
+      { opacity: 0 },
+      { opacity: 0, offset: .20 },
+      { opacity: 1, offset: .42 },
+      { opacity: 1, offset: .86 },
+      { opacity: 0, offset: 1 },
+    ];
+    return [
+      { opacity: 1 },
+      { opacity: 1, offset: .54 },
+      { opacity: .35, offset: .68 },
+      { opacity: 0, offset: .78 },
+      { opacity: 0 },
+    ];
+  }
+
+  function lightweightVanishFrames(base, start, center, assetId) {
+    return [0, .18, .36, .50, .62, .74, 1].map((progress) => {
+      const gather = model.clamp01(progress / .58);
+      const eased = gather * gather * (3 - 2 * gather);
+      const rect = curvedIntermediateRect(start, center, eased, assetId, 1);
+      const opacity = progress < .46 ? 1 : Math.max(0, 1 - (progress - .46) / .24);
+      return transformRectFrame(base, rect, opacity, '28%', progress, roundedProxyClip(COMPACT_MORPH_POINTS, 0));
     });
   }
 
@@ -1361,9 +1428,12 @@
     const rowRects = new Map(rows.map((row) => [row.dataset.rowId, row.getBoundingClientRect()]));
     stage.hidden = false;
     stage.style.opacity = '0';
-    const targetRects = new Map([...stage.querySelectorAll('.assetPetal')].map((group) => {
-      const rect = group.querySelector('.petalEdge')?.getBoundingClientRect() || group.getBoundingClientRect();
-      return [group.dataset.id, rect];
+    const targetShapes = new Map([...stage.querySelectorAll('.assetPetal')].map((group) => {
+      const edge = group.querySelector('.petalEdge');
+      if (!edge?.getAttribute('d')) return [group.dataset.id, null];
+      const rect = edge.getBoundingClientRect();
+      const clip = state.compactMorphClips.get(group.dataset.id) || samplePetalMorphShape(group, rect, COMPACT_MORPH_POINTS);
+      return [group.dataset.id, { rect, clip }];
     }));
     const chartRect = stage.querySelector('#assetPieSvg')?.getBoundingClientRect();
     const aggregateRect = centerAggregateRect(chartRect);
@@ -1373,17 +1443,26 @@
     petals.forEach((petal) => { petal.style.opacity = '0'; });
     tableWrap.style.opacity = '0';
     const animations = proxies.map((proxy, index) => {
-      const target = targetRects.get(proxy.dataset.id);
+      const targetShape = targetShapes.get(proxy.dataset.id);
       const start = rowRects.get(proxy.dataset.id);
-      if (!target || !start) return null;
+      if (!start) return null;
+      if (!targetShape) return proxy.animate(
+        lightweightVanishFrames(proxyBaseRect(proxy), start, aggregateRect, proxy.dataset.id),
+        { duration, delay: state.reduceMotion ? 0 : index * 2, easing: 'linear', fill: 'forwards' },
+      );
       return proxy.animate(
-        lightweightMorphFrames(proxyBaseRect(proxy), start, aggregateRect, target, proxy.dataset.id),
+        lightweightMorphFrames(proxyBaseRect(proxy), start, aggregateRect, targetShape.rect, proxy.dataset.id, targetShape.clip.rounded, targetShape.clip.petal),
         { duration, delay: state.reduceMotion ? 0 : index * 2, easing: 'linear', fill: 'forwards' },
       );
     }).filter(Boolean);
+    const identityAnimations = proxies.map((proxy, index) => proxy.querySelector('.assetMorphIdentity')?.animate(
+      lightweightIdentityFrames(false),
+      { duration, delay: state.reduceMotion ? 0 : index * 2, easing: 'linear', fill: 'forwards' },
+    )).filter(Boolean);
     const petalAnimations = petals.map((petal, index) => petal.animate([
       { opacity: 0 },
-      { opacity: 0, offset: .90 },
+      { opacity: 0, offset: .82 },
+      { opacity: .38, offset: .90 },
       { opacity: 1, offset: 1 },
     ], { duration, delay: state.reduceMotion ? 0 : index * 2, easing: 'linear', fill: 'forwards' }));
     const stageAnimation = stage.animate([
@@ -1392,12 +1471,13 @@
       { opacity: 1, offset: .52 },
       { opacity: 1 },
     ], { duration, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'forwards' });
-    await Promise.allSettled([...animations, ...petalAnimations, stageAnimation].map((animation) => animation.finished));
+    await Promise.allSettled([...animations, ...identityAnimations, ...petalAnimations, stageAnimation].map((animation) => animation.finished));
     proxies.forEach((proxy) => proxy.remove());
     stageAnimation.cancel();
     stage.style.opacity = '';
     petals.forEach((petal) => { petal.style.opacity = ''; });
     petalAnimations.forEach((animation) => animation.cancel());
+    identityAnimations.forEach((animation) => animation.cancel());
     doc.body.classList.add('assetPieMode');
     tableWrap.style.opacity = '';
     state.mode = 'pie';
@@ -1429,9 +1509,10 @@
       return;
     }
     doc.body.classList.add('assetPieBusy', 'assetPieMorphingOut');
-    const sourceRects = new Map([...stage.querySelectorAll('.assetPetal')].map((group) => {
+    const sourceShapes = new Map([...stage.querySelectorAll('.assetPetal')].map((group) => {
       const rect = group.querySelector('.petalEdge')?.getBoundingClientRect() || group.getBoundingClientRect();
-      return [group.dataset.id, rect];
+      const clip = state.compactMorphClips.get(group.dataset.id) || samplePetalMorphShape(group, rect, COMPACT_MORPH_POINTS);
+      return [group.dataset.id, { rect, clip }];
     }));
     clearTimeout(state.detailTimer);
     if (state.selectionRaf) cancelAnimationFrame(state.selectionRaf);
@@ -1447,21 +1528,27 @@
     const assets = orderAssetsByIds(readRows(doc), state.ringOrder);
     const chartRect = stage.querySelector('#assetPieSvg')?.getBoundingClientRect();
     const aggregateRect = centerAggregateRect(chartRect);
+    const sourceRects = new Map([...sourceShapes].map(([id, shape]) => [id, shape.rect]));
     const proxies = createLightweightProxies(doc, assets, sourceRects, targetRects);
     const duration = state.reduceMotion ? 140 : model.MOTION.viewMorphMs;
     const animations = proxies.map((proxy, index) => {
-      const start = sourceRects.get(proxy.dataset.id);
+      const sourceShape = sourceShapes.get(proxy.dataset.id);
       const target = targetRects.get(proxy.dataset.id);
-      if (!start || !target) return null;
+      if (!sourceShape || !target) return null;
       return proxy.animate(
-        lightweightMorphFrames(proxyBaseRect(proxy), start, aggregateRect, target, proxy.dataset.id, true),
+        lightweightMorphFrames(proxyBaseRect(proxy), sourceShape.rect, aggregateRect, target, proxy.dataset.id, sourceShape.clip.rounded, sourceShape.clip.petal, true),
         { duration, delay: state.reduceMotion ? 0 : index * 2, easing: 'linear', fill: 'forwards' },
       );
     }).filter(Boolean);
+    const identityAnimations = proxies.map((proxy, index) => proxy.querySelector('.assetMorphIdentity')?.animate(
+      lightweightIdentityFrames(true),
+      { duration, delay: state.reduceMotion ? 0 : index * 2, easing: 'linear', fill: 'forwards' },
+    )).filter(Boolean);
     const petals = [...stage.querySelectorAll('.assetPetal')];
     const petalAnimations = petals.map((petal, index) => petal.animate([
       { opacity: 1 },
-      { opacity: 0, offset: .09 },
+      { opacity: .45, offset: .10 },
+      { opacity: 0, offset: .20 },
       { opacity: 0 },
     ], { duration, delay: state.reduceMotion ? 0 : index * 2, easing: 'linear', fill: 'forwards' }));
     const stageAnimation = stage.animate([
@@ -1472,10 +1559,11 @@
     ], { duration, easing: 'linear', fill: 'forwards' });
     const tableAnimation = tableWrap.animate([
       { opacity: 0 },
-      { opacity: 0, offset: .94 },
+      { opacity: 0, offset: .84 },
+      { opacity: .35, offset: .92 },
       { opacity: 1 },
     ], { duration, easing: 'linear', fill: 'forwards' });
-    await Promise.allSettled([...animations, ...petalAnimations, stageAnimation, tableAnimation].map((animation) => animation.finished));
+    await Promise.allSettled([...animations, ...identityAnimations, ...petalAnimations, stageAnimation, tableAnimation].map((animation) => animation.finished));
     proxies.forEach((proxy) => proxy.remove());
     stageAnimation.cancel();
     tableAnimation.cancel();
@@ -1483,6 +1571,7 @@
     tableWrap.style.opacity = '';
     stage.hidden = true;
     petalAnimations.forEach((animation) => animation.cancel());
+    identityAnimations.forEach((animation) => animation.cancel());
     state.mode = 'cards';
     state.morphing = false;
     state.selectedId = null;
