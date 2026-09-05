@@ -1,4 +1,4 @@
-const CACHE_NAME = "asset-allocator-v29-mobile-compositor-parity-20260905";
+const CACHE_NAME = "asset-allocator-v31-instant-info-clipped-handoff-20260905";
 const APP_SHELL = [
   "./",
   "./index.html",

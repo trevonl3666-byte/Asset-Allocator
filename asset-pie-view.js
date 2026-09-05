@@ -60,6 +60,7 @@
       dataTimer: 0,
       dataDirty: true,
       detailTimer: 0,
+      pendingDetailId: null,
       morphing: false,
       ringOrder: [],
       lastContourAt: 0,
@@ -205,10 +206,13 @@
       .assetPieViewBtn svg{display:block;width:20px;height:20px;fill:currentColor;stroke:currentColor;stroke-width:1.25;stroke-linejoin:round}
       body.assetPieMode #assetPieStage + .tableWrap{display:none!important}
 
-      #assetPieStage{margin:0;border:1px solid #2a3949;border-radius:0 0 22px 22px;background:radial-gradient(circle at 52% 34%,rgba(23,40,54,.44),rgba(7,13,19,.96) 67%),#071018;overflow:hidden;box-shadow:0 18px 44px rgba(0,0,0,.3)}
+      #assetPieStage{margin:0;border:1px solid #2a3949;border-radius:0 0 22px 22px;background:radial-gradient(circle at 52% 34%,rgba(23,40,54,.44),rgba(7,13,19,.96) 67%),#071018;overflow:hidden;overflow-anchor:none;box-shadow:0 18px 44px rgba(0,0,0,.3)}
       #assetPieStage[hidden]{display:block!important;position:fixed!important;left:-200vw!important;top:0!important;width:calc(100vw - 10px)!important;visibility:hidden!important;pointer-events:none!important;contain:strict!important}
-      .assetPieViewport{position:relative;height:min(116vw,500px);min-height:438px;max-height:500px;padding:5px 0 0;touch-action:none;overscroll-behavior:contain;transition:height 440ms cubic-bezier(.22,1,.36,1),min-height 440ms cubic-bezier(.22,1,.36,1),max-height 440ms cubic-bezier(.22,1,.36,1)}
-      #assetPieSvg{display:block;width:100%;height:100%;overflow:visible;transform-origin:50% 45.581%;transition:none;will-change:transform;backface-visibility:hidden;-webkit-backface-visibility:hidden;transform-style:flat}
+      .assetPieViewport{position:relative;height:min(116vw,500px);min-height:438px;max-height:500px;padding:5px 0 0;touch-action:pan-y;transition:height 440ms cubic-bezier(.22,1,.36,1),min-height 440ms cubic-bezier(.22,1,.36,1),max-height 440ms cubic-bezier(.22,1,.36,1)}
+      #assetPieSvg{position:relative;z-index:1;display:block;width:100%;height:100%;overflow:visible;pointer-events:none;transform-origin:50% 45.581%;transition:none;will-change:transform;backface-visibility:hidden;-webkit-backface-visibility:hidden;transform-style:flat}
+      .assetPieGestureDisk{position:absolute;z-index:0;left:50%;top:45.581%;height:76.279%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;touch-action:none;pointer-events:auto}
+      .assetPetal,.assetPetal *{touch-action:none}
+      .assetPetal{pointer-events:all}
       #assetPieStage.hasSelection .assetPieViewport{height:min(116vw,500px);min-height:438px;max-height:500px}
       .assetPetal{cursor:pointer;outline:none;transform-box:view-box;transform-origin:center;will-change:transform}
       .assetPetal .petalDepthWall{opacity:0;pointer-events:none;stroke:var(--petal-accent,#6aaee3);stroke-width:1.15;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke;filter:brightness(.64) saturate(1.12) drop-shadow(0 8px 7px rgba(0,0,0,.7));will-change:transform,opacity}
@@ -241,7 +245,13 @@
       .petalAmount{font-weight:650;fill:#dce8f4}
       .petalDesc,.petalShares{font-weight:520;fill:#aebfd1}
       .pieInstruction{margin:-6px 0 19px;text-align:center;color:#64798d;font-size:13px;letter-spacing:.015em}
-      .assetPieDetail{margin:0 12px 16px;transform-origin:50% 0;position:relative;touch-action:pan-y}
+      .assetPieQuickStatus{margin:0 12px 12px;min-height:54px;padding:10px 14px;border:1px solid #2b3d4f;border-radius:14px;background:linear-gradient(135deg,rgba(18,31,43,.97),rgba(9,17,25,.97));display:grid;grid-template-columns:auto auto 1fr;align-items:center;gap:4px 12px;color:#dce8f4;contain:content}
+      .assetPieQuickStatus[hidden]{display:none!important}
+      .assetPieQuickName{font-size:16px;font-weight:780}
+      .assetPieQuickPct{font-size:18px;font-weight:820;color:#f3f7fb}
+      .assetPieQuickAmount{justify-self:end;font-size:15px;font-weight:650;color:#c9d9e8}
+      .assetPieQuickDesc{grid-column:1/-1;font-size:13px;color:#8fa4b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .assetPieDetail{margin:0 12px 16px;transform-origin:50% 0;position:relative;touch-action:pan-y;overflow-anchor:none}
       @media (max-width:900px){
         body,body *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
         input,textarea,[contenteditable="true"],[contenteditable="true"] *{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
@@ -268,6 +278,8 @@
       .assetMorphIdentity small{font-size:9px;font-weight:650;line-height:1.1;color:#dbe8f3}
       .assetMorphProxy.isLightweight{contain:strict;backface-visibility:hidden;transform-style:flat;will-change:opacity,transform}
       .assetMorphProxy.isLightweight .assetMorphIdentity{opacity:1}
+      .assetMorphCorridor{position:fixed;inset:0;z-index:2147483000;overflow:hidden;pointer-events:none;transform:translateZ(0);contain:strict}
+      @media(max-width:760px){.assetPieGestureDisk{z-index:2}}
       @media(max-width:390px){
         .assetPieViewport{min-height:420px;height:113vw}
         .pieSummary button{padding:0 11px;font-size:13px}
@@ -285,6 +297,7 @@
     section.hidden = true;
     section.innerHTML = `
       <div class="assetPieViewport">
+        <div class="assetPieGestureDisk" aria-hidden="true"></div>
         <svg id="assetPieSvg" viewBox="0 0 360 430" role="group" aria-label="资产配置饼状图">
           <defs>
             ${Object.entries(TEXTURES).map(([key, href]) => `<pattern id="texture-${key}" patternUnits="userSpaceOnUse" width="360" height="430"><image href="${href}" x="0" y="0" width="360" height="430" preserveAspectRatio="xMidYMid slice"/></pattern>`).join('')}
@@ -294,6 +307,12 @@
         </svg>
       </div>
       <p class="pieInstruction">点击资产板块查看其他配置内容</p>
+      <div class="assetPieQuickStatus" hidden aria-label="当前选中资产">
+        <strong class="assetPieQuickName"></strong>
+        <span class="assetPieQuickPct"></span>
+        <span class="assetPieQuickAmount"></span>
+        <span class="assetPieQuickDesc"></span>
+      </div>
       <div class="assetPieDetail" hidden></div>
       <div class="pieSummary">
         <div class="pieTotal"><span>实际交易总额</span><strong>¥0.00</strong></div>
@@ -680,7 +699,7 @@
     return delta;
   }
 
-  function applyBubbleField(stage, state, forceContours = false) {
+  function applyBubbleField(stage, state, forceContours = false, forcePose = false) {
     const cx = 180;
     const cy = 196;
     const now = performance.now();
@@ -736,7 +755,7 @@
       // While the user or the settling spring rotates on a phone, keep the
       // seven petals as one GPU-composited surface. Per-petal path/transform
       // writes during this phase force Safari to repaint every texture layer.
-      if (state.compactMotion && motionActive && !forceContours) continue;
+      if (state.compactMotion && rotationActive && !forceContours && !forcePose) continue;
       if (refreshContours || !nodes.path) {
         const innerMotion = model.innerSlidePose(relative, response, isSelected);
         const path = bubblePetalPath(cx, cy, profile.innerRadius, model.referenceOuterRadius(), item.start, item.end, model.repulsiveGapChannel(item.allocationTotal, response), profile.sideBend, isSelected ? own : 0, innerMotion, model.referenceInnerBoundary(item.asset.name), model.referenceInnerJoinRadius(item.asset.name, item.span));
@@ -781,12 +800,14 @@
         depthTint.setAttribute('transform', `translate(${lipX.toFixed(3)} ${lipY.toFixed(3)})`);
         depthTint.style.opacity = depth.lipOpacity.toFixed(3);
       }
-      group.setAttribute('transform', `translate(${tx.toFixed(3)} ${ty.toFixed(3)}) translate(${pivot.x.toFixed(3)} ${pivot.y.toFixed(3)}) rotate(${localAngle.toFixed(3)}) scale(${pose.scaleRadial.toFixed(4)} ${pose.scaleTangent.toFixed(4)}) rotate(${(-localAngle).toFixed(3)}) translate(${(-pivot.x).toFixed(3)} ${(-pivot.y).toFixed(3)})`);
+      const groupTransform = `translate(${tx.toFixed(3)} ${ty.toFixed(3)}) translate(${pivot.x.toFixed(3)} ${pivot.y.toFixed(3)}) rotate(${localAngle.toFixed(3)}) scale(${pose.scaleRadial.toFixed(4)} ${pose.scaleTangent.toFixed(4)}) rotate(${(-localAngle).toFixed(3)}) translate(${(-pivot.x).toFixed(3)} ${(-pivot.y).toFixed(3)})`;
+      if (group.getAttribute('transform') !== groupTransform) group.setAttribute('transform', groupTransform);
     }
     if (refreshContours) state.lastContourAt = now;
   }
 
   function installPieSwipe(doc, stage, state) {
+    const win = doc.defaultView;
     const viewport = stage.querySelector('.assetPieViewport');
     const svg = stage.querySelector('#assetPieSvg');
     viewport.addEventListener('pointerdown', (event) => {
@@ -797,6 +818,32 @@
       const center = svgPoint.matrixTransform(svg.getScreenCTM());
       const startAngle = Math.atan2(event.clientY - center.y, event.clientX - center.x);
       const startRadius = Math.hypot(event.clientX - center.x, event.clientY - center.y);
+      const matrix = svg.getScreenCTM();
+      const scaleX = Math.hypot(matrix.a, matrix.b);
+      const scaleY = Math.hypot(matrix.c, matrix.d);
+      const diskRadius = Math.min(scaleX, scaleY) * 164;
+      if (startRadius > diskRadius) return;
+      // The browser decides whether to start page panning from the very first
+      // touch samples. Claim an in-disk gesture immediately; waiting until the
+      // rotation threshold lets a few vertical pixels leak into page scroll.
+      if (event.cancelable) event.preventDefault();
+      let tapTarget = null;
+      const gestureDisk = event.target.closest?.('.assetPieGestureDisk');
+      if (gestureDisk) {
+        gestureDisk.style.pointerEvents = 'none';
+        const underlying = doc.elementFromPoint(event.clientX, event.clientY);
+        gestureDisk.style.pointerEvents = '';
+        tapTarget = underlying?.closest?.('.petalPctHit,.assetPetal') || null;
+      }
+      const lockedScrollX = win.scrollX;
+      const lockedScrollY = win.scrollY;
+      const htmlScrollBehavior = doc.documentElement.style.scrollBehavior;
+      doc.documentElement.style.scrollBehavior = 'auto';
+      const lockScroll = () => {
+        if (Math.abs(win.scrollX - lockedScrollX) > .5 || Math.abs(win.scrollY - lockedScrollY) > .5) {
+          win.scrollTo({ left: lockedScrollX, top: lockedScrollY, behavior: 'instant' });
+        }
+      };
       state.drag = {
         pointerId: event.pointerId,
         startX: event.clientX,
@@ -810,12 +857,19 @@
         lastTime: performance.now(),
         startRotation: state.chartRotation.value,
         moved: false,
+        tapTarget,
+        scrollX: lockedScrollX,
+        scrollY: lockedScrollY,
+        htmlScrollBehavior,
+        lockScroll,
       };
+      win.addEventListener('scroll', lockScroll, { passive: true });
       state.chartRotation.dragging = true;
     });
     viewport.addEventListener('pointermove', (event) => {
       const drag = state.drag;
       if (!drag || drag.pointerId !== event.pointerId) return;
+      if (event.cancelable) event.preventDefault();
       const dx = event.clientX - drag.startX;
       const dy = event.clientY - drag.startY;
       const now = performance.now();
@@ -833,7 +887,6 @@
       drag.lastX = event.clientX;
       drag.lastTime = now;
       if (!drag.moved) return;
-      event.preventDefault();
       state.chartRotation.value = drag.startRotation + drag.accumulatedDegrees;
       state.chartRotation.velocity = incrementalDegrees / dt;
       state.chartRotation.velocity = Math.max(-720, Math.min(720, state.chartRotation.velocity));
@@ -847,6 +900,19 @@
       const drag = state.drag;
       if (!drag || drag.pointerId !== event.pointerId) return;
       state.drag = null;
+      const restoreScroll = () => {
+        if (Math.abs(win.scrollX - drag.scrollX) > .5 || Math.abs(win.scrollY - drag.scrollY) > .5) {
+          // The host page enables `html { scroll-behavior:smooth }`; an
+          // unqualified scrollTo would therefore ease back over several
+          // frames and look like residual page movement beneath the disk.
+          win.scrollTo({ left: drag.scrollX, top: drag.scrollY, behavior: 'instant' });
+        }
+      };
+      win.setTimeout(() => {
+        restoreScroll();
+        win.removeEventListener('scroll', drag.lockScroll);
+        doc.documentElement.style.scrollBehavior = drag.htmlScrollBehavior;
+      }, 80);
       state.chartRotation.dragging = false;
       if (viewport.hasPointerCapture(event.pointerId)) viewport.releasePointerCapture(event.pointerId);
       if (drag.moved) {
@@ -855,6 +921,7 @@
         const intentionalFlick = !cancelled && (Math.abs(drag.accumulatedDegrees) >= 8 || Math.abs(state.chartRotation.velocity) >= 130);
         if (intentionalFlick && bottomAsset?.asset.id === drag.startSelectedId) {
           selectAdjacentAsset(doc, stage, state, drag.accumulatedDegrees < 0 ? 1 : -1);
+          restoreScroll();
           return;
         }
         if (bottomAsset && bottomAsset.asset.id !== state.selectedId) selectAsset(doc, stage, state, bottomAsset.asset.id, { preserveRotation: true, detailDelay: 70 });
@@ -863,7 +930,18 @@
           ? model.rotationTargetFor(bottomAsset.mid, state.chartRotation.value)
           : model.nearestEquivalentAngle(0, state.chartRotation.value);
         startSelectionSpring(stage, state);
-      } else startSelectionSpring(stage, state);
+      } else if (!cancelled && drag.tapTarget?.isConnected) {
+        drag.tapTarget.dispatchEvent(new doc.defaultView.MouseEvent('click', {
+          bubbles: true,
+          cancelable: true,
+          clientX: event.clientX,
+          clientY: event.clientY,
+        }));
+        state.suppressClickUntil = performance.now() + 180;
+      }
+      else startSelectionSpring(stage, state);
+      restoreScroll();
+      requestAnimationFrame(restoreScroll);
     };
     viewport.addEventListener('pointerup', (event) => finish(event));
     viewport.addEventListener('pointercancel', (event) => finish(event, true));
@@ -967,18 +1045,52 @@
       const selectedGroup = stage.querySelector(`.assetPetal[data-id="${CSS.escape(id)}"]`);
       if (selectedGroup) selectedGroup.parentNode.append(selectedGroup);
     }
+    if (state.compactMotion) {
+      for (const [assetId, spring] of state.selection) {
+        spring.value = assetId === id ? 1 : 0;
+        spring.velocity = 0;
+      }
+      applyBubbleField(stage, state, false, true);
+    }
+    if (id && state.compactMotion) renderQuickStatus(stage, state, id);
     startSelectionSpring(stage, state);
     if (id) {
-      const delay = state.reduceMotion ? 0 : (options.detailDelay ?? 105);
-      state.detailTimer = setTimeout(() => {
-        if (state.selectedId === id) renderDetail(doc, stage, state, id);
-      }, delay);
+      if (state.compactMotion) state.pendingDetailId = id;
+      else {
+        const delay = state.reduceMotion ? 0 : (options.detailDelay ?? 105);
+        state.detailTimer = setTimeout(() => {
+          if (state.selectedId === id) renderDetail(doc, stage, state, id);
+        }, delay);
+      }
     }
-    else closeDetail(stage, state);
+    else {
+      state.pendingDetailId = null;
+      closeDetail(stage, state);
+    }
+  }
+
+  function renderQuickStatus(stage, state, id) {
+    const asset = state.assets.find((item) => item.id === id);
+    const quick = stage.querySelector('.assetPieQuickStatus');
+    if (!asset || !quick) return;
+    quick.querySelector('.assetPieQuickName').textContent = asset.name;
+    quick.querySelector('.assetPieQuickPct').textContent = `${trimNumber(asset.pct)}%`;
+    quick.querySelector('.assetPieQuickAmount').textContent = formatMoney(asset.amount);
+    quick.querySelector('.assetPieQuickDesc').textContent = asset.desc || '资产配置';
+    quick.dataset.assetId = id;
+    quick.hidden = false;
+    const detail = stage.querySelector('.assetPieDetail');
+    if (detail) detail.hidden = true;
   }
 
   function openInlineRatioEditor(doc, stage, state, id) {
     if (state.mode !== 'pie' || state.morphing || state.selectedId !== id) return;
+    const rotation = state.chartRotation;
+    if (state.compactMotion && (state.drag || state.selectionAnimating || Math.abs(rotation.target - rotation.value) > .015 || Math.abs(rotation.velocity) > .04)) {
+      clearTimeout(state.inlineRatioTimer);
+      state.inlineRatioTimer = setTimeout(() => openInlineRatioEditor(doc, stage, state, id), 80);
+      return;
+    }
     const asset = state.assets.find((item) => item.id === id);
     const hit = stage.querySelector(`.assetPetal[data-id="${CSS.escape(id)}"] .petalPctHit`);
     const viewport = stage.querySelector('.assetPieViewport');
@@ -1074,7 +1186,8 @@
         else { spring.value = target; spring.velocity = 0; }
       }
       const rotation = state.chartRotation;
-      if (!rotation.dragging) {
+      if (rotation.dragging) moving = true;
+      else {
         const acceleration = (model.MOTION.rotateStiffness * (rotation.target - rotation.value) - model.MOTION.rotateDamping * rotation.velocity) / model.MOTION.rotateMass;
         rotation.velocity += acceleration * dt;
         rotation.value += rotation.velocity * dt;
@@ -1094,7 +1207,16 @@
         }
         state.selectionRaf = 0;
         state.selectionAnimating = false;
-        if (state.compactMotion) applyBubbleField(stage, state, true);
+        if (state.compactMotion) {
+          applyBubbleField(stage, state, true);
+          const pendingDetailId = state.pendingDetailId;
+          state.pendingDetailId = null;
+          if (pendingDetailId && state.selectedId === pendingDetailId && state.mode === 'pie' && !state.morphing) {
+            requestAnimationFrame(() => {
+              if (state.selectedId === pendingDetailId && state.mode === 'pie' && !state.morphing) renderDetail(stage.ownerDocument, stage, state, pendingDetailId);
+            });
+          }
+        }
       }
     };
     state.selectionRaf = requestAnimationFrame(tick);
@@ -1104,6 +1226,8 @@
     const asset = state.assets.find((item) => item.id === id);
     const detail = stage.querySelector('.assetPieDetail');
     if (!asset) return;
+    const quick = stage.querySelector('.assetPieQuickStatus');
+    if (quick) quick.hidden = true;
     detail.getAnimations({ subtree: true }).forEach((animation) => animation.cancel());
     const previousId = detail.dataset.assetId || '';
     const currentTable = detail.querySelector('table.detailCurrent') || detail.querySelector('table');
@@ -1216,6 +1340,11 @@
   }
 
   function closeDetail(stage, state) {
+    const quick = stage.querySelector('.assetPieQuickStatus');
+    if (quick) {
+      quick.hidden = true;
+      delete quick.dataset.assetId;
+    }
     const detail = stage.querySelector('.assetPieDetail');
     if (detail.hidden) return;
     detail.getAnimations({ subtree: true }).forEach((animation) => animation.cancel());
@@ -1459,6 +1588,7 @@
 
   async function morphToPieCompact(doc, stage, tableWrap, toggle, state, refresh) {
     state.morphing = true;
+    clearTransientPieUi(stage, state);
     if (state.reduceMotion) {
       if (state.dataDirty || !state.assets.length) refresh();
       stage.hidden = false;
@@ -1484,7 +1614,10 @@
     }));
     const chartRect = stage.querySelector('#assetPieSvg')?.getBoundingClientRect();
     const aggregateRect = centerAggregateRect(chartRect);
-    const proxies = createLightweightProxies(doc, state.assets, rowRects, rowRects);
+    const corridor = createMorphCorridor(doc);
+    const toolbarBottom = doc.querySelector('.mobileSortBar')?.getBoundingClientRect().bottom || 0;
+    corridor.style.clipPath = `inset(${Math.max(0, toolbarBottom).toFixed(2)}px 0 0 0)`;
+    const proxies = createLightweightProxies(doc, state.assets, rowRects, rowRects, corridor);
     const duration = state.reduceMotion ? 140 : model.MOTION.viewMorphMs;
     const petals = [...stage.querySelectorAll('.assetPetal')];
     petals.forEach((petal) => { petal.style.opacity = '0'; });
@@ -1520,6 +1653,7 @@
     ], { duration, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'forwards' });
     await Promise.allSettled([...animations, ...identityAnimations, ...petalAnimations, stageAnimation].map((animation) => animation.finished));
     proxies.forEach((proxy) => proxy.remove());
+    corridor.remove();
     stageAnimation.cancel();
     stage.style.opacity = '';
     petals.forEach((petal) => { petal.style.opacity = ''; });
@@ -1536,6 +1670,7 @@
 
   async function morphToCardsCompact(doc, stage, tableWrap, toggle, state) {
     state.morphing = true;
+    clearTransientPieUi(stage, state);
     if (state.reduceMotion) {
       clearTimeout(state.detailTimer);
       if (state.selectionRaf) cancelAnimationFrame(state.selectionRaf);
@@ -1562,7 +1697,6 @@
       const clip = state.compactMorphClips.get(group.dataset.id) || samplePetalMorphShape(group, rect, COMPACT_MORPH_POINTS);
       return [group.dataset.id, { rect, clip }];
     }));
-    clearTimeout(state.detailTimer);
     if (state.selectionRaf) cancelAnimationFrame(state.selectionRaf);
     state.selectionRaf = 0;
     state.selectedId = null;
@@ -1586,7 +1720,10 @@
     const chartRect = stage.querySelector('#assetPieSvg')?.getBoundingClientRect();
     const aggregateRect = centerAggregateRect(chartRect);
     const sourceRects = new Map([...sourceShapes].map(([id, shape]) => [id, shape.rect]));
-    const proxies = createLightweightProxies(doc, assets, sourceRects, targetRects);
+    const corridor = createMorphCorridor(doc);
+    const toolbarBottom = doc.querySelector('.mobileSortBar')?.getBoundingClientRect().bottom || 0;
+    corridor.style.clipPath = `inset(${Math.max(0, toolbarBottom).toFixed(2)}px 0 0 0)`;
+    const proxies = createLightweightProxies(doc, assets, sourceRects, targetRects, corridor);
     const duration = state.reduceMotion ? 140 : model.MOTION.viewMorphMs;
     const animations = proxies.map((proxy, index) => {
       const sourceShape = sourceShapes.get(proxy.dataset.id);
@@ -1623,6 +1760,7 @@
     ], { duration, easing: 'linear', fill: 'forwards' });
     await Promise.allSettled([...animations, ...identityAnimations, ...petalAnimations, stageAnimation, tableAnimation].map((animation) => animation.finished));
     proxies.forEach((proxy) => proxy.remove());
+    corridor.remove();
     stageAnimation.cancel();
     tableAnimation.cancel();
     tableWrap.style.opacity = '';
@@ -1649,6 +1787,7 @@
   async function morphToPie(doc, win, stage, tableWrap, toggle, state, refresh) {
     if (state.compactMotion) return morphToPieCompact(doc, stage, tableWrap, toggle, state, refresh);
     state.morphing = true;
+    clearTransientPieUi(stage, state);
     doc.body.classList.add('assetPieBusy', 'assetPieMorphingIn');
     refresh();
     const rows = [...doc.querySelectorAll('#tbody tr[data-row-id]')];
@@ -1722,6 +1861,7 @@
   async function morphToCards(doc, win, stage, tableWrap, toggle, state) {
     if (state.compactMotion) return morphToCardsCompact(doc, stage, tableWrap, toggle, state);
     state.morphing = true;
+    clearTransientPieUi(stage, state);
     doc.body.classList.add('assetPieBusy', 'assetPieMorphingOut');
     const sourceShapes = new Map([...stage.querySelectorAll('.assetPetal')].map((group) => {
       const rect = group.querySelector('.petalEdge')?.getBoundingClientRect() || group.getBoundingClientRect();
@@ -1842,7 +1982,7 @@
     }).filter(Boolean);
   }
 
-  function createLightweightProxies(doc, assets, rects, baseRects = rects) {
+  function createLightweightProxies(doc, assets, rects, baseRects = rects, host = doc.body) {
     return assets.map((asset) => {
       const rect = rects.get(asset.id);
       const base = baseRects.get(asset.id) || rect;
@@ -1870,9 +2010,36 @@
       amount.textContent = formatMoney(asset.amount);
       identity.append(code, percentage, amount);
       proxy.append(identity);
-      doc.body.append(proxy);
+      host.append(proxy);
       return proxy;
     }).filter(Boolean);
+  }
+
+  function createMorphCorridor(doc) {
+    const corridor = doc.createElement('div');
+    corridor.className = 'assetMorphCorridor';
+    corridor.setAttribute('aria-hidden', 'true');
+    doc.body.append(corridor);
+    return corridor;
+  }
+
+  function clearTransientPieUi(stage, state) {
+    clearTimeout(state.detailTimer);
+    clearTimeout(state.inlineRatioTimer);
+    state.detailTimer = 0;
+    state.inlineRatioTimer = 0;
+    state.pendingDetailId = null;
+    stage.querySelector('.assetPieInlineRatio')?.remove();
+    const quick = stage.querySelector('.assetPieQuickStatus');
+    if (quick) {
+      quick.hidden = true;
+      delete quick.dataset.assetId;
+    }
+    const detail = stage.querySelector('.assetPieDetail');
+    detail.getAnimations({ subtree: true }).forEach((animation) => animation.cancel());
+    detail.hidden = true;
+    detail.replaceChildren();
+    delete detail.dataset.assetId;
   }
 
   function proxyBaseRect(proxy) {
