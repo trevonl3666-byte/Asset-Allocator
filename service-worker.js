@@ -1,4 +1,4 @@
-const CACHE_NAME = "asset-allocator-v31-instant-info-clipped-handoff-20260905";
+const CACHE_NAME = "asset-allocator-v34-v5-pie-v14-view-transitions-20260906";
 const APP_SHELL = [
   "./",
   "./index.html",
