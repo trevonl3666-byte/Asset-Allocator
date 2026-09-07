@@ -1,4 +1,4 @@
-const CACHE_NAME = "asset-allocator-v36-mobile-drag-follow-finger-20260906";
+const CACHE_NAME = "asset-allocator-v37-mobile-rotation-guard-cache-20260906";
 const APP_SHELL = [
   "./",
   "./index.html",

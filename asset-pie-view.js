@@ -436,7 +436,7 @@
     const activeIds = new Set(drawOrder.map((item) => item.asset.id));
     for (const item of drawOrder) {
       const group = ordered.find((entry) => entry.id === item.asset.id).node;
-      updatePetalGroup(doc, group, item, state);
+      updatePetalGroup(doc, group, item, state, stage);
       cachePetalNodes(state, item.asset.id, group);
       layer.append(group);
       if (!state.selection.has(item.asset.id)) state.selection.set(item.asset.id, { value: 0, velocity: 0 });
@@ -520,7 +520,7 @@
     return group;
   }
 
-  function updatePetalGroup(doc, group, item, state) {
+  function updatePetalGroup(doc, group, item, state, stage) {
     const clipId = `petal-clip-${String(item.asset.id).replace(/[^a-zA-Z0-9_-]/g, '-')}`;
     group.classList.toggle('isSelected', item.asset.id === state.selectedId);
     group.setAttribute('aria-pressed', item.asset.id === state.selectedId ? 'true' : 'false');
@@ -537,6 +537,7 @@
     const openRatio = (event) => {
       event.preventDefault();
       event.stopPropagation();
+      if (state.compactMotion && (state.drag?.moved || performance.now() < state.suppressClickUntil)) return;
       const id = item.asset.id;
       if (state.selectedId !== id) selectAsset(doc, stage, state, id, { detailDelay: 80 });
       clearTimeout(state.inlineRatioTimer);
@@ -708,8 +709,15 @@
         : model.bubbleInteractionPose(relative, response, isSelected);
       const profile = model.referencePetalProfile(item.asset.name, item.span);
       const placement = model.referenceLabelPlacement(item.asset.name);
-      const innerMotion = model.innerSlidePose(relative, response, isSelected);
-      const path = bubblePetalPath(cx, cy, profile.innerRadius, model.referenceOuterRadius(), item.start, item.end, model.repulsiveGapChannel(item.allocationTotal, response), profile.sideBend, isSelected ? own : 0, innerMotion, model.referenceInnerBoundary(item.asset.name));
+      // The contour does not depend on the disc's rotation angle. Reuse only
+      // identical inputs; changing selection still rebuilds every needed frame.
+      const contourKey = [item.asset.name, item.start, item.end, item.span, item.allocationTotal, relative, response, isSelected, own].join('|');
+      let path = nodes.path;
+      if (!useMobileCompositor || nodes.contourKey !== contourKey || !path) {
+        const innerMotion = model.innerSlidePose(relative, response, isSelected);
+        path = bubblePetalPath(cx, cy, profile.innerRadius, model.referenceOuterRadius(), item.start, item.end, model.repulsiveGapChannel(item.allocationTotal, response), profile.sideBend, isSelected ? own : 0, innerMotion, model.referenceInnerBoundary(item.asset.name));
+        nodes.contourKey = contourKey;
+      }
       const anchor = placement || point(cx, cy, profile.labelRadius, item.mid);
       if (nodes.path !== path) {
         nodes.shapePaths.forEach((node) => node.setAttribute('d', path));
@@ -987,6 +995,7 @@
 
   function openInlineRatioEditor(doc, stage, state, id) {
     if (state.mode !== 'pie' || state.morphing || state.selectedId !== id) return;
+    if (state.compactMotion && (state.drag?.moved || performance.now() < state.suppressClickUntil)) return;
     const asset = state.assets.find((item) => item.id === id);
     const hit = stage.querySelector(`.assetPetal[data-id="${CSS.escape(id)}"] .petalPctHit`);
     const viewport = stage.querySelector('.assetPieViewport');
