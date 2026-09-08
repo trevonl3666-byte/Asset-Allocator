@@ -228,6 +228,7 @@
       startedAt: performance.now(),
       duration,
     };
+    if (state.mobileRotationFastPath) state.rotationSessionActive = true;
   }
 
   function injectStyles(doc) {
@@ -849,6 +850,15 @@
     applyBubbleField(stage, state, true);
   }
 
+  function settleMobileSelectionForAutoRotate(stage, state) {
+    if (!state.mobileRotationFastPath) return;
+    for (const [id, spring] of state.selection) {
+      spring.value = id === state.selectedId ? 1 : 0;
+      spring.velocity = 0;
+    }
+    applyBubbleField(stage, state, true);
+  }
+
   function installPieSwipe(doc, stage, state) {
     const viewport = stage.querySelector('.assetPieViewport');
     const svg = stage.querySelector('#assetPieSvg');
@@ -1061,6 +1071,7 @@
       else startSelectionRotation(state, targetRotation);
     } else state.chartRotation.animation = null;
     syncPetalSelectionState(stage, state);
+    if (state.mobileRotationFastPath && options.rotateToBottom && !options.preserveRotation) settleMobileSelectionForAutoRotate(stage, state);
     startSelectionSpring(stage, state);
     if (id) {
       const delay = state.reduceMotion ? 0 : (options.detailDelay ?? 105);
@@ -1184,6 +1195,7 @@
         else { spring.value = target; spring.velocity = 0; }
       }
       const rotation = state.chartRotation;
+      const mobileAutoRotateOnly = state.mobileRotationFastPath && rotation.animation && !rotation.dragging;
       if (!rotation.dragging) {
         if (rotation.animation) {
           const elapsed = now - rotation.animation.startedAt;
@@ -1206,7 +1218,8 @@
           else { rotation.value = rotation.target; rotation.velocity = 0; }
         }
       }
-      applyBubbleField(stage, state);
+      if (mobileAutoRotateOnly) applyMobileRotationOnly(stage, state);
+      else applyBubbleField(stage, state);
       if (!state.reduceMotion && performance.now() - state.flowStartedAt < model.MOTION.fluidMs) moving = true;
       if (moving && !state.reduceMotion) state.selectionRaf = requestAnimationFrame(tick);
       else {
