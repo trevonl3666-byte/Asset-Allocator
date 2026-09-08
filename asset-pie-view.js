@@ -53,7 +53,7 @@
       rotationSessionActive: false,
       pendingRotationSample: null,
       selectionLast: 0,
-      chartRotation: { value: 0, velocity: 0, target: 0, dragging: false },
+      chartRotation: { value: 0, velocity: 0, target: 0, dragging: false, animation: null },
       drag: null,
       suppressClickUntil: 0,
       flowStartedAt: 0,
@@ -194,6 +194,39 @@
 
   function formatMoney(value) {
     return `¥${Math.round(Number(value) || 0).toLocaleString('zh-CN')}`;
+  }
+
+  function easeSelectionRotate(progress) {
+    const t = Math.max(0, Math.min(1, Number(progress) || 0));
+    return 1 - Math.pow(1 - t, 3);
+  }
+
+  function startSelectionRotation(state, targetDegrees) {
+    const rotation = state.chartRotation;
+    const target = Number.isFinite(targetDegrees) ? targetDegrees : rotation.value;
+    rotation.target = target;
+    if (state.reduceMotion) {
+      rotation.value = target;
+      rotation.velocity = 0;
+      rotation.animation = null;
+      return;
+    }
+    const delta = target - rotation.value;
+    const distance = Math.abs(delta);
+    if (distance < .12) {
+      rotation.value = target;
+      rotation.velocity = 0;
+      rotation.animation = null;
+      return;
+    }
+    const duration = Math.max(320, Math.min(560, 300 + distance * 1.4));
+    rotation.velocity = 0;
+    rotation.animation = {
+      start: rotation.value,
+      end: target,
+      startedAt: performance.now(),
+      duration,
+    };
   }
 
   function injectStyles(doc) {
@@ -420,6 +453,7 @@
         state.chartRotation.value = model.rotationTargetFor(selectedGeometry.mid, state.chartRotation.value);
         state.chartRotation.target = state.chartRotation.value;
         state.chartRotation.velocity = 0;
+        state.chartRotation.animation = null;
       }
     }
     if (!state.assets.some((asset) => asset.pct > 0)) {
@@ -840,6 +874,7 @@
         moved: false,
       };
       if (state.mobileRotationFastPath) settleMobileSelectionForDrag(stage, state);
+      state.chartRotation.animation = null;
       state.chartRotation.dragging = true;
       state.rotationSessionActive = true;
     });
@@ -1018,10 +1053,12 @@
     state.flowStartedAt = performance.now();
     const selectedGeometry = state.geometry.find((item) => item.asset.id === id);
     if (options.rotateToBottom) {
-      state.chartRotation.target = selectedGeometry
+      const targetRotation = selectedGeometry
         ? model.rotationTargetFor(selectedGeometry.mid, state.chartRotation.value)
         : model.nearestEquivalentAngle(0, state.chartRotation.value);
-    }
+      if (options.preserveRotation) state.chartRotation.target = targetRotation;
+      else startSelectionRotation(state, targetRotation);
+    } else state.chartRotation.animation = null;
     syncPetalSelectionState(stage, state);
     startSelectionSpring(stage, state);
     if (id) {
@@ -1147,12 +1184,26 @@
       }
       const rotation = state.chartRotation;
       if (!rotation.dragging) {
-        const acceleration = (model.MOTION.rotateStiffness * (rotation.target - rotation.value) - model.MOTION.rotateDamping * rotation.velocity) / model.MOTION.rotateMass;
-        rotation.velocity += acceleration * dt;
-        rotation.value += rotation.velocity * dt;
-        rotation.velocity = Math.max(-720, Math.min(720, rotation.velocity));
-        if (Math.abs(rotation.value - rotation.target) > .015 || Math.abs(rotation.velocity) > .04) moving = true;
-        else { rotation.value = rotation.target; rotation.velocity = 0; }
+        if (rotation.animation) {
+          const elapsed = now - rotation.animation.startedAt;
+          const progress = Math.max(0, Math.min(1, elapsed / rotation.animation.duration));
+          const eased = easeSelectionRotate(progress);
+          rotation.value = rotation.animation.start + (rotation.animation.end - rotation.animation.start) * eased;
+          rotation.velocity = 0;
+          if (progress < 1) moving = true;
+          else {
+            rotation.value = rotation.animation.end;
+            rotation.target = rotation.animation.end;
+            rotation.animation = null;
+          }
+        } else {
+          const acceleration = (model.MOTION.rotateStiffness * (rotation.target - rotation.value) - model.MOTION.rotateDamping * rotation.velocity) / model.MOTION.rotateMass;
+          rotation.velocity += acceleration * dt;
+          rotation.value += rotation.velocity * dt;
+          rotation.velocity = Math.max(-720, Math.min(720, rotation.velocity));
+          if (Math.abs(rotation.value - rotation.target) > .015 || Math.abs(rotation.velocity) > .04) moving = true;
+          else { rotation.value = rotation.target; rotation.velocity = 0; }
+        }
       }
       applyBubbleField(stage, state);
       if (!state.reduceMotion && performance.now() - state.flowStartedAt < model.MOTION.fluidMs) moving = true;
@@ -1163,6 +1214,7 @@
           if (!state.chartRotation.dragging) {
             state.chartRotation.value = state.chartRotation.target;
             state.chartRotation.velocity = 0;
+            state.chartRotation.animation = null;
           }
           applyBubbleField(stage, state);
         }
@@ -1630,6 +1682,7 @@
       state.chartRotation.value = 0;
       state.chartRotation.target = 0;
       state.chartRotation.velocity = 0;
+      state.chartRotation.animation = null;
       stage.classList.remove('hasSelection');
       for (const spring of state.selection.values()) { spring.value = 0; spring.velocity = 0; }
       closeDetail(stage, state);
