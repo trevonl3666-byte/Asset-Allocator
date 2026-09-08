@@ -38,7 +38,8 @@
     const stage = buildStage(doc);
     tableWrap.before(stage);
 
-    const compactMotion = win.matchMedia('(max-width: 760px)').matches || (win.navigator.hardwareConcurrency || 8) <= 4;
+    const mobileRotationFastPath = win.matchMedia('(max-width: 760px)').matches;
+    const compactMotion = mobileRotationFastPath || (win.navigator.hardwareConcurrency || 8) <= 4;
     const state = {
       mode: 'cards',
       selectedId: null,
@@ -67,6 +68,8 @@
       reduceMotion: win.matchMedia('(prefers-reduced-motion: reduce)').matches,
       transitionReducedMotion: win.matchMedia('(prefers-reduced-motion: reduce)').matches && !compactMotion,
       compactMotion,
+      mobileRotationFastPath,
+      mobileRotationLayer: null,
     };
     installPieSwipe(doc, stage, state);
     installDetailSwipe(doc, stage, state);
@@ -772,6 +775,40 @@
     if (node.getAttribute(name) !== value) node.setAttribute(name, value);
   }
 
+  // Mobile drag fast-path: while the finger is actively rotating the pie,
+  // only move the already-rasterized compositor and keep labels upright.
+  // The expensive petal path/selection spring work is committed after drag.
+  function applyMobileRotationOnly(stage, state) {
+    const rotationValue = state.chartRotation.value;
+    const layer = state.mobileRotationLayer || (state.mobileRotationLayer = {
+      compositor: stage.querySelector('.assetPieCompositor'),
+      rotator: stage.querySelector('.pieRotator'),
+    });
+    const compositor = layer.compositor;
+    const rotator = layer.rotator;
+    const transform = `translate3d(0,0,0) rotate(${rotationValue.toFixed(3)}deg)`;
+    if (compositor && compositor.style.transform !== transform) compositor.style.transform = transform;
+    if (rotator?.hasAttribute('transform')) rotator.removeAttribute('transform');
+    for (const nodes of state.petalNodes.values()) {
+      const label = nodes.label;
+      if (!label) continue;
+      const labelX = label.dataset.labelX;
+      const labelY = label.dataset.labelY;
+      setChangedAttribute(label, 'transform', `translate(${labelX} ${labelY}) rotate(${(-rotationValue).toFixed(3)})`);
+    }
+  }
+
+  function settleMobileSelectionForDrag(stage, state) {
+    if (!state.mobileRotationFastPath) return;
+    if (state.selectionRaf) cancelAnimationFrame(state.selectionRaf);
+    state.selectionRaf = 0;
+    for (const [id, spring] of state.selection) {
+      spring.value = id === state.selectedId ? 1 : 0;
+      spring.velocity = 0;
+    }
+    applyBubbleField(stage, state, true);
+  }
+
   function installPieSwipe(doc, stage, state) {
     const viewport = stage.querySelector('.assetPieViewport');
     const svg = stage.querySelector('#assetPieSvg');
@@ -797,6 +834,7 @@
         startRotation: state.chartRotation.value,
         moved: false,
       };
+      if (state.mobileRotationFastPath) settleMobileSelectionForDrag(stage, state);
       state.chartRotation.dragging = true;
       state.rotationSessionActive = true;
     });
@@ -804,7 +842,7 @@
       const drag = state.drag;
       if (!drag || drag.pointerId !== event.pointerId) return;
       if (state.compactMotion) {
-        event.preventDefault();
+        if (!state.mobileRotationFastPath) event.preventDefault();
         state.pendingRotationSample = {
           pointerId: event.pointerId,
           clientX: event.clientX,
@@ -821,7 +859,7 @@
         time: performance.now(),
       });
       if (drag.moved) event.preventDefault();
-    }, { passive: false });
+    }, { passive: state.mobileRotationFastPath });
     const finish = (event, cancelled = false) => {
       const drag = state.drag;
       if (!drag || drag.pointerId !== event.pointerId) return;
@@ -874,6 +912,14 @@
     if (!drag.moved) return;
     state.chartRotation.value = drag.startRotation + drag.accumulatedDegrees;
     state.chartRotation.velocity = Math.max(-720, Math.min(720, incrementalDegrees / dt));
+    // On phones, do not rebuild SVG petal contours or swap the detail card
+    // while the finger is moving. Those operations were the main source of
+    // visible frame stalls. Keep the exact rotation tracking at rAF cadence,
+    // then synchronize selection once on pointerup.
+    if (state.mobileRotationFastPath && state.rotationSessionActive) {
+      if (render) applyMobileRotationOnly(stage, state);
+      return;
+    }
     const bottomAsset = assetAtBottom(state);
     if (bottomAsset && bottomAsset.asset.id !== state.selectedId) {
       selectAsset(stage.ownerDocument, stage, state, bottomAsset.asset.id, { preserveRotation: true, detailDelay: 70 });
