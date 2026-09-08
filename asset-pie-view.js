@@ -220,6 +220,9 @@
       .assetPetal .petalShade{fill:rgba(4,10,16,.46)}
       .assetPetal .petalEdge{fill:none;stroke:#42586d;stroke-width:1.3;vector-effect:non-scaling-stroke;opacity:.9}
       .assetPetal .petalHighlight{fill:none;stroke:rgba(203,224,245,.13);stroke-width:.75;vector-effect:non-scaling-stroke}
+      .assetPetal .petalVisual,.assetPetal .petalLabel{transition:filter 260ms cubic-bezier(.22,1,.36,1),opacity 260ms cubic-bezier(.22,1,.36,1)}
+      #assetPieStage.hasSelection .assetPetal:not(.isSelected) .petalVisual{filter:brightness(.62) saturate(.78);opacity:.82}
+      #assetPieStage.hasSelection .assetPetal:not(.isSelected) .petalLabel{filter:brightness(.72);opacity:.62}
       .assetPetal .petalHit{fill:transparent;stroke:transparent;stroke-width:12;pointer-events:all}
       .assetPetal:focus-visible .petalEdge{stroke:#64b2ff;stroke-width:2.2}
       .assetPetal.isSelected .petalVisual{filter:brightness(1.12) saturate(1.06) drop-shadow(0 10px 11px rgba(0,0,0,.64)) drop-shadow(0 0 7px rgba(76,164,242,.58))}
@@ -500,12 +503,13 @@
       const ratioPoint = ratioRect && event.clientX >= ratioRect.left && event.clientX <= ratioRect.right && event.clientY >= ratioRect.top && event.clientY <= ratioRect.bottom;
       if (event.target.closest('.petalPctHit') || ratioPoint) {
         const selectedId = group.dataset.id;
-        if (state.selectedId !== selectedId) selectAsset(doc, stage, state, selectedId, { detailDelay: 80 });
+        if (state.selectedId !== selectedId) selectAsset(doc, stage, state, selectedId, { rotateToBottom: true, detailDelay: 80 });
         clearTimeout(state.inlineRatioTimer);
         state.inlineRatioTimer = setTimeout(() => openInlineRatioEditor(doc, stage, state, selectedId), state.reduceMotion ? 0 : 360);
         return;
       }
-      selectAsset(doc, stage, state, model.reduceSelection(state.selectedId, group.dataset.id));
+      const nextId = model.reduceSelection(state.selectedId, group.dataset.id);
+      selectAsset(doc, stage, state, nextId, { rotateToBottom: Boolean(nextId) });
     });
     group.addEventListener('focus', () => { state.focusedAssetId = group.dataset.id; });
     group.addEventListener('keydown', (event) => {
@@ -513,12 +517,13 @@
       event.preventDefault();
       if (event.target.closest('.petalPctHit')) {
         const selectedId = group.dataset.id;
-        if (state.selectedId !== selectedId) selectAsset(doc, stage, state, selectedId, { detailDelay: 80 });
+        if (state.selectedId !== selectedId) selectAsset(doc, stage, state, selectedId, { rotateToBottom: true, detailDelay: 80 });
         clearTimeout(state.inlineRatioTimer);
         state.inlineRatioTimer = setTimeout(() => openInlineRatioEditor(doc, stage, state, selectedId), state.reduceMotion ? 0 : 360);
         return;
       }
-      selectAsset(doc, stage, state, model.reduceSelection(state.selectedId, group.dataset.id));
+      const nextId = model.reduceSelection(state.selectedId, group.dataset.id);
+      selectAsset(doc, stage, state, nextId, { rotateToBottom: Boolean(nextId) });
     });
     return group;
   }
@@ -542,7 +547,7 @@
       event.stopPropagation();
       if (state.compactMotion && (state.drag?.moved || performance.now() < state.suppressClickUntil)) return;
       const id = item.asset.id;
-      if (state.selectedId !== id) selectAsset(doc, stage, state, id, { detailDelay: 80 });
+      if (state.selectedId !== id) selectAsset(doc, stage, state, id, { rotateToBottom: true, detailDelay: 80 });
       clearTimeout(state.inlineRatioTimer);
       state.inlineRatioTimer = setTimeout(() => openInlineRatioEditor(doc, stage, state, id), state.reduceMotion ? 0 : 360);
     };
