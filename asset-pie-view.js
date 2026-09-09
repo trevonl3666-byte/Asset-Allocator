@@ -199,7 +199,10 @@
 
   function easeSelectionRotate(progress) {
     const t = Math.max(0, Math.min(1, Number(progress) || 0));
-    return 1 - Math.pow(1 - t, 3);
+    // Inertial ease-out: keep the opening movement decisive, then let the
+    // rotation continuously bleed speed so the final landing never feels
+    // like a hard brake. The slope reaches zero at the target angle.
+    return 1 - Math.pow(1 - t, 4);
   }
 
   function startSelectionRotation(state, targetDegrees) {
@@ -220,7 +223,7 @@
       rotation.animation = null;
       return;
     }
-    const duration = Math.max(320, Math.min(560, 300 + distance * 1.4));
+    const duration = Math.max(420, Math.min(720, 390 + distance * 1.65));
     rotation.velocity = 0;
     rotation.animation = {
       start: rotation.value,
@@ -264,6 +267,7 @@
       .assetPetal.isSelected .petalShade{fill:rgba(4,10,16,.31)}
       .assetPetal.isSelected .petalEdge{stroke:color-mix(in srgb,var(--petal-accent,#8ecaff) 68%,white);stroke-width:1.75;stroke-linejoin:round}
       .assetPetal.isSelected .petalHighlight{stroke:rgba(237,248,255,.9);stroke-width:1.2}
+      @media (max-width:760px){#assetPieStage.mobileAutoRotating .assetPetal .petalVisual,#assetPieStage.mobileAutoRotating .assetPetal .petalLabel{transition:none!important}}
       .petalLabel{pointer-events:all;fill:#eef6ff;text-anchor:middle;paint-order:stroke;stroke:rgba(3,8,13,.34);stroke-width:1.4px;stroke-linejoin:round;font-variant-numeric:tabular-nums;user-select:none;-webkit-user-select:none}
       .petalLabel text{pointer-events:none}
       .petalPctHit{fill:transparent;stroke:transparent;stroke-width:1;pointer-events:all;cursor:text}
@@ -885,6 +889,7 @@
         moved: false,
       };
       if (state.mobileRotationFastPath) settleMobileSelectionForDrag(stage, state);
+      stage.classList.remove('mobileAutoRotating');
       state.chartRotation.animation = null;
       state.chartRotation.dragging = true;
       state.rotationSessionActive = true;
@@ -1063,6 +1068,9 @@
     stage.classList.toggle('hasSelection', Boolean(id));
     state.flowStartedAt = performance.now();
     const selectedGeometry = state.geometry.find((item) => item.asset.id === id);
+    const mobileAutoRotate = Boolean(state.mobileRotationFastPath && options.rotateToBottom && !options.preserveRotation);
+    if (mobileAutoRotate) stage.classList.add('mobileAutoRotating');
+    else stage.classList.remove('mobileAutoRotating');
     if (options.rotateToBottom) {
       const targetRotation = selectedGeometry
         ? model.rotationTargetFor(selectedGeometry.mid, state.chartRotation.value)
@@ -1071,10 +1079,21 @@
       else startSelectionRotation(state, targetRotation);
     } else state.chartRotation.animation = null;
     syncPetalSelectionState(stage, state);
-    if (state.mobileRotationFastPath && options.rotateToBottom && !options.preserveRotation) settleMobileSelectionForAutoRotate(stage, state);
+    if (mobileAutoRotate) {
+      settleMobileSelectionForAutoRotate(stage, state);
+      // On iPhone, keep the selected pose fixed while the compositor rotates.
+      // This prevents the spring/contour field from competing for the same frames.
+      state.flowStartedAt = 0;
+    }
     startSelectionSpring(stage, state);
     if (id) {
-      const delay = state.reduceMotion ? 0 : (options.detailDelay ?? 105);
+      let delay = state.reduceMotion ? 0 : (options.detailDelay ?? 105);
+      // Do not build/animate the heavy detail card while the pie itself is rotating.
+      // Wait until the compositor has landed, then reveal the detail content.
+      if (mobileAutoRotate && state.chartRotation.animation) {
+        const rotationEnd = state.chartRotation.animation.startedAt + state.chartRotation.animation.duration;
+        delay = Math.max(delay, rotationEnd - performance.now() + 42);
+      }
       state.detailTimer = setTimeout(() => {
         if (state.selectedId === id) renderDetail(doc, stage, state, id);
       }, delay);
@@ -1208,6 +1227,7 @@
             rotation.value = rotation.animation.end;
             rotation.target = rotation.animation.end;
             rotation.animation = null;
+            stage.classList.remove('mobileAutoRotating');
           }
         } else {
           const acceleration = (model.MOTION.rotateStiffness * (rotation.target - rotation.value) - model.MOTION.rotateDamping * rotation.velocity) / model.MOTION.rotateMass;
