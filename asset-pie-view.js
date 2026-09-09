@@ -945,12 +945,6 @@
   function installPieSwipe(doc, stage, state) {
     const viewport = stage.querySelector('.assetPieViewport');
     const svg = stage.querySelector('#assetPieSvg');
-    viewport.addEventListener('touchstart', (event) => {
-      const touch = event.touches && event.touches[0];
-      if (!touch) return;
-      if (state.mode !== 'pie' || state.morphing) return;
-      if (isWithinRotationZone(svg, touch.clientX, touch.clientY)) event.preventDefault();
-    }, { passive: false });
     viewport.addEventListener('pointerdown', (event) => {
       if (state.mode !== 'pie' || state.morphing || (event.button !== undefined && event.button !== 0)) return;
       if (!isWithinRotationZone(svg, event.clientX, event.clientY)) return;
@@ -974,8 +968,10 @@
         moved: false,
         directionLock: 0,
         reversePressure: 0,
+        tapAssetId: event.target.closest?.('.assetPetal')?.dataset?.id || null,
+        tapRatio: Boolean(event.target.closest?.('.petalPctHit')),
+        detailHidden: false,
       };
-      if (state.mobileRotationFastPath) settleMobileSelectionForDrag(stage, state);
       stage.classList.remove('mobileAutoRotating');
       state.chartRotation.animation = null;
       state.chartRotation.dragging = true;
@@ -993,6 +989,7 @@
           time: performance.now(),
         };
         scheduleMobileRotationFrame(stage, state, viewport);
+        if (drag.moved) event.preventDefault();
         return;
       }
       processRotationSample(stage, state, viewport, {
@@ -1002,7 +999,7 @@
         time: performance.now(),
       });
       if (drag.moved) event.preventDefault();
-    }, { passive: state.mobileRotationFastPath });
+    }, { passive: false });
     const finish = (event, cancelled = false) => {
       const drag = state.drag;
       if (!drag || drag.pointerId !== event.pointerId) return;
@@ -1021,27 +1018,25 @@
         state.suppressClickUntil = performance.now() + 320;
 
         if (state.mobileRotationFastPath) {
-          // Unified phone rule: once a slice is chosen, it always settles at
-          // the exact bottom. Preserve the finger's release velocity so the
-          // transition feels like one continuous inertial movement, but do not
-          // project far enough to "run away" to a different slice.
+          // Keep the drag -> inertia handoff on the same lightweight compositor
+          // path. The asset under the bottom marker is already tracked live
+          // during drag, so pointerup must not re-run selection/render work.
           const rawReleaseVelocity = cancelled ? 0 : state.chartRotation.velocity;
           const releaseVelocity = Math.max(-220, Math.min(220, rawReleaseVelocity));
-          let landingAsset = assetNearestBottomAtRotation(state, state.chartRotation.value) || assetAtBottom(state);
-
-          clearTimeout(state.detailTimer);
-          state.detailTimer = 0;
+          let landingAsset = state.geometry.find((item) => item.asset.id === state.selectedId)
+            || assetNearestBottomAtRotation(state, state.chartRotation.value)
+            || assetAtBottom(state);
           if (landingAsset && landingAsset.asset.id !== state.selectedId) {
-            selectAsset(doc, stage, state, landingAsset.asset.id, { preserveRotation: true, deferDetail: true });
+            setMobileSelectionLightweight(stage, state, landingAsset.asset.id);
           }
           landingAsset = state.geometry.find((item) => item.asset.id === state.selectedId) || landingAsset;
-
           const landingTarget = landingAsset
             ? model.rotationTargetFor(landingAsset.mid, state.chartRotation.value)
             : state.chartRotation.value;
 
+          clearTimeout(state.detailTimer);
+          state.detailTimer = 0;
           stage.classList.add('mobileAutoRotating');
-          syncPetalSelectionState(stage, state);
           settleMobileSelectionForAutoRotate(stage, state);
           applyMobileRotationOnly(stage, state);
           const inertiaDuration = startReleaseInertia(state, landingTarget, releaseVelocity);
@@ -1085,6 +1080,18 @@
             }, Math.max(70, inertiaDuration + 48));
           }
         }
+      } else if (!cancelled && drag.tapAssetId) {
+        // A tap must select reliably on iOS even when the rotation gesture layer
+        // participates in pointer handling. Handle it here instead of relying on
+        // the browser's synthetic click, then suppress the duplicate click.
+        state.suppressClickUntil = performance.now() + 360;
+        selectAsset(doc, stage, state, drag.tapAssetId, { rotateToBottom: true, detailDelay: 90 });
+        if (drag.tapRatio) {
+          clearTimeout(state.inlineRatioTimer);
+          state.inlineRatioTimer = setTimeout(() => {
+            if (state.selectedId === drag.tapAssetId) openInlineRatioEditor(doc, stage, state, drag.tapAssetId);
+          }, state.reduceMotion ? 0 : 380);
+        }
       } else startSelectionSpring(stage, state);
     };
     viewport.addEventListener('pointerup', (event) => finish(event));
@@ -1103,7 +1110,18 @@
     drag.accumulatedDegrees += incrementalDegrees;
     const tangentialDistance = Math.abs(drag.accumulatedDegrees) * Math.PI / 180 * Math.max(48, drag.startRadius);
     const radialDistance = Math.abs(radius - drag.startRadius);
-    if (!drag.moved && tangentialDistance > 8 && tangentialDistance > radialDistance * 1.05) { drag.moved = true; drag.directionLock = drag.directionLock || Math.sign(drag.accumulatedDegrees) || 0; }
+    if (!drag.moved && tangentialDistance > 8 && tangentialDistance > radialDistance * 1.05) {
+      drag.moved = true;
+      drag.directionLock = drag.directionLock || Math.sign(drag.accumulatedDegrees) || 0;
+      if (!drag.detailHidden) {
+        drag.detailHidden = true;
+        clearTimeout(state.detailTimer);
+        state.detailTimer = 0;
+        stage.querySelector('.assetPieInlineRatio')?.remove();
+        const detail = stage.querySelector('.assetPieDetail');
+        if (detail) detail.hidden = true;
+      }
+    }
     if (model.shouldCaptureRotationPointer(drag.moved) && !viewport.hasPointerCapture(sample.pointerId)) viewport.setPointerCapture(sample.pointerId);
     drag.lastAngle = angle;
     drag.lastX = sample.clientX;
@@ -1116,6 +1134,10 @@
     // visible frame stalls. Keep the exact rotation tracking at rAF cadence,
     // then synchronize selection once on pointerup.
     if (state.mobileRotationFastPath && state.rotationSessionActive) {
+      const bottomAsset = assetAtBottom(state);
+      if (bottomAsset && bottomAsset.asset.id !== state.selectedId) {
+        setMobileSelectionLightweight(stage, state, bottomAsset.asset.id);
+      }
       if (render) applyMobileRotationOnly(stage, state);
       return;
     }
@@ -1264,6 +1286,17 @@
     if (!state.selectedId) return;
     const selectedGroup = stage.querySelector(`.assetPetal[data-id="${CSS.escape(state.selectedId)}"]`);
     if (selectedGroup) selectedGroup.parentNode.append(selectedGroup);
+  }
+
+  function setMobileSelectionLightweight(stage, state, id) {
+    if (!id || state.selectedId === id) return;
+    state.selectedId = id;
+    stage.classList.add('hasSelection');
+    for (const [assetId, spring] of state.selection) {
+      spring.value = assetId === id ? 1 : 0;
+      spring.velocity = 0;
+    }
+    syncPetalSelectionState(stage, state);
   }
 
   function openInlineRatioEditor(doc, stage, state, id) {
