@@ -931,16 +931,28 @@
       if (viewport.hasPointerCapture(event.pointerId)) viewport.releasePointerCapture(event.pointerId);
       if (drag.moved) {
         state.suppressClickUntil = performance.now() + 420;
-        let bottomAsset = assetAtBottom(state);
-        const intentionalFlick = !cancelled && (Math.abs(drag.accumulatedDegrees) >= 8 || Math.abs(state.chartRotation.velocity) >= 130);
-        if (intentionalFlick && bottomAsset?.asset.id === drag.startSelectedId) {
-          selectAdjacentAsset(doc, stage, state, drag.accumulatedDegrees < 0 ? 1 : -1);
-          return;
+        // Let the release velocity carry the disc forward before deciding which
+        // asset lands at the bottom marker. The landing asset and the visual
+        // selection are always the same item, matching VIDEO2's wheel logic.
+        const releaseVelocity = cancelled ? 0 : state.chartRotation.velocity;
+        const projectedTravel = Math.max(-96, Math.min(96, releaseVelocity * 0.18));
+        const projectedRotation = state.chartRotation.value + projectedTravel;
+        let landingAsset = assetNearestBottomAtRotation(state, projectedRotation) || assetAtBottom(state);
+        const intentionalFlick = !cancelled && (Math.abs(drag.accumulatedDegrees) >= 8 || Math.abs(releaseVelocity) >= 130);
+        if (intentionalFlick && landingAsset?.asset.id === drag.startSelectedId) {
+          const available = state.geometry.filter((item) => item.span > .006);
+          const currentIndex = available.findIndex((item) => item.asset.id === landingAsset.asset.id);
+          if (currentIndex >= 0 && available.length > 1) {
+            const step = releaseVelocity < 0 || (releaseVelocity === 0 && drag.accumulatedDegrees < 0) ? 1 : -1;
+            landingAsset = available[(currentIndex + step + available.length) % available.length];
+          }
         }
-        if (bottomAsset && bottomAsset.asset.id !== state.selectedId) selectAsset(doc, stage, state, bottomAsset.asset.id, { preserveRotation: true, detailDelay: 70 });
-        bottomAsset = state.geometry.find((item) => item.asset.id === state.selectedId) || bottomAsset;
-        state.chartRotation.target = bottomAsset
-          ? model.rotationTargetFor(bottomAsset.mid, state.chartRotation.value)
+        if (landingAsset && landingAsset.asset.id !== state.selectedId) {
+          selectAsset(doc, stage, state, landingAsset.asset.id, { preserveRotation: true, detailDelay: 70 });
+        }
+        landingAsset = state.geometry.find((item) => item.asset.id === state.selectedId) || landingAsset;
+        state.chartRotation.target = landingAsset
+          ? model.rotationTargetFor(landingAsset.mid, state.chartRotation.value)
           : model.nearestEquivalentAngle(0, state.chartRotation.value);
         startSelectionSpring(stage, state);
       } else startSelectionSpring(stage, state);
@@ -1036,13 +1048,24 @@
     return delta;
   }
 
-  function assetAtBottom(state) {
+  function assetNearestBottomAtRotation(state, rotationDegrees) {
     const available = state.geometry.filter((item) => item.span > .006);
     if (!available.length) return null;
-    const rotation = state.chartRotation.value * Math.PI / 180;
+    const rotation = (Number(rotationDegrees) || 0) * Math.PI / 180;
     return available.reduce((best, item) => (
       circularDistance(item.mid + rotation, Math.PI / 2) < circularDistance(best.mid + rotation, Math.PI / 2) ? item : best
     ), available[0]);
+  }
+
+  function assetAtBottom(state) {
+    return assetNearestBottomAtRotation(state, state.chartRotation.value);
+  }
+
+  function rotationTargetForAsset(state, assetId) {
+    const geometry = state.geometry.find((item) => item.asset.id === assetId);
+    return geometry
+      ? model.rotationTargetFor(geometry.mid, state.chartRotation.value)
+      : model.nearestEquivalentAngle(0, state.chartRotation.value);
   }
 
   function selectAdjacentAsset(doc, stage, state, direction) {
@@ -1073,7 +1096,7 @@
     else stage.classList.remove('mobileAutoRotating');
     if (options.rotateToBottom) {
       const targetRotation = selectedGeometry
-        ? model.rotationTargetFor(selectedGeometry.mid, state.chartRotation.value)
+        ? rotationTargetForAsset(state, id)
         : model.nearestEquivalentAngle(0, state.chartRotation.value);
       if (options.preserveRotation) state.chartRotation.target = targetRotation;
       else startSelectionRotation(state, targetRotation);
