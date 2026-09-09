@@ -71,6 +71,7 @@
       compactMotion,
       mobileRotationFastPath,
       mobileRotationLayer: null,
+      releaseInertiaActive: false,
     };
     installPieSwipe(doc, stage, state);
     installDetailSwipe(doc, stage, state);
@@ -262,8 +263,31 @@
       duration,
       release: true,
     };
-    if (state.mobileRotationFastPath) state.rotationSessionActive = true;
+    if (state.mobileRotationFastPath) {
+      state.rotationSessionActive = true;
+      state.releaseInertiaActive = true;
+    }
     return duration;
+  }
+
+  function dampOppositeDirectionIncrement(drag, incrementalDegrees) {
+    const delta = Number(incrementalDegrees) || 0;
+    if (!drag || !delta) return delta;
+    const sign = Math.sign(delta);
+    if (!drag.directionLock && Math.abs(drag.accumulatedDegrees) >= 6) drag.directionLock = Math.sign(drag.accumulatedDegrees) || sign;
+    const locked = drag.directionLock || 0;
+    if (!locked || sign === locked) {
+      drag.reversePressure = 0;
+      return delta;
+    }
+    const magnitude = Math.abs(delta);
+    drag.reversePressure = (drag.reversePressure || 0) + magnitude;
+    if (drag.reversePressure >= 14 || magnitude >= 7.5) {
+      drag.directionLock = sign;
+      drag.reversePressure = 0;
+      return delta;
+    }
+    return delta * 0.18;
   }
 
   function injectStyles(doc) {
@@ -278,7 +302,7 @@
 
       #assetPieStage{margin:0;border:1px solid #2a3949;border-radius:0 0 22px 22px;background:radial-gradient(circle at 52% 34%,rgba(23,40,54,.44),rgba(7,13,19,.96) 67%),#071018;overflow:hidden;box-shadow:0 18px 44px rgba(0,0,0,.3)}
       #assetPieStage[hidden]{display:block!important;position:fixed!important;left:-200vw!important;top:0!important;width:calc(100vw - 10px)!important;visibility:hidden!important;pointer-events:none!important;contain:strict!important}
-      .assetPieViewport{position:relative;height:min(116vw,500px);min-height:438px;max-height:500px;padding:5px 0 0;touch-action:none;overscroll-behavior:contain;transition:height 440ms cubic-bezier(.22,1,.36,1),min-height 440ms cubic-bezier(.22,1,.36,1),max-height 440ms cubic-bezier(.22,1,.36,1)}
+      .assetPieViewport{position:relative;height:min(116vw,500px);min-height:438px;max-height:500px;padding:5px 0 0;touch-action:pan-y;overscroll-behavior:contain;transition:height 440ms cubic-bezier(.22,1,.36,1),min-height 440ms cubic-bezier(.22,1,.36,1),max-height 440ms cubic-bezier(.22,1,.36,1)}
       .assetPieCompositor{width:100%;height:100%;transform-origin:50% 45.581%}
       #assetPieSvg{display:block;width:100%;height:100%;overflow:visible;transform-origin:50% 46%;transition:transform 440ms cubic-bezier(.22,1,.36,1);will-change:transform}
       #assetPieStage.hasSelection .assetPieViewport{height:min(116vw,500px);min-height:438px;max-height:500px}
@@ -892,18 +916,44 @@
       spring.value = id === state.selectedId ? 1 : 0;
       spring.velocity = 0;
     }
-    applyBubbleField(stage, state, true);
+  }
+
+  function rotationZoneMetrics(svg) {
+    const ctm = svg?.getScreenCTM?.();
+    if (!ctm) return null;
+    const centerPoint = svg.createSVGPoint();
+    centerPoint.x = 180;
+    centerPoint.y = 196;
+    const edgePoint = svg.createSVGPoint();
+    edgePoint.x = 180 + model.referenceOuterRadius();
+    edgePoint.y = 196;
+    const center = centerPoint.matrixTransform(ctm);
+    const edge = edgePoint.matrixTransform(ctm);
+    const radius = Math.hypot(edge.x - center.x, edge.y - center.y);
+    return { center, radius, maxRadius: radius + 22 };
+  }
+
+  function isWithinRotationZone(svg, clientX, clientY) {
+    const metrics = rotationZoneMetrics(svg);
+    if (!metrics) return false;
+    return Math.hypot(clientX - metrics.center.x, clientY - metrics.center.y) <= metrics.maxRadius;
   }
 
   function installPieSwipe(doc, stage, state) {
     const viewport = stage.querySelector('.assetPieViewport');
     const svg = stage.querySelector('#assetPieSvg');
+    viewport.addEventListener('touchstart', (event) => {
+      const touch = event.touches && event.touches[0];
+      if (!touch) return;
+      if (state.mode !== 'pie' || state.morphing) return;
+      if (isWithinRotationZone(svg, touch.clientX, touch.clientY)) event.preventDefault();
+    }, { passive: false });
     viewport.addEventListener('pointerdown', (event) => {
       if (state.mode !== 'pie' || state.morphing || (event.button !== undefined && event.button !== 0)) return;
-      const svgPoint = svg.createSVGPoint();
-      svgPoint.x = 180;
-      svgPoint.y = 196;
-      const center = svgPoint.matrixTransform(svg.getScreenCTM());
+      if (!isWithinRotationZone(svg, event.clientX, event.clientY)) return;
+      const metrics = rotationZoneMetrics(svg);
+      if (!metrics) return;
+      const center = metrics.center;
       const startAngle = Math.atan2(event.clientY - center.y, event.clientX - center.x);
       const startRadius = Math.hypot(event.clientX - center.x, event.clientY - center.y);
       state.drag = {
@@ -919,6 +969,8 @@
         lastTime: performance.now(),
         startRotation: state.chartRotation.value,
         moved: false,
+        directionLock: 0,
+        reversePressure: 0,
       };
       if (state.mobileRotationFastPath) settleMobileSelectionForDrag(stage, state);
       stage.classList.remove('mobileAutoRotating');
@@ -960,6 +1012,7 @@
       }
       state.drag = null;
       state.chartRotation.dragging = false;
+      state.releaseInertiaActive = false;
       if (viewport.hasPointerCapture(event.pointerId)) viewport.releasePointerCapture(event.pointerId);
       if (drag.moved) {
         state.suppressClickUntil = performance.now() + 420;
@@ -991,10 +1044,12 @@
           : model.nearestEquivalentAngle(0, state.chartRotation.value);
         if (state.mobileRotationFastPath) {
           stage.classList.add('mobileAutoRotating');
+          syncPetalSelectionState(stage, state);
           settleMobileSelectionForAutoRotate(stage, state);
           state.flowStartedAt = 0;
         }
         const inertiaDuration = startReleaseInertia(state, landingTarget, releaseVelocity);
+        if (state.mobileRotationFastPath) applyMobileRotationOnly(stage, state);
         startSelectionSpring(stage, state);
         if (state.selectedId) {
           state.detailTimer = setTimeout(() => {
@@ -1014,11 +1069,12 @@
     const radius = Math.hypot(sample.clientX - drag.center.x, sample.clientY - drag.center.y);
     const angle = Math.atan2(sample.clientY - drag.center.y, sample.clientX - drag.center.x);
     const angularDelta = normalizedAngleDelta(angle, drag.lastAngle) * 180 / Math.PI;
-    const incrementalDegrees = drag.startRadius > 48 ? angularDelta : -(sample.clientX - drag.lastX) * .34;
+    const rawIncrementalDegrees = drag.startRadius > 48 ? angularDelta : -(sample.clientX - drag.lastX) * .34;
+    const incrementalDegrees = dampOppositeDirectionIncrement(drag, rawIncrementalDegrees);
     drag.accumulatedDegrees += incrementalDegrees;
     const tangentialDistance = Math.abs(drag.accumulatedDegrees) * Math.PI / 180 * Math.max(48, drag.startRadius);
     const radialDistance = Math.abs(radius - drag.startRadius);
-    if (!drag.moved && tangentialDistance > 8 && tangentialDistance > radialDistance * 1.05) drag.moved = true;
+    if (!drag.moved && tangentialDistance > 8 && tangentialDistance > radialDistance * 1.05) { drag.moved = true; drag.directionLock = drag.directionLock || Math.sign(drag.accumulatedDegrees) || 0; }
     if (model.shouldCaptureRotationPointer(drag.moved) && !viewport.hasPointerCapture(sample.pointerId)) viewport.setPointerCapture(sample.pointerId);
     drag.lastAngle = angle;
     drag.lastX = sample.clientX;
@@ -1270,17 +1326,20 @@
         processRotationSample(stage, state, stage.querySelector('.assetPieViewport'), sample, false);
       }
       let moving = false;
-      for (const [id, spring] of state.selection) {
-        const target = id === state.selectedId ? 1 : 0;
-        const k = state.selectedId ? model.MOTION.selectStiffness : model.MOTION.settleStiffness;
-        const c = state.selectedId ? model.MOTION.selectDamping : model.MOTION.settleDamping;
-        const mass = state.selectedId ? model.MOTION.selectMass : model.MOTION.settleMass;
-        const acceleration = (k * (target - spring.value) - c * spring.velocity) / mass;
-        spring.velocity += acceleration * dt;
-        spring.value += spring.velocity * dt;
-        spring.value = Math.max(-.16, Math.min(1.68, spring.value));
-        if (Math.abs(spring.value - target) > .0007 || Math.abs(spring.velocity) > .005) moving = true;
-        else { spring.value = target; spring.velocity = 0; }
+      const lightweightRelease = state.mobileRotationFastPath && state.releaseInertiaActive && !state.chartRotation.dragging;
+      if (!lightweightRelease) {
+        for (const [id, spring] of state.selection) {
+          const target = id === state.selectedId ? 1 : 0;
+          const k = state.selectedId ? model.MOTION.selectStiffness : model.MOTION.settleStiffness;
+          const c = state.selectedId ? model.MOTION.selectDamping : model.MOTION.settleDamping;
+          const mass = state.selectedId ? model.MOTION.selectMass : model.MOTION.settleMass;
+          const acceleration = (k * (target - spring.value) - c * spring.velocity) / mass;
+          spring.velocity += acceleration * dt;
+          spring.value += spring.velocity * dt;
+          spring.value = Math.max(-.16, Math.min(1.68, spring.value));
+          if (Math.abs(spring.value - target) > .0007 || Math.abs(spring.velocity) > .005) moving = true;
+          else { spring.value = target; spring.velocity = 0; }
+        }
       }
       const rotation = state.chartRotation;
       const mobileAutoRotateOnly = state.mobileRotationFastPath && rotation.animation && !rotation.dragging;
@@ -1296,6 +1355,7 @@
             rotation.value = rotation.animation.end;
             rotation.target = rotation.animation.end;
             rotation.animation = null;
+            state.releaseInertiaActive = false;
             stage.classList.remove('mobileAutoRotating');
           }
         } else {
@@ -2135,6 +2195,7 @@
       state.drag = null;
       state.chartRotation.dragging = false;
       state.rotationSessionActive = false;
+      state.releaseInertiaActive = false;
       applyBubbleField(stage, state, true);
     }
     clearTimeout(state.detailTimer);
