@@ -348,15 +348,18 @@
     const flat = { thickness: 0, opacity: 0, highlight, faceLift: 0, lipOffset: 0, wallOffset: 0, lipOpacity: 0, wallOpacity: 0 };
     if (reduceMotion || !own) return flat;
     const restrained = own <= 1 ? own : 1 + (own - 1) * .5;
+    // Keep the original jewel-like 3D lift on mobile as well: slightly fuller
+    // wall depth, brighter lip, and a touch more face lift so the selected
+    // slice continues to read like the earlier reference screenshots.
     return {
-      thickness: 9.8 * restrained,
-      opacity: .92 * highlight,
+      thickness: 11.4 * restrained,
+      opacity: .95 * highlight,
       highlight,
-      faceLift: -4.6 * restrained,
-      lipOffset: 6.2 * restrained,
-      wallOffset: 9.4 * restrained,
-      lipOpacity: .6 * highlight,
-      wallOpacity: .88 * highlight,
+      faceLift: -5.2 * restrained,
+      lipOffset: 7.2 * restrained,
+      wallOffset: 10.8 * restrained,
+      lipOpacity: .68 * highlight,
+      wallOpacity: .92 * highlight,
     };
   }
 
@@ -387,7 +390,10 @@
   function innerSlidePose(relativeAngle, response = 1, selected = false) {
     const strength = clamp01(response);
     if (!strength) return { angle: 0, radius: 0 };
-    if (selected) return { angle: 0, radius: -3.2 * strength };
+    // Lock the selected slice's outline to the base layout. Clicking may lift
+    // the slice in 3D, but it must not pinch, sharpen, or pull the inner nose
+    // into a different contour.
+    if (selected) return { angle: 0, radius: 0 };
     let signed = Number(relativeAngle) || 0;
     while (signed > Math.PI) signed -= Math.PI * 2;
     while (signed < -Math.PI) signed += Math.PI * 2;

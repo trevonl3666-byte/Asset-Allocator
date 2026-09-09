@@ -819,7 +819,10 @@
       let path = nodes.path;
       if (!useMobileCompositor || nodes.contourKey !== contourKey || !path) {
         const innerMotion = model.innerSlidePose(relative, response, isSelected);
-        path = bubblePetalPath(cx, cy, profile.innerRadius, model.referenceOuterRadius(), item.start, item.end, model.repulsiveGapChannel(item.allocationTotal, response), profile.sideBend, isSelected ? own : 0, innerMotion, model.referenceInnerBoundary(item.asset.name));
+        // Keep every slice on its original rounded footprint. Selection may
+        // change elevation/highlight only; the live path should remain the same
+        // rounded shape and layout as the base pie.
+        path = bubblePetalPath(cx, cy, profile.innerRadius, model.referenceOuterRadius(), item.start, item.end, model.repulsiveGapChannel(item.allocationTotal, response), profile.sideBend, 0, innerMotion, model.referenceInnerBoundary(item.asset.name));
         nodes.contourKey = contourKey;
       }
       const anchor = placement || point(cx, cy, profile.labelRadius, item.mid);
@@ -1015,46 +1018,72 @@
       state.releaseInertiaActive = false;
       if (viewport.hasPointerCapture(event.pointerId)) viewport.releasePointerCapture(event.pointerId);
       if (drag.moved) {
-        state.suppressClickUntil = performance.now() + 420;
-        // Let the release velocity carry the disc forward before deciding which
-        // asset lands at the bottom marker. The landing asset and the visual
-        // selection are always the same item, matching VIDEO2's wheel logic.
-        const releaseVelocity = cancelled ? 0 : state.chartRotation.velocity;
-        const projectedTravel = Math.max(-96, Math.min(96, releaseVelocity * 0.18));
-        const projectedRotation = state.chartRotation.value + projectedTravel;
-        let landingAsset = assetNearestBottomAtRotation(state, projectedRotation) || assetAtBottom(state);
-        const intentionalFlick = !cancelled && (Math.abs(drag.accumulatedDegrees) >= 8 || Math.abs(releaseVelocity) >= 130);
-        if (intentionalFlick && landingAsset?.asset.id === drag.startSelectedId) {
-          const available = state.geometry.filter((item) => item.span > .006);
-          const currentIndex = available.findIndex((item) => item.asset.id === landingAsset.asset.id);
-          if (currentIndex >= 0 && available.length > 1) {
-            const step = releaseVelocity < 0 || (releaseVelocity === 0 && drag.accumulatedDegrees < 0) ? 1 : -1;
-            landingAsset = available[(currentIndex + step + available.length) % available.length];
-          }
-        }
-        if (landingAsset && landingAsset.asset.id !== state.selectedId) {
-          selectAsset(doc, stage, state, landingAsset.asset.id, { preserveRotation: true, deferDetail: true });
-        } else {
+        state.suppressClickUntil = performance.now() + 320;
+
+        if (state.mobileRotationFastPath) {
+          // Unified phone rule: once a slice is chosen, it always settles at
+          // the exact bottom. Preserve the finger's release velocity so the
+          // transition feels like one continuous inertial movement, but do not
+          // project far enough to "run away" to a different slice.
+          const rawReleaseVelocity = cancelled ? 0 : state.chartRotation.velocity;
+          const releaseVelocity = Math.max(-220, Math.min(220, rawReleaseVelocity));
+          let landingAsset = assetNearestBottomAtRotation(state, state.chartRotation.value) || assetAtBottom(state);
+
           clearTimeout(state.detailTimer);
           state.detailTimer = 0;
-        }
-        landingAsset = state.geometry.find((item) => item.asset.id === state.selectedId) || landingAsset;
-        const landingTarget = landingAsset
-          ? model.rotationTargetFor(landingAsset.mid, state.chartRotation.value)
-          : model.nearestEquivalentAngle(0, state.chartRotation.value);
-        if (state.mobileRotationFastPath) {
+          if (landingAsset && landingAsset.asset.id !== state.selectedId) {
+            selectAsset(doc, stage, state, landingAsset.asset.id, { preserveRotation: true, deferDetail: true });
+          }
+          landingAsset = state.geometry.find((item) => item.asset.id === state.selectedId) || landingAsset;
+
+          const landingTarget = landingAsset
+            ? model.rotationTargetFor(landingAsset.mid, state.chartRotation.value)
+            : state.chartRotation.value;
+
           stage.classList.add('mobileAutoRotating');
           syncPetalSelectionState(stage, state);
           settleMobileSelectionForAutoRotate(stage, state);
-          state.flowStartedAt = 0;
-        }
-        const inertiaDuration = startReleaseInertia(state, landingTarget, releaseVelocity);
-        if (state.mobileRotationFastPath) applyMobileRotationOnly(stage, state);
-        startSelectionSpring(stage, state);
-        if (state.selectedId) {
-          state.detailTimer = setTimeout(() => {
-            if (state.selectedId) renderDetail(doc, stage, state, state.selectedId);
-          }, Math.max(70, inertiaDuration + 48));
+          applyMobileRotationOnly(stage, state);
+          const inertiaDuration = startReleaseInertia(state, landingTarget, releaseVelocity);
+          startSelectionSpring(stage, state);
+
+          if (state.selectedId) {
+            state.detailTimer = setTimeout(() => {
+              if (state.selectedId) renderDetail(doc, stage, state, state.selectedId);
+            }, Math.max(90, inertiaDuration + 54));
+          }
+        } else {
+          // Desktop keeps the existing inertial landing behavior.
+          const releaseVelocity = cancelled ? 0 : state.chartRotation.velocity;
+          const projectedTravel = Math.max(-96, Math.min(96, releaseVelocity * 0.18));
+          const projectedRotation = state.chartRotation.value + projectedTravel;
+          let landingAsset = assetNearestBottomAtRotation(state, projectedRotation) || assetAtBottom(state);
+          const intentionalFlick = !cancelled && (Math.abs(drag.accumulatedDegrees) >= 8 || Math.abs(releaseVelocity) >= 130);
+          if (intentionalFlick && landingAsset?.asset.id === drag.startSelectedId) {
+            const available = state.geometry.filter((item) => item.span > .006);
+            const currentIndex = available.findIndex((item) => item.asset.id === landingAsset.asset.id);
+            if (currentIndex >= 0 && available.length > 1) {
+              const step = releaseVelocity < 0 || (releaseVelocity === 0 && drag.accumulatedDegrees < 0) ? 1 : -1;
+              landingAsset = available[(currentIndex + step + available.length) % available.length];
+            }
+          }
+          if (landingAsset && landingAsset.asset.id !== state.selectedId) {
+            selectAsset(doc, stage, state, landingAsset.asset.id, { preserveRotation: true, deferDetail: true });
+          } else {
+            clearTimeout(state.detailTimer);
+            state.detailTimer = 0;
+          }
+          landingAsset = state.geometry.find((item) => item.asset.id === state.selectedId) || landingAsset;
+          const landingTarget = landingAsset
+            ? model.rotationTargetFor(landingAsset.mid, state.chartRotation.value)
+            : model.nearestEquivalentAngle(0, state.chartRotation.value);
+          const inertiaDuration = startReleaseInertia(state, landingTarget, releaseVelocity);
+          startSelectionSpring(stage, state);
+          if (state.selectedId) {
+            state.detailTimer = setTimeout(() => {
+              if (state.selectedId) renderDetail(doc, stage, state, state.selectedId);
+            }, Math.max(70, inertiaDuration + 48));
+          }
         }
       } else startSelectionSpring(stage, state);
     };
