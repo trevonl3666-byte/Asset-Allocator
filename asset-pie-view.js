@@ -234,6 +234,38 @@
     if (state.mobileRotationFastPath) state.rotationSessionActive = true;
   }
 
+
+  function startReleaseInertia(state, targetDegrees, releaseVelocity) {
+    const rotation = state.chartRotation;
+    const target = Number.isFinite(targetDegrees) ? targetDegrees : rotation.value;
+    const delta = target - rotation.value;
+    const distance = Math.abs(delta);
+    if (distance < .12) {
+      rotation.value = target;
+      rotation.target = target;
+      rotation.velocity = 0;
+      rotation.animation = null;
+      return 0;
+    }
+    const velocity = Number(releaseVelocity) || 0;
+    const sameDirection = Math.sign(velocity) === Math.sign(delta) && Math.abs(velocity) > 24;
+    // Quartic ease-out starts with slope 4. Choose duration from the actual
+    // release velocity so pointerup does not create a visible speed discontinuity.
+    const matchedDuration = sameDirection ? Math.abs(4 * delta / velocity) * 1000 : 0;
+    const duration = Math.max(300, Math.min(920, matchedDuration || (430 + distance * 1.75)));
+    rotation.target = target;
+    rotation.velocity = velocity;
+    rotation.animation = {
+      start: rotation.value,
+      end: target,
+      startedAt: performance.now(),
+      duration,
+      release: true,
+    };
+    if (state.mobileRotationFastPath) state.rotationSessionActive = true;
+    return duration;
+  }
+
   function injectStyles(doc) {
     const style = doc.createElement('style');
     style.id = 'assetPiePreviewStyles';
@@ -948,13 +980,27 @@
           }
         }
         if (landingAsset && landingAsset.asset.id !== state.selectedId) {
-          selectAsset(doc, stage, state, landingAsset.asset.id, { preserveRotation: true, detailDelay: 70 });
+          selectAsset(doc, stage, state, landingAsset.asset.id, { preserveRotation: true, deferDetail: true });
+        } else {
+          clearTimeout(state.detailTimer);
+          state.detailTimer = 0;
         }
         landingAsset = state.geometry.find((item) => item.asset.id === state.selectedId) || landingAsset;
-        state.chartRotation.target = landingAsset
+        const landingTarget = landingAsset
           ? model.rotationTargetFor(landingAsset.mid, state.chartRotation.value)
           : model.nearestEquivalentAngle(0, state.chartRotation.value);
+        if (state.mobileRotationFastPath) {
+          stage.classList.add('mobileAutoRotating');
+          settleMobileSelectionForAutoRotate(stage, state);
+          state.flowStartedAt = 0;
+        }
+        const inertiaDuration = startReleaseInertia(state, landingTarget, releaseVelocity);
         startSelectionSpring(stage, state);
+        if (state.selectedId) {
+          state.detailTimer = setTimeout(() => {
+            if (state.selectedId) renderDetail(doc, stage, state, state.selectedId);
+          }, Math.max(70, inertiaDuration + 48));
+        }
       } else startSelectionSpring(stage, state);
     };
     viewport.addEventListener('pointerup', (event) => finish(event));
@@ -1109,7 +1155,7 @@
       state.flowStartedAt = 0;
     }
     startSelectionSpring(stage, state);
-    if (id) {
+    if (id && !options.deferDetail) {
       let delay = state.reduceMotion ? 0 : (options.detailDelay ?? 105);
       // Do not build/animate the heavy detail card while the pie itself is rotating.
       // Wait until the compositor has landed, then reveal the detail content.
