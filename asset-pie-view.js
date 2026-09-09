@@ -270,11 +270,54 @@
     return duration;
   }
 
+  function signedTangentialDeltaDegrees(center, fromX, fromY, toX, toY) {
+    const vx = fromX - center.x;
+    const vy = fromY - center.y;
+    const radius = Math.max(36, Math.hypot(vx, vy));
+    const tx = -vy / radius;
+    const ty = vx / radius;
+    const dx = toX - fromX;
+    const dy = toY - fromY;
+    return ((dx * tx) + (dy * ty)) / radius * 180 / Math.PI;
+  }
+
+  function rememberDragVelocitySample(drag, velocity, time) {
+    if (!drag) return;
+    if (!drag.velocitySamples) drag.velocitySamples = [];
+    drag.velocitySamples.push({ velocity, time });
+    const cutoff = time - 120;
+    while (drag.velocitySamples.length && drag.velocitySamples[0].time < cutoff) drag.velocitySamples.shift();
+  }
+
+  function releaseVelocityForDrag(drag, fallbackVelocity = 0) {
+    if (!drag?.velocitySamples?.length) return fallbackVelocity;
+    const samples = drag.velocitySamples;
+    const latest = samples[samples.length - 1];
+    const fresh = samples.filter((sample) => latest.time - sample.time <= 90);
+    const windowed = fresh.length ? fresh : samples;
+    let weighted = 0;
+    let totalWeight = 0;
+    for (let index = 0; index < windowed.length; index += 1) {
+      const sample = windowed[index];
+      const weight = 1 + index;
+      weighted += sample.velocity * weight;
+      totalWeight += weight;
+    }
+    const averaged = totalWeight ? weighted / totalWeight : fallbackVelocity;
+    if (Math.abs(averaged) < 20) return 0;
+    return averaged;
+  }
+
   function dampOppositeDirectionIncrement(drag, incrementalDegrees) {
     const delta = Number(incrementalDegrees) || 0;
     if (!drag || !delta) return delta;
     const sign = Math.sign(delta);
-    if (!drag.directionLock && Math.abs(drag.accumulatedDegrees) >= 6) drag.directionLock = Math.sign(drag.accumulatedDegrees) || sign;
+    const mobileLike = Boolean(drag.mobileLike);
+    const lockThreshold = mobileLike ? 4.25 : 6;
+    const reverseCommit = mobileLike ? 5.5 : 14;
+    const immediateFlip = mobileLike ? 3.25 : 7.5;
+    const reverseDamping = mobileLike ? 0.62 : 0.18;
+    if (!drag.directionLock && Math.abs(drag.accumulatedDegrees) >= lockThreshold) drag.directionLock = Math.sign(drag.accumulatedDegrees) || sign;
     const locked = drag.directionLock || 0;
     if (!locked || sign === locked) {
       drag.reversePressure = 0;
@@ -282,12 +325,12 @@
     }
     const magnitude = Math.abs(delta);
     drag.reversePressure = (drag.reversePressure || 0) + magnitude;
-    if (drag.reversePressure >= 14 || magnitude >= 7.5) {
+    if (drag.reversePressure >= reverseCommit || magnitude >= immediateFlip) {
       drag.directionLock = sign;
       drag.reversePressure = 0;
       return delta;
     }
-    return delta * 0.18;
+    return delta * reverseDamping;
   }
 
   function injectStyles(doc) {
@@ -971,6 +1014,10 @@
         tapAssetId: event.target.closest?.('.assetPetal')?.dataset?.id || null,
         tapRatio: Boolean(event.target.closest?.('.petalPctHit')),
         detailHidden: false,
+        lastY: event.clientY,
+        lastRenderedRotation: state.chartRotation.value,
+        velocitySamples: [],
+        mobileLike: state.mobileRotationFastPath,
       };
       stage.classList.remove('mobileAutoRotating');
       state.chartRotation.animation = null;
@@ -1021,8 +1068,8 @@
           // Keep the drag -> inertia handoff on the same lightweight compositor
           // path. The asset under the bottom marker is already tracked live
           // during drag, so pointerup must not re-run selection/render work.
-          const rawReleaseVelocity = cancelled ? 0 : state.chartRotation.velocity;
-          const releaseVelocity = Math.max(-220, Math.min(220, rawReleaseVelocity));
+          const rawReleaseVelocity = cancelled ? 0 : releaseVelocityForDrag(drag, state.chartRotation.velocity);
+          const releaseVelocity = Math.max(-180, Math.min(180, rawReleaseVelocity));
           let landingAsset = state.geometry.find((item) => item.asset.id === state.selectedId)
             || assetNearestBottomAtRotation(state, state.chartRotation.value)
             || assetAtBottom(state);
@@ -1105,7 +1152,11 @@
     const radius = Math.hypot(sample.clientX - drag.center.x, sample.clientY - drag.center.y);
     const angle = Math.atan2(sample.clientY - drag.center.y, sample.clientX - drag.center.x);
     const angularDelta = normalizedAngleDelta(angle, drag.lastAngle) * 180 / Math.PI;
-    const rawIncrementalDegrees = drag.startRadius > 48 ? angularDelta : -(sample.clientX - drag.lastX) * .34;
+    const tangentialDelta = signedTangentialDeltaDegrees(drag.center, drag.lastX, drag.lastY, sample.clientX, sample.clientY);
+    const blendedDelta = drag.startRadius > 48
+      ? (tangentialDelta * 0.74) + (angularDelta * 0.26)
+      : -(sample.clientX - drag.lastX) * .34;
+    const rawIncrementalDegrees = Math.abs(blendedDelta) > .002 ? blendedDelta : angularDelta;
     const incrementalDegrees = dampOppositeDirectionIncrement(drag, rawIncrementalDegrees);
     drag.accumulatedDegrees += incrementalDegrees;
     const tangentialDistance = Math.abs(drag.accumulatedDegrees) * Math.PI / 180 * Math.max(48, drag.startRadius);
@@ -1125,10 +1176,12 @@
     if (model.shouldCaptureRotationPointer(drag.moved) && !viewport.hasPointerCapture(sample.pointerId)) viewport.setPointerCapture(sample.pointerId);
     drag.lastAngle = angle;
     drag.lastX = sample.clientX;
+    drag.lastY = sample.clientY;
     drag.lastTime = sample.time;
     if (!drag.moved) return;
     state.chartRotation.value = drag.startRotation + drag.accumulatedDegrees;
     state.chartRotation.velocity = Math.max(-720, Math.min(720, incrementalDegrees / dt));
+    rememberDragVelocitySample(drag, state.chartRotation.velocity, sample.time);
     // On phones, do not rebuild SVG petal contours or swap the detail card
     // while the finger is moving. Those operations were the main source of
     // visible frame stalls. Keep the exact rotation tracking at rAF cadence,
