@@ -345,10 +345,10 @@
 
       #assetPieStage{margin:0;border:1px solid #2a3949;border-radius:0 0 22px 22px;background:radial-gradient(circle at 52% 34%,rgba(23,40,54,.44),rgba(7,13,19,.96) 67%),#071018;overflow:hidden;box-shadow:0 18px 44px rgba(0,0,0,.3)}
       #assetPieStage[hidden]{display:block!important;position:fixed!important;left:-200vw!important;top:0!important;width:calc(100vw - 10px)!important;visibility:hidden!important;pointer-events:none!important;contain:strict!important}
-      .assetPieViewport{position:relative;height:min(116vw,500px);min-height:438px;max-height:500px;padding:5px 0 0;touch-action:pan-y;overscroll-behavior:contain;transition:height 440ms cubic-bezier(.22,1,.36,1),min-height 440ms cubic-bezier(.22,1,.36,1),max-height 440ms cubic-bezier(.22,1,.36,1)}
+      .assetPieViewport{position:relative;height:min(124vw,548px);min-height:470px;max-height:548px;padding:10px 0 6px;touch-action:none;overscroll-behavior:contain;transition:height 440ms cubic-bezier(.22,1,.36,1),min-height 440ms cubic-bezier(.22,1,.36,1),max-height 440ms cubic-bezier(.22,1,.36,1)}
       .assetPieCompositor{width:100%;height:100%;transform-origin:50% 45.581%}
       #assetPieSvg{display:block;width:100%;height:100%;overflow:visible;transform-origin:50% 46%;transition:transform 440ms cubic-bezier(.22,1,.36,1);will-change:transform}
-      #assetPieStage.hasSelection .assetPieViewport{height:min(116vw,500px);min-height:438px;max-height:500px}
+      #assetPieStage.hasSelection .assetPieViewport{height:min(124vw,548px);min-height:470px;max-height:548px}
       #assetPieStage.hasSelection #assetPieSvg{transform:none}
       .assetPetal{cursor:pointer;outline:none;transform-box:view-box;transform-origin:center;will-change:transform}
       .assetPetal .petalDepthWall{opacity:0;pointer-events:none;stroke:var(--petal-accent,#6aaee3);stroke-width:1.15;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke;filter:brightness(.64) saturate(1.12) drop-shadow(0 8px 7px rgba(0,0,0,.7));will-change:transform,opacity}
@@ -976,7 +976,7 @@
     const center = centerPoint.matrixTransform(ctm);
     const edge = edgePoint.matrixTransform(ctm);
     const radius = Math.hypot(edge.x - center.x, edge.y - center.y);
-    return { center, radius, maxRadius: radius + 22 };
+    return { center, radius, maxRadius: radius + 44 };
   }
 
   function isWithinRotationZone(svg, clientX, clientY) {
@@ -1540,6 +1540,7 @@
     const boundedAnchor = Math.max(10, Math.min(90, anchor));
     detail.style.setProperty('--detail-anchor', `${boundedAnchor}%`);
     detail.style.transformOrigin = `${boundedAnchor}% 0`;
+    detail.style.touchAction = 'pan-y';
     detail.querySelectorAll('input,select,button').forEach((control) => {
       if (control.classList.contains('dragHandle') || control.classList.contains('assetSelectBtn')) return;
       control.addEventListener('input', () => syncDetailControl(doc, state, control));

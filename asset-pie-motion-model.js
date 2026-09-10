@@ -347,19 +347,18 @@
     const highlight = Math.min(1, own);
     const flat = { thickness: 0, opacity: 0, highlight, faceLift: 0, lipOffset: 0, wallOffset: 0, lipOpacity: 0, wallOpacity: 0 };
     if (reduceMotion || !own) return flat;
-    const restrained = own <= 1 ? own : 1 + (own - 1) * .5;
-    // Keep the original jewel-like 3D lift on mobile as well: slightly fuller
-    // wall depth, brighter lip, and a touch more face lift so the selected
-    // slice continues to read like the earlier reference screenshots.
+    const restrained = own <= 1 ? own : 1 + (own - 1) * .4;
+    // Keep the lift clean and singular: the selected face rises as one rounded
+    // plate with only a soft underside, avoiding the stacked multi-layer look.
     return {
-      thickness: 11.4 * restrained,
-      opacity: .95 * highlight,
+      thickness: 7.2 * restrained,
+      opacity: .78 * highlight,
       highlight,
-      faceLift: -5.2 * restrained,
-      lipOffset: 7.2 * restrained,
-      wallOffset: 10.8 * restrained,
-      lipOpacity: .68 * highlight,
-      wallOpacity: .92 * highlight,
+      faceLift: -4.0 * restrained,
+      lipOffset: 2.8 * restrained,
+      wallOffset: 6.3 * restrained,
+      lipOpacity: .18 * highlight,
+      wallOpacity: .54 * highlight,
     };
   }
 
