@@ -12,6 +12,8 @@
     hkd: `${APP_ROOT}assets/hkd-background.png`,
   };
   const DEPTH_TINTS = Object.freeze({ usd: '#5b9dcc', gold: '#c98a31', cny: '#c95b62', hkd: '#7c8e69' });
+  const PIE_COMPOSITOR_SCALE = 1.08;
+  const PIE_COMPOSITOR_OFFSET_Y = 6;
 
   function bootAssetPieView() {
     const win = window;
@@ -249,11 +251,14 @@
       return 0;
     }
     const velocity = Number(releaseVelocity) || 0;
-    const sameDirection = Math.sign(velocity) === Math.sign(delta) && Math.abs(velocity) > 24;
-    // Quartic ease-out starts with slope 4. Choose duration from the actual
-    // release velocity so pointerup does not create a visible speed discontinuity.
+    const sameDirection = Math.sign(velocity) === Math.sign(delta) && Math.abs(velocity) > 18;
+    // Quartic ease-out starts with slope 4. Blend the duration matched from
+    // the release velocity with a distance-based fallback so pointerup keeps a
+    // continuous feel instead of snapping into a shorter settle.
     const matchedDuration = sameDirection ? Math.abs(4 * delta / velocity) * 1000 : 0;
-    const duration = Math.max(300, Math.min(920, matchedDuration || (430 + distance * 1.75)));
+    const fallbackDuration = 452 + distance * 1.82;
+    const blendedDuration = matchedDuration ? (matchedDuration * 0.74 + fallbackDuration * 0.26) : fallbackDuration;
+    const duration = Math.max(340, Math.min(980, blendedDuration));
     rotation.target = target;
     rotation.velocity = velocity;
     rotation.animation = {
@@ -345,12 +350,13 @@
 
       #assetPieStage{margin:0;border:1px solid #2a3949;border-radius:0 0 22px 22px;background:radial-gradient(circle at 52% 34%,rgba(23,40,54,.44),rgba(7,13,19,.96) 67%),#071018;overflow:hidden;box-shadow:0 18px 44px rgba(0,0,0,.3)}
       #assetPieStage[hidden]{display:block!important;position:fixed!important;left:-200vw!important;top:0!important;width:calc(100vw - 10px)!important;visibility:hidden!important;pointer-events:none!important;contain:strict!important}
-      .assetPieViewport{position:relative;height:min(124vw,548px);min-height:470px;max-height:548px;padding:10px 0 6px;touch-action:none;overscroll-behavior:contain;transition:height 440ms cubic-bezier(.22,1,.36,1),min-height 440ms cubic-bezier(.22,1,.36,1),max-height 440ms cubic-bezier(.22,1,.36,1)}
-      .assetPieCompositor{width:100%;height:100%;transform-origin:50% 45.581%}
+      .assetPieViewport{position:relative;height:min(132vw,590px);min-height:500px;max-height:590px;padding:12px 0 8px;touch-action:pan-y pinch-zoom;overscroll-behavior-y:contain;overscroll-behavior-x:auto;transition:height 440ms cubic-bezier(.22,1,.36,1),min-height 440ms cubic-bezier(.22,1,.36,1),max-height 440ms cubic-bezier(.22,1,.36,1)}
+      .assetPieCompositor{width:100%;height:100%;transform-origin:50% 45.581%;will-change:transform}
       #assetPieSvg{display:block;width:100%;height:100%;overflow:visible;transform-origin:50% 46%;transition:transform 440ms cubic-bezier(.22,1,.36,1);will-change:transform}
-      #assetPieStage.hasSelection .assetPieViewport{height:min(124vw,548px);min-height:470px;max-height:548px}
+      .assetPieGestureZone{fill:rgba(0,0,0,.001);stroke:none;pointer-events:all;touch-action:none}
+      #assetPieStage.hasSelection .assetPieViewport{height:min(132vw,590px);min-height:500px;max-height:590px}
       #assetPieStage.hasSelection #assetPieSvg{transform:none}
-      .assetPetal{cursor:pointer;outline:none;transform-box:view-box;transform-origin:center;will-change:transform}
+      .assetPetal{cursor:pointer;outline:none;transform-box:view-box;transform-origin:center;will-change:transform;touch-action:none}
       .assetPetal .petalDepthWall{opacity:0;pointer-events:none;stroke:var(--petal-accent,#6aaee3);stroke-width:1.15;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke;filter:brightness(.64) saturate(1.12) drop-shadow(0 8px 7px rgba(0,0,0,.7));will-change:transform,opacity}
       .assetPetal .petalDepthTint{fill:#5b9dcc;opacity:0;pointer-events:none;stroke:color-mix(in srgb,var(--petal-accent,#8ecaff) 58%,white);stroke-width:.95;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke;filter:brightness(1.08) saturate(1.12) drop-shadow(0 4px 5px rgba(0,0,0,.42));will-change:transform,opacity}
       .assetPetal .petalTexture{filter:url(#petalDepth)}
@@ -360,16 +366,16 @@
       .assetPetal .petalVisual,.assetPetal .petalLabel{transition:filter 260ms cubic-bezier(.22,1,.36,1),opacity 260ms cubic-bezier(.22,1,.36,1)}
       #assetPieStage.hasSelection .assetPetal:not(.isSelected) .petalVisual{filter:brightness(.62) saturate(.78);opacity:.82}
       #assetPieStage.hasSelection .assetPetal:not(.isSelected) .petalLabel{filter:brightness(.72);opacity:.62}
-      .assetPetal .petalHit{fill:transparent;stroke:transparent;stroke-width:12;pointer-events:all}
+      .assetPetal .petalHit{fill:transparent;stroke:transparent;stroke-width:12;pointer-events:all;touch-action:none}
       .assetPetal:focus-visible .petalEdge{stroke:#64b2ff;stroke-width:2.2}
       .assetPetal.isSelected .petalVisual{filter:brightness(1.12) saturate(1.06) drop-shadow(0 10px 11px rgba(0,0,0,.64)) drop-shadow(0 0 7px rgba(76,164,242,.58))}
       .assetPetal.isSelected .petalShade{fill:rgba(4,10,16,.31)}
       .assetPetal.isSelected .petalEdge{stroke:color-mix(in srgb,var(--petal-accent,#8ecaff) 68%,white);stroke-width:1.75;stroke-linejoin:round}
       .assetPetal.isSelected .petalHighlight{stroke:rgba(237,248,255,.9);stroke-width:1.2}
       @media (max-width:760px){#assetPieStage.mobileAutoRotating .assetPetal .petalVisual,#assetPieStage.mobileAutoRotating .assetPetal .petalLabel{transition:none!important}}
-      .petalLabel{pointer-events:all;fill:#eef6ff;text-anchor:middle;paint-order:stroke;stroke:rgba(3,8,13,.34);stroke-width:1.4px;stroke-linejoin:round;font-variant-numeric:tabular-nums;user-select:none;-webkit-user-select:none}
+      .petalLabel{pointer-events:all;fill:#eef6ff;text-anchor:middle;paint-order:stroke;stroke:rgba(3,8,13,.34);stroke-width:1.4px;stroke-linejoin:round;font-variant-numeric:tabular-nums;user-select:none;-webkit-user-select:none;touch-action:none}
       .petalLabel text{pointer-events:none}
-      .petalPctHit{fill:transparent;stroke:transparent;stroke-width:1;pointer-events:all;cursor:text}
+      .petalPctHit{fill:transparent;stroke:transparent;stroke-width:1;pointer-events:all;cursor:text;touch-action:none}
       .petalPctHit:focus-visible{fill:rgba(36,145,255,.12);stroke:#79bdff;stroke-width:1.5;outline:none}
       .assetPieInlineRatio{position:absolute;z-index:12;display:flex;align-items:center;gap:5px;padding:6px;border:1px solid #45627d;border-radius:14px;background:rgba(9,18,27,.96);box-shadow:0 14px 32px rgba(0,0,0,.46),inset 0 1px 0 rgba(255,255,255,.06);backdrop-filter:blur(14px);transform:translate(-50%,-100%);transform-origin:50% 100%}
       .assetPieInlineRatio::after{content:"";position:absolute;left:50%;bottom:-5px;width:9px;height:9px;transform:translateX(-50%) rotate(45deg);border-right:1px solid #45627d;border-bottom:1px solid #45627d;background:#0a131d}
@@ -413,7 +419,7 @@
       .assetMorphProxy.isLightweight .assetMorphIdentity{opacity:1}
       .assetMorphCorridor{position:fixed;inset:0;z-index:2147483000;overflow:hidden;pointer-events:none;transform:translateZ(0);contain:strict}
       @media(max-width:390px){
-        .assetPieViewport{min-height:420px;height:113vw}
+        .assetPieViewport{min-height:456px;height:121vw}
         .pieSummary button{padding:0 11px;font-size:13px}
       }
       @media(max-width:760px){
@@ -438,7 +444,7 @@
             ${Object.entries(TEXTURES).map(([key, href]) => `<pattern id="texture-${key}" patternUnits="userSpaceOnUse" width="360" height="430"><image href="${href}" x="0" y="0" width="360" height="430" preserveAspectRatio="xMidYMid slice"/></pattern>`).join('')}
             <filter id="petalDepth" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="7" stdDeviation="7" flood-color="#000814" flood-opacity=".58"/></filter>
           </defs>
-          <g class="pieRotator"><g class="petalLayer"></g></g>
+          <g class="pieRotator"><circle class="assetPieGestureZone" cx="180" cy="196" r="202" aria-hidden="true"></circle><g class="petalLayer"></g></g>
         </svg></div>
       </div>
       <p class="pieInstruction">点击资产板块查看其他配置内容</p>
@@ -819,6 +825,12 @@
     return delta;
   }
 
+  function pieCompositorTransform(rotationDegrees = 0) {
+    const rotation = Number(rotationDegrees) || 0;
+    const rotatePart = Math.abs(rotation) > 0.0001 ? ` rotate(${rotation.toFixed(3)}deg)` : '';
+    return `translate3d(0, ${PIE_COMPOSITOR_OFFSET_Y}px, 0) scale(${PIE_COMPOSITOR_SCALE})${rotatePart}`;
+  }
+
   function applyBubbleField(stage, state, forceRotationCommit = false) {
     const cx = 180;
     const cy = 196;
@@ -832,11 +844,11 @@
     const compositor = stage.querySelector('.assetPieCompositor');
     const rotator = stage.querySelector('.pieRotator');
     if (useMobileCompositor) {
-      if (compositor) compositor.style.transform = `translate3d(0,0,0) rotate(${rotationValue.toFixed(3)}deg)`;
+      if (compositor) compositor.style.transform = pieCompositorTransform(rotationValue);
       if (rotator?.hasAttribute('transform')) rotator.removeAttribute('transform');
     } else {
       if (rotator) rotator.setAttribute('transform', `rotate(${rotationValue.toFixed(3)} ${cx} ${cy})`);
-      if (compositor) compositor.style.transform = '';
+      if (compositor) compositor.style.transform = pieCompositorTransform(0);
     }
     const selectedGeometry = state.geometry.find((item) => item.asset.id === state.selectedId);
     const selectedStrength = selectedGeometry ? Math.max(0, state.selection.get(selectedGeometry.asset.id)?.value || 0) : 0;
@@ -933,7 +945,7 @@
     });
     const compositor = layer.compositor;
     const rotator = layer.rotator;
-    const transform = `translate3d(0,0,0) rotate(${rotationValue.toFixed(3)}deg)`;
+    const transform = pieCompositorTransform(rotationValue);
     if (compositor && compositor.style.transform !== transform) compositor.style.transform = transform;
     if (rotator?.hasAttribute('transform')) rotator.removeAttribute('transform');
     for (const nodes of state.petalNodes.values()) {
