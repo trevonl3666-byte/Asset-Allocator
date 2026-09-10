@@ -308,9 +308,43 @@
       weighted += sample.velocity * weight;
       totalWeight += weight;
     }
-    const averaged = totalWeight ? weighted / totalWeight : fallbackVelocity;
+    let averaged = totalWeight ? weighted / totalWeight : fallbackVelocity;
+    const intendedDirection = Math.sign(drag?.lastMeaningfulDirection || 0);
+    if (intendedDirection && Math.sign(averaged) && Math.sign(averaged) !== intendedDirection) {
+      const aligned = windowed.filter((sample) => Math.sign(sample.velocity) === intendedDirection);
+      if (aligned.length) averaged = aligned.reduce((sum, sample) => sum + sample.velocity, 0) / aligned.length;
+      else averaged = 0;
+    }
     if (Math.abs(averaged) < 20) return 0;
     return averaged;
+  }
+
+
+  function stabilizeMobileIncrement(drag, rawDelta) {
+    let delta = Number(rawDelta) || 0;
+    if (!drag?.mobileLike) return delta;
+    if (Math.abs(delta) < 0.018) return 0;
+    delta = Math.max(-7.5, Math.min(7.5, delta));
+    const sign = Math.sign(delta);
+    const previous = Number(drag.filteredIncrement) || 0;
+    const previousSign = Math.sign(previous);
+
+    if (previousSign && sign !== previousSign) {
+      // Ignore tiny one-frame sign flips caused by thumb wobble or angle noise.
+      drag.mobileReversePressure = (drag.mobileReversePressure || 0) + Math.abs(delta);
+      if (Math.abs(delta) < 0.85 && drag.mobileReversePressure < 1.15) return 0;
+      // A real reversal should still take over quickly after a short, deliberate move.
+      drag.mobileReversePressure = 0;
+      drag.filteredIncrement = delta;
+      drag.lastMeaningfulDirection = sign;
+      return delta;
+    }
+
+    drag.mobileReversePressure = 0;
+    const filtered = previous ? previous * 0.28 + delta * 0.72 : delta;
+    drag.filteredIncrement = filtered;
+    if (Math.abs(filtered) > 0.04) drag.lastMeaningfulDirection = Math.sign(filtered);
+    return filtered;
   }
 
   function dampOppositeDirectionIncrement(drag, incrementalDegrees) {
@@ -350,9 +384,9 @@
 
       #assetPieStage{margin:0;border:1px solid #2a3949;border-radius:0 0 22px 22px;background:radial-gradient(circle at 52% 34%,rgba(23,40,54,.44),rgba(7,13,19,.96) 67%),#071018;overflow:hidden;box-shadow:0 18px 44px rgba(0,0,0,.3)}
       #assetPieStage[hidden]{display:block!important;position:fixed!important;left:-200vw!important;top:0!important;width:calc(100vw - 10px)!important;visibility:hidden!important;pointer-events:none!important;contain:strict!important}
-      .assetPieViewport{position:relative;height:min(132vw,590px);min-height:500px;max-height:590px;padding:12px 0 8px;touch-action:pan-y pinch-zoom;overscroll-behavior-y:contain;overscroll-behavior-x:auto;transition:height 440ms cubic-bezier(.22,1,.36,1),min-height 440ms cubic-bezier(.22,1,.36,1),max-height 440ms cubic-bezier(.22,1,.36,1)}
+      .assetPieViewport{position:relative;height:min(132vw,590px);min-height:500px;max-height:590px;padding:12px 0 8px;touch-action:pan-y pinch-zoom;overscroll-behavior-y:auto;overscroll-behavior-x:auto;transition:height 440ms cubic-bezier(.22,1,.36,1),min-height 440ms cubic-bezier(.22,1,.36,1),max-height 440ms cubic-bezier(.22,1,.36,1)}
       .assetPieCompositor{width:100%;height:100%;transform-origin:50% 45.581%;will-change:transform}
-      #assetPieSvg{display:block;width:100%;height:100%;overflow:visible;transform-origin:50% 46%;transition:transform 440ms cubic-bezier(.22,1,.36,1);will-change:transform}
+      #assetPieSvg{display:block;width:100%;height:100%;overflow:visible;transform-origin:50% 46%;transition:transform 440ms cubic-bezier(.22,1,.36,1);will-change:transform;touch-action:pan-y pinch-zoom}
       .assetPieGestureZone{fill:rgba(0,0,0,.001);stroke:none;pointer-events:all;touch-action:none}
       #assetPieStage.hasSelection .assetPieViewport{height:min(132vw,590px);min-height:500px;max-height:590px}
       #assetPieStage.hasSelection #assetPieSvg{transform:none}
@@ -444,7 +478,7 @@
             ${Object.entries(TEXTURES).map(([key, href]) => `<pattern id="texture-${key}" patternUnits="userSpaceOnUse" width="360" height="430"><image href="${href}" x="0" y="0" width="360" height="430" preserveAspectRatio="xMidYMid slice"/></pattern>`).join('')}
             <filter id="petalDepth" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="7" stdDeviation="7" flood-color="#000814" flood-opacity=".58"/></filter>
           </defs>
-          <g class="pieRotator"><circle class="assetPieGestureZone" cx="180" cy="196" r="202" aria-hidden="true"></circle><g class="petalLayer"></g></g>
+          <g class="pieRotator"><circle class="assetPieGestureZone" cx="180" cy="196" r="164" aria-hidden="true"></circle><g class="petalLayer"></g></g>
         </svg></div>
       </div>
       <p class="pieInstruction">点击资产板块查看其他配置内容</p>
@@ -983,12 +1017,12 @@
     centerPoint.x = 180;
     centerPoint.y = 196;
     const edgePoint = svg.createSVGPoint();
-    edgePoint.x = 180 + model.referenceOuterRadius();
+    edgePoint.x = 180 + 164;
     edgePoint.y = 196;
     const center = centerPoint.matrixTransform(ctm);
     const edge = edgePoint.matrixTransform(ctm);
     const radius = Math.hypot(edge.x - center.x, edge.y - center.y);
-    return { center, radius, maxRadius: radius + 44 };
+    return { center, radius, maxRadius: radius + 6 };
   }
 
   function isWithinRotationZone(svg, clientX, clientY) {
@@ -1030,6 +1064,9 @@
         lastRenderedRotation: state.chartRotation.value,
         velocitySamples: [],
         mobileLike: state.mobileRotationFastPath,
+        filteredIncrement: 0,
+        mobileReversePressure: 0,
+        lastMeaningfulDirection: 0,
       };
       stage.classList.remove('mobileAutoRotating');
       state.chartRotation.animation = null;
@@ -1165,11 +1202,19 @@
     const angle = Math.atan2(sample.clientY - drag.center.y, sample.clientX - drag.center.x);
     const angularDelta = normalizedAngleDelta(angle, drag.lastAngle) * 180 / Math.PI;
     const tangentialDelta = signedTangentialDeltaDegrees(drag.center, drag.lastX, drag.lastY, sample.clientX, sample.clientY);
+    // On phones use the signed tangential projection as the single source of
+    // truth. Mixing it with wrapped polar-angle deltas could briefly disagree
+    // on leftward one-hand drags and feel like a dropped touch / tiny reversal.
     const blendedDelta = drag.startRadius > 48
-      ? (tangentialDelta * 0.74) + (angularDelta * 0.26)
+      ? (state.mobileRotationFastPath ? tangentialDelta : (tangentialDelta * 0.74) + (angularDelta * 0.26))
       : -(sample.clientX - drag.lastX) * .34;
-    const rawIncrementalDegrees = Math.abs(blendedDelta) > .002 ? blendedDelta : angularDelta;
-    const incrementalDegrees = dampOppositeDirectionIncrement(drag, rawIncrementalDegrees);
+    const rawIncrementalDegrees = Math.abs(blendedDelta) > .002 ? blendedDelta : (state.mobileRotationFastPath ? 0 : angularDelta);
+    const stabilizedDegrees = state.mobileRotationFastPath
+      ? stabilizeMobileIncrement(drag, rawIncrementalDegrees)
+      : rawIncrementalDegrees;
+    const incrementalDegrees = state.mobileRotationFastPath
+      ? stabilizedDegrees
+      : dampOppositeDirectionIncrement(drag, stabilizedDegrees);
     drag.accumulatedDegrees += incrementalDegrees;
     const tangentialDistance = Math.abs(drag.accumulatedDegrees) * Math.PI / 180 * Math.max(48, drag.startRadius);
     const radialDistance = Math.abs(radius - drag.startRadius);
