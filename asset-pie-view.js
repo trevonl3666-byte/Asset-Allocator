@@ -384,9 +384,9 @@
 
       #assetPieStage{margin:0;border:1px solid #2a3949;border-radius:0 0 22px 22px;background:radial-gradient(circle at 52% 34%,rgba(23,40,54,.44),rgba(7,13,19,.96) 67%),#071018;overflow:hidden;box-shadow:0 18px 44px rgba(0,0,0,.3)}
       #assetPieStage[hidden]{display:block!important;position:fixed!important;left:-200vw!important;top:0!important;width:calc(100vw - 10px)!important;visibility:hidden!important;pointer-events:none!important;contain:strict!important}
-      .assetPieViewport{position:relative;height:min(132vw,590px);min-height:500px;max-height:590px;padding:12px 0 8px;touch-action:pan-y pinch-zoom;overscroll-behavior-y:auto;overscroll-behavior-x:auto;transition:height 440ms cubic-bezier(.22,1,.36,1),min-height 440ms cubic-bezier(.22,1,.36,1),max-height 440ms cubic-bezier(.22,1,.36,1)}
+      .assetPieViewport{position:relative;height:min(132vw,590px);min-height:500px;max-height:590px;padding:12px 0 8px;touch-action:pan-y;overscroll-behavior-y:auto;overscroll-behavior-x:auto;transition:height 440ms cubic-bezier(.22,1,.36,1),min-height 440ms cubic-bezier(.22,1,.36,1),max-height 440ms cubic-bezier(.22,1,.36,1)}
       .assetPieCompositor{width:100%;height:100%;transform-origin:50% 45.581%;will-change:transform}
-      #assetPieSvg{display:block;width:100%;height:100%;overflow:visible;transform-origin:50% 46%;transition:transform 440ms cubic-bezier(.22,1,.36,1);will-change:transform;touch-action:pan-y pinch-zoom}
+      #assetPieSvg{display:block;width:100%;height:100%;overflow:visible;transform-origin:50% 46%;transition:transform 440ms cubic-bezier(.22,1,.36,1);will-change:transform;touch-action:pan-y}
       .assetPieGestureZone{fill:rgba(0,0,0,.001);stroke:none;pointer-events:all;touch-action:none}
       #assetPieStage.hasSelection .assetPieViewport{height:min(132vw,590px);min-height:500px;max-height:590px}
       #assetPieStage.hasSelection #assetPieSvg{transform:none}
@@ -478,7 +478,7 @@
             ${Object.entries(TEXTURES).map(([key, href]) => `<pattern id="texture-${key}" patternUnits="userSpaceOnUse" width="360" height="430"><image href="${href}" x="0" y="0" width="360" height="430" preserveAspectRatio="xMidYMid slice"/></pattern>`).join('')}
             <filter id="petalDepth" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="7" stdDeviation="7" flood-color="#000814" flood-opacity=".58"/></filter>
           </defs>
-          <g class="pieRotator"><circle class="assetPieGestureZone" cx="180" cy="196" r="164" aria-hidden="true"></circle><g class="petalLayer"></g></g>
+          <g class="pieRotator"><circle class="assetPieGestureZone" cx="180" cy="196" r="166" aria-hidden="true"></circle><g class="petalLayer"></g></g>
         </svg></div>
       </div>
       <p class="pieInstruction">点击资产板块查看其他配置内容</p>
@@ -1017,12 +1017,12 @@
     centerPoint.x = 180;
     centerPoint.y = 196;
     const edgePoint = svg.createSVGPoint();
-    edgePoint.x = 180 + 164;
+    edgePoint.x = 180 + 166;
     edgePoint.y = 196;
     const center = centerPoint.matrixTransform(ctm);
     const edge = edgePoint.matrixTransform(ctm);
     const radius = Math.hypot(edge.x - center.x, edge.y - center.y);
-    return { center, radius, maxRadius: radius + 6 };
+    return { center, radius, maxRadius: radius };
   }
 
   function isWithinRotationZone(svg, clientX, clientY) {
@@ -1036,7 +1036,8 @@
     const svg = stage.querySelector('#assetPieSvg');
     viewport.addEventListener('pointerdown', (event) => {
       if (state.mode !== 'pie' || state.morphing || (event.button !== undefined && event.button !== 0)) return;
-      if (!isWithinRotationZone(svg, event.clientX, event.clientY)) return;
+      const rotationTarget = event.target.closest?.('.assetPieGestureZone,.assetPetal,.petalPctHit,.petalLabel');
+      if (!rotationTarget) return;
       const metrics = rotationZoneMetrics(svg);
       if (!metrics) return;
       const center = metrics.center;
