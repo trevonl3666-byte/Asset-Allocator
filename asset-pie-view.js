@@ -384,11 +384,11 @@
 
       #assetPieStage{margin:0;border:1px solid #2a3949;border-radius:0 0 22px 22px;background:radial-gradient(circle at 52% 34%,rgba(23,40,54,.44),rgba(7,13,19,.96) 67%),#071018;overflow:hidden;box-shadow:0 18px 44px rgba(0,0,0,.3)}
       #assetPieStage[hidden]{display:block!important;position:fixed!important;left:-200vw!important;top:0!important;width:calc(100vw - 10px)!important;visibility:hidden!important;pointer-events:none!important;contain:strict!important}
-      .assetPieViewport{position:relative;height:min(132vw,590px);min-height:500px;max-height:590px;padding:12px 0 8px;touch-action:pan-y;overscroll-behavior-y:auto;overscroll-behavior-x:auto;transition:height 440ms cubic-bezier(.22,1,.36,1),min-height 440ms cubic-bezier(.22,1,.36,1),max-height 440ms cubic-bezier(.22,1,.36,1)}
-      .assetPieCompositor{width:100%;height:100%;transform-origin:50% 45.581%;will-change:transform}
+      .assetPieViewport{position:relative;height:min(113vw,505px);min-height:432px;max-height:505px;padding:10px 0 0;overflow:hidden;touch-action:pan-y;overscroll-behavior-y:auto;overscroll-behavior-x:auto;transition:height 440ms cubic-bezier(.22,1,.36,1),min-height 440ms cubic-bezier(.22,1,.36,1),max-height 440ms cubic-bezier(.22,1,.36,1)}
+      .assetPieCompositor{width:100%;height:auto;aspect-ratio:360/430;transform-origin:50% 45.581%;will-change:transform}
       #assetPieSvg{display:block;width:100%;height:100%;overflow:visible;transform-origin:50% 46%;transition:transform 440ms cubic-bezier(.22,1,.36,1);will-change:transform;touch-action:pan-y}
       .assetPieGestureZone{fill:rgba(0,0,0,.001);stroke:none;pointer-events:all;touch-action:none}
-      #assetPieStage.hasSelection .assetPieViewport{height:min(132vw,590px);min-height:500px;max-height:590px}
+      #assetPieStage.hasSelection .assetPieViewport{height:min(113vw,505px);min-height:432px;max-height:505px}
       #assetPieStage.hasSelection #assetPieSvg{transform:none}
       .assetPetal{cursor:pointer;outline:none;transform-box:view-box;transform-origin:center;will-change:transform;touch-action:none}
       .assetPetal .petalDepthWall{opacity:0;pointer-events:none;stroke:var(--petal-accent,#6aaee3);stroke-width:1.15;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke;filter:brightness(.64) saturate(1.12) drop-shadow(0 8px 7px rgba(0,0,0,.7));will-change:transform,opacity}
@@ -423,7 +423,7 @@
       .petalPct{font-weight:900}
       .petalAmount{font-weight:650;fill:#dce8f4}
       .petalDesc,.petalShares{font-weight:520;fill:#aebfd1}
-      .pieInstruction{margin:-6px 0 19px;text-align:center;color:#64798d;font-size:13px;letter-spacing:.015em}
+      .pieInstruction{margin:-14px 0 10px;text-align:center;color:#64798d;font-size:13px;letter-spacing:.015em}
       .assetPieDetail{margin:0 12px 16px;transform-origin:50% 0;position:relative;touch-action:pan-y}
       @media (max-width:900px){
         body,body *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
@@ -453,7 +453,7 @@
       .assetMorphProxy.isLightweight .assetMorphIdentity{opacity:1}
       .assetMorphCorridor{position:fixed;inset:0;z-index:2147483000;overflow:hidden;pointer-events:none;transform:translateZ(0);contain:strict}
       @media(max-width:390px){
-        .assetPieViewport{min-height:456px;height:121vw}
+        .assetPieViewport{min-height:408px;height:109vw}
         .pieSummary button{padding:0 11px;font-size:13px}
       }
       @media(max-width:760px){
@@ -1613,6 +1613,59 @@
       const original = doc.querySelector(selector);
       if (!original) return;
       event.preventDefault();
+      event.stopPropagation();
+
+      // The configuration-difference card in the pie detail is a live clone of
+      // the normal asset row. Mirror the exact front/back flip feedback here
+      // instead of letting the hidden source row animate while the visible
+      // clone jumps directly to its final face.
+      if (button.classList.contains('allocFlipToggle')) {
+        const shell = button.closest('.allocFlipShell');
+        const inner = shell?.querySelector('.allocFlipInner');
+        if (!shell || !inner || shell.classList.contains('isAnimating')) return;
+        const fromFlipped = inner.classList.contains('isFlipped');
+        const toFlipped = !fromFlipped;
+        shell.classList.add('isAnimating');
+        inner.getAnimations?.().forEach((animation) => animation.cancel());
+        inner.classList.remove('isFlipped');
+
+        // Update the real row/state immediately so switching views or assets
+        // during the animation still preserves the same face.
+        original.click();
+
+        const finishFlip = () => {
+          inner.classList.toggle('isFlipped', toFlipped);
+          shell.classList.remove('isAnimating');
+          button.setAttribute('aria-label', toFlipped ? `返回 ${asset.name} 配置差额` : `查看 ${asset.name} 计算交易汇率`);
+          button.title = toFlipped ? '翻转返回配置差额' : '翻转查看计算交易汇率';
+          const refreshed = readRows(doc);
+          const freshAsset = refreshed.find((row) => row.id === id);
+          if (freshAsset) {
+            const index = state.assets.findIndex((row) => row.id === id);
+            if (index >= 0) state.assets[index] = freshAsset;
+          }
+        };
+
+        if (!inner.animate) {
+          finishFlip();
+          return;
+        }
+        const forward = [0, 14, 32, 61, 90, 112, 140, 162, 180];
+        const backward = [180, 162, 140, 112, 90, 61, 32, 14, 0];
+        const angles = fromFlipped ? backward : forward;
+        const offsets = [0, .13, .25, .38, .50, .62, .75, .87, 1];
+        const animation = inner.animate(
+          angles.map((angle, index) => ({ transform: `rotateY(${angle}deg)`, offset: offsets[index] })),
+          { duration: 440, easing: 'cubic-bezier(.34,.03,.22,1)', fill: 'forwards' },
+        );
+        animation.onfinish = () => {
+          try { animation.cancel(); } catch (_) {}
+          finishFlip();
+        };
+        animation.oncancel = () => shell.classList.remove('isAnimating');
+        return;
+      }
+
       original.click();
       setTimeout(() => {
         const refreshed = readRows(doc);
