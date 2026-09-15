@@ -4734,8 +4734,15 @@ function ensureAutoValues(r){
     return;
   }
 
-  // 未手动填写支付金额时，跟随目标人民币金额。
-  if(!r.rmbManual || r.actualRmb===null){
+  // v13：目标计划与真实执行分层。
+  // 只在这一行“从未生成过实际交易数据”时，用当前目标金额初始化一次。
+  // 此后无论修改可投资本金还是目标比例，都只重算 targetOf(r)，
+  // 已有的实际人民币 / 支付金额 / 换汇金额 / 当前交易汇率保持不变。
+  // 若用户希望实际金额重新跟随目标，必须主动点击“支付金额跟随目标”，
+  // 该按钮会把 actualRmb/payAmount 清空，从而在下一次 render 重新初始化。
+  const hasExecutionValue = r.actualRmb!==null && r.actualRmb!==undefined;
+  const hasPaymentValue = r.payAmount!==null && r.payAmount!==undefined;
+  if(!r.rmbManual && !hasExecutionValue && !hasPaymentValue){
     r.actualRmb=target;
     const converted=convertCurrency(r,target,"CNY",r.payCcy,true);
     r.payAmount=converted===null?target:converted;
