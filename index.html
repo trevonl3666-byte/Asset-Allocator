@@ -406,6 +406,16 @@
     margin-bottom:4px
   }
   .assetSortTitle{font-weight:800}
+  .assetSortHeadActions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+  .assetSortModeBtn{
+    height:38px;min-width:42px;padding:0 9px;border:1px solid #3a4959;border-radius:9px;
+    background:#121b25;color:#d7e5f4;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px;
+    -webkit-tap-highlight-color:transparent
+  }
+  .assetSortModeBtn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .assetSortModeBtn span{font-size:12px;font-weight:850;min-width:9px;text-align:center}
+  .assetSortModeBtn:active{transform:scale(.97)}
+  .assetSortModeBtn:focus-visible{outline:2px solid #4b86c5;outline-offset:2px}
   .assetSortDone{
     height:38px;padding:0 13px;border:1px solid #3a4959;border-radius:9px;
     background:#17202b;color:var(--text);cursor:pointer
@@ -439,9 +449,12 @@
   }
   .assetSortName{min-width:0;font-weight:750;overflow:hidden;text-overflow:ellipsis}
   .assetSortPctControl{display:flex;align-items:center;gap:5px;flex:0 0 auto;cursor:text;touch-action:manipulation}
-  .assetSortPctInput{width:70px;height:36px;padding:0 9px;border:1px solid #334151;border-radius:9px;background:#0a1017;color:var(--text);font-size:14px;font-weight:750;text-align:right;outline:none}
-  .assetSortPctInput:focus{border-color:#4b86c5;box-shadow:0 0 0 3px rgba(88,166,255,.08)}
-  .assetSortPctUnit{color:#a8bad0;font-size:13px;font-weight:750}
+  .assetSortPctInput,.assetSortAmountInput{height:36px;padding:0 9px;border:1px solid #334151;border-radius:9px;background:#0a1017;color:var(--text);font-size:14px;font-weight:750;text-align:right;outline:none}
+  .assetSortPctInput{width:70px}
+  .assetSortAmountInput{width:108px;font-size:13px}
+  .assetSortPctInput:focus,.assetSortAmountInput:focus{border-color:#4b86c5;box-shadow:0 0 0 3px rgba(88,166,255,.08)}
+  .assetSortAmountInput:disabled{opacity:.48;cursor:not-allowed}
+  .assetSortPctUnit{color:#a8bad0;font-size:13px;font-weight:750;white-space:nowrap}
   .assetDetailsToggleWrap{display:flex;align-items:center;justify-content:center;width:100%;min-height:24px}
   .assetDetailsToggle{width:26px;height:20px;padding:0;border:0;border-radius:0;background:transparent;color:#dce9f8;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:none}
   .assetDetailsToggle:hover,.assetDetailsToggle:active{background:transparent;border-color:transparent}
@@ -2031,6 +2044,7 @@
 
   /* 用户要求：排序比例紧凑 + 参考汇率内嵌锁 */
   .assetSortPctInput{width:58px!important;min-width:58px!important;max-width:58px!important;padding:0 7px!important}
+  .assetSortAmountInput{width:104px!important;min-width:104px!important;max-width:104px!important;padding:0 7px!important}
   .rateLockField{position:relative;display:block;min-width:0}
   .rateLockField>.field{min-width:0;width:100%;padding-right:42px!important}
   .rateLockBtn{
@@ -2049,6 +2063,7 @@
     .rateLockBtn{right:9px;width:22px;height:22px}
     .rateLockBtn svg{width:16px;height:16px}
     .assetSortPctInput{width:56px!important;min-width:56px!important;max-width:56px!important}
+    .assetSortAmountInput{width:100px!important;min-width:100px!important;max-width:100px!important}
   }
 
 
@@ -3107,9 +3122,15 @@
   <section class="assetSortDialog" role="dialog" aria-modal="true" aria-labelledby="assetSortTitle">
     <div class="assetSortHead">
       <div id="assetSortTitle" class="assetSortTitle">调整资产顺序</div>
-      <button id="assetSortDoneBtn" class="assetSortDone" type="button">完成</button>
+      <div class="assetSortHeadActions">
+        <button id="assetSortModeBtn" class="assetSortModeBtn" type="button" aria-label="切换为金额编辑" title="切换为金额编辑">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 6h10"></path><path d="m11 3 3 3-3 3"></path><path d="M16 14H6"></path><path d="m9 11-3 3 3 3"></path></svg>
+          <span id="assetSortModeMark">%</span>
+        </button>
+        <button id="assetSortDoneBtn" class="assetSortDone" type="button">完成</button>
+      </div>
     </div>
-    <div class="assetSortHint">按住资产上下拖动；拖到任意位置会实时调整顺序，松手即确定。</div>
+    <div id="assetSortHint" class="assetSortHint">按住资产上下拖动；右侧可直接修改目标比例。</div>
     <div id="assetSortList" class="assetSortList"></div>
   </section>
 </div>
@@ -4614,6 +4635,16 @@ function syncSharePlan(r){
 
   r.fxAmount=price*shares;
   r.fxManual=false;
+
+  // 手动支付金额拥有最高优先级。即使“单股金额 × 股数”可以自动得到换汇后金额，
+  // 也绝不能把用户刚输入的实际支付金额覆盖回目标金额或估算汇率金额。
+  // 此时保留两边真实输入，让交易汇率直接由 支付金额 ÷ 换汇后金额 实时反推。
+  if(r.rmbManual){
+    r.autoFromFx=false;
+    updateRmbEquivalent(r);
+    return;
+  }
+
   r.autoFromFx=shares>0;
   if(shares>0) syncPaymentFromFx(r);
 }
@@ -5072,10 +5103,33 @@ function bindRowReorder(){
 
 
 let assetSortSession=null;
+let assetSortEditMode="pct";
+
+function updateAssetSortModeUi(){
+  const btn=el("assetSortModeBtn");
+  const mark=el("assetSortModeMark");
+  const hint=el("assetSortHint");
+  const amountMode=assetSortEditMode==="amount";
+  if(mark) mark.textContent=amountMode?"¥":"%";
+  if(btn){
+    const next=amountMode?"百分比":"金额";
+    btn.setAttribute("aria-label",`切换为${next}编辑`);
+    btn.title=`切换为${next}编辑`;
+  }
+  if(hint){
+    hint.textContent=amountMode
+      ? "按住资产上下拖动；右侧直接修改目标金额（CNY），比例会实时反推。"
+      : "按住资产上下拖动；右侧直接修改目标比例，目标金额会实时重算。";
+  }
+}
 
 function buildAssetSortList(){
   const list=el("assetSortList");
   if(!list) return;
+  updateAssetSortModeUi();
+  const amountMode=assetSortEditMode==="amount";
+  const principal=principalCnyValue();
+  const amountReady=principal!==null && principal>0;
   list.innerHTML="";
   state.rows.forEach(r=>{
     const item=document.createElement("div");
@@ -5084,11 +5138,17 @@ function buildAssetSortList(){
     item.tabIndex=0;
     item.draggable=false;
     item.setAttribute("role","group");
-    item.setAttribute("aria-label",`${r.name}，拖动调整顺序，可直接修改比例`);
+    item.setAttribute("aria-label",`${r.name}，拖动调整顺序，可直接修改${amountMode?"金额":"比例"}`);
+    const target=targetOf(r);
+    const value=amountMode ? (amountReady && target!==null ? displayNumber(Math.round(target*100)/100) : "") : displayNumber(Number(r.pct)||0);
+    const inputClass=amountMode?"assetSortAmountInput":"assetSortPctInput";
+    const unit=amountMode?"CNY":"%";
+    const disabled=amountMode && !amountReady ? "disabled" : "";
+    const placeholder=amountMode && !amountReady ? 'placeholder="需本金汇率"' : "";
     item.innerHTML=`<span class="assetSortName">${r.name}</span>
-      <label class="assetSortPctControl" aria-label="${r.name} 当前比例">
-        <input class="assetSortPctInput" data-id="${r.id}" type="text" inputmode="decimal" value="${Number(r.pct)}" aria-label="${r.name} 比例" />
-        <span class="assetSortPctUnit">%</span>
+      <label class="assetSortPctControl" aria-label="${r.name} 当前${amountMode?"目标金额":"比例"}">
+        <input class="${inputClass}" data-id="${r.id}" type="text" inputmode="decimal" value="${value}" ${disabled} ${placeholder} aria-label="${r.name} ${amountMode?"目标金额 CNY":"比例"}" />
+        <span class="assetSortPctUnit">${unit}</span>
       </label>`;
     list.appendChild(item);
   });
@@ -5261,7 +5321,7 @@ function bindAssetSortItems(){
       startAssetSortDrag(item,ev);
     });
   });
-  list.querySelectorAll(".assetSortPctInput").forEach(input=>{
+  list.querySelectorAll(".assetSortPctInput,.assetSortAmountInput").forEach(input=>{
     input.addEventListener("pointerdown",ev=>ev.stopPropagation());
     input.addEventListener("keydown",ev=>ev.stopPropagation());
     const selectAll=()=>requestAnimationFrame(()=>{try{input.select();}catch(_){}});
@@ -5275,14 +5335,20 @@ function bindAssetSortItems(){
       const r=state.rows.find(row=>row.id===inputEl.dataset.id);
       if(!r) return;
 
-      // 排序弹窗里的比例就是正式目标比例：输入时立刻同步到下方资产卡，
-      // 并让目标金额、配置差额、汇总等所有依赖比例的结果同步重算。
-      r.pct=Math.max(0,n);
+      if(inputEl.classList.contains("assetSortAmountInput")){
+        const principal=principalCnyValue();
+        if(principal===null || !(principal>0)) return;
+        // 金额模式：目标金额 / 人民币本金 = 目标比例。
+        // 不做整数化，确保输入金额可以精确反推到比例。
+        r.pct=Math.max(0,n)/principal*100;
+      }else{
+        // 百分比模式：比例就是正式目标比例。
+        r.pct=Math.max(0,n);
+      }
       ratioEditBase=null;
       render();
 
-      // render() 只重绘主资产列表，排序弹窗本身保持原地；
-      // 恢复用户正在输入的原始文本与选区，避免键盘输入过程中跳动。
+      // 主资产列表会重绘，但排序弹窗保持原地；恢复正在输入的原始文本。
       inputEl.value=raw;
     });
   });
@@ -6093,6 +6159,10 @@ el("clearBtn").onclick=clearAll;
 
 if(el("openAssetSortBtn")) el("openAssetSortBtn").addEventListener("click",ev=>{ev.preventDefault();ev.stopPropagation();openAssetSortModal();});
 if(el("openAssetSortBtnDesktop")) el("openAssetSortBtnDesktop").addEventListener("click",ev=>{ev.preventDefault();ev.stopPropagation();openAssetSortModal();});
+if(el("assetSortModeBtn")) el("assetSortModeBtn").onclick=()=>{
+  assetSortEditMode=assetSortEditMode==="pct"?"amount":"pct";
+  buildAssetSortList();
+};
 if(el("assetSortDoneBtn")) el("assetSortDoneBtn").onclick=closeAssetSortModal;
 document.querySelectorAll("[data-sort-close='1']").forEach(x=>x.addEventListener("click",closeAssetSortModal));
 if(el("assetPickerCloseBtn")) el("assetPickerCloseBtn").onclick=closeAssetPicker;

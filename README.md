@@ -35,3 +35,8 @@
 - 清空投资记录改为按当前选择年份删除。
 - 删除前必须输入精确确认短语 `delect all the data in this year`。
 - 其他年份的本地记录不会被删除。
+
+## v9 updates
+- Manual actual payment input now has priority over unit-price/share auto calculations, so entering a CNY payment such as 5500 is preserved and the live implied FX rate is calculated from payment / received amount.
+- Asset order modal now includes a compact switch beside Done for editing either target percentage or target CNY amount; amount edits are converted back to target percentage in real time.
+

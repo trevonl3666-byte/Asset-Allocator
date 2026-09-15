@@ -1,4 +1,4 @@
-const CACHE_NAME = "asset-allocator-v43-year-clear-confirm-cache-20260915";
+const CACHE_NAME = "asset-allocator-v44-manual-trade-sort-mode-cache-20260915";
 const APP_SHELL = [
   "./",
   "./index.html",
