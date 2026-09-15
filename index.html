@@ -2590,6 +2590,206 @@
     .summary .card:first-child .printInvoiceBtn{height:36px;font-size:11px}
     .receiptStage{padding-top:calc(48px + env(safe-area-inset-top))}
   }
+
+
+  /* v70：本地投资记录热力图 */
+  .historyPanel{margin-top:14px;padding:16px 18px}
+  .historyHead{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .historyTitle{font-size:18px;font-weight:850;line-height:1.25}
+  .historySub{margin-top:5px;color:var(--muted);font-size:13px;line-height:1.65;max-width:760px}
+  .historyActions{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}
+  .historyDateField{display:flex;flex-direction:column;gap:7px;min-width:170px}
+  .historyDateField label{margin:0;font-size:13px;color:var(--muted)}
+  .historyDateInput{
+    width:100%;height:42px;padding:0 12px;border:1px solid var(--line);border-radius:9px;
+    background:var(--input);color:var(--text);outline:none
+  }
+  .historyDateInput:focus{border-color:#4b86c5;box-shadow:0 0 0 3px rgba(88,166,255,.08)}
+  .historyActionBtns{display:flex;gap:8px;flex-wrap:wrap}
+  .historyActionBtns .ghost,.historyActionBtns .primary{height:42px}
+  .historyMetaRow{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:14px}
+  .historyRangeGroup{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .historyYearSelect{
+    height:34px;min-width:92px;padding:0 30px 0 11px;border:1px solid #334151;border-radius:9px;
+    background:#111923;color:#e7f1fc;font-size:13px;font-weight:800;outline:none;cursor:pointer
+  }
+  .historyYearSelect:focus{border-color:#4b86c5;box-shadow:0 0 0 3px rgba(88,166,255,.08)}
+  .historyRange{color:#c9daec;font-size:13px;font-weight:700}
+  .historyLegend{display:flex;align-items:center;gap:8px;color:#9db2c8;font-size:12px}
+  .historyLegendScale{display:flex;align-items:center;gap:4px}
+  .legendBox{width:14px;height:14px;border-radius:4px;border:1px solid rgba(255,255,255,.03)}
+  .historyMapWrap{
+    margin-top:14px;overflow:auto;padding-bottom:4px;
+    scrollbar-width:none;-ms-overflow-style:none;-webkit-overflow-scrolling:touch
+  }
+  .historyMapWrap::-webkit-scrollbar{width:0;height:0;display:none}
+  .historyMapInner{min-width:860px}
+  .historyMonthRow{position:relative;height:20px;margin-left:38px;margin-bottom:8px}
+  .historyMonthLabel{position:absolute;top:0;color:#dce9f8;font-size:12px;font-weight:700;white-space:nowrap}
+  .historyGridStage{display:flex;align-items:flex-start;gap:10px}
+  .historyWeekLabels{width:28px;position:relative;height:122px;flex:0 0 auto}
+  .historyWeekLabel{position:absolute;left:0;color:#b5c8dc;font-size:12px;line-height:14px}
+  .historyWeekLabel.mon{top:15px}
+  .historyWeekLabel.wed{top:51px}
+  .historyWeekLabel.fri{top:87px}
+  .historyGrid{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,14px);grid-auto-columns:14px;gap:4px}
+  .historyCell{
+    appearance:none;-webkit-appearance:none;
+    width:14px;height:14px;padding:0;border:0;border-radius:4px;
+    background:#101821;box-shadow:inset 0 0 0 1px rgba(255,255,255,.02);
+    cursor:default;position:relative
+  }
+  .historyCell.inRange.level-0{background:#111b26}
+  .historyCell.inRange.level-1{background:#0e4429}
+  .historyCell.inRange.level-2{background:#006d32}
+  .historyCell.inRange.level-3{background:#26a641}
+  .historyCell.inRange.level-4{background:#39d353}
+  .historyCell.hasRecord{cursor:pointer}
+  .historyCell.outRange{opacity:.28}
+  .historyCell.futureDate{opacity:.46;cursor:default}
+  .historyCell.hasRecord:hover,
+  .historyCell.hasRecord.isPointerHover{
+    transform:translateY(-1px);
+    box-shadow:0 0 0 2px rgba(255,255,255,.94),0 4px 12px rgba(0,0,0,.30);
+    z-index:3
+  }
+  .historyCell:focus-visible{outline:2px solid #9ed0ff;outline-offset:2px}
+  .historyCell.isPicked{box-shadow:0 0 0 2px rgba(255,255,255,.92);z-index:2}
+  .historyStats{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+  .historyStat{min-width:0}
+  .historyStat .k{color:var(--muted);font-size:12px}
+  .historyStat .v{margin-top:3px;font-weight:800;font-size:18px;line-height:1.3;word-break:break-word}
+  .historyStat .s{margin-top:2px;color:var(--muted);font-size:11px;line-height:1.45}
+  .historyEmpty{margin-top:14px;padding:14px 15px;border:1px dashed #304152;border-radius:12px;background:#0d141d;color:#a9bdd2;font-size:13px;line-height:1.65}
+
+  .recordModal{display:none}
+  .recordModal[aria-hidden="false"]{display:block}
+  .recordBackdrop{position:fixed;inset:0;z-index:2147483300;background:rgba(0,0,0,.64)}
+  .recordDialog{
+    position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2147483301;
+    width:min(980px,calc(100vw - 28px));max-height:calc(100vh - 40px);overflow:auto;
+    border:1px solid #334151;border-radius:18px;background:#101821;color:var(--text);
+    box-shadow:0 24px 70px rgba(0,0,0,.56);
+    scrollbar-width:none;-ms-overflow-style:none;-webkit-overflow-scrolling:touch;overscroll-behavior:contain
+  }
+  .recordDialog::-webkit-scrollbar{width:0;height:0;display:none}
+  body.recordOpen{overflow:hidden!important;overscroll-behavior:none}
+  .recordHead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:16px 18px 12px;border-bottom:1px solid var(--line)}
+  .recordTitle{font-size:20px;font-weight:850;line-height:1.2}
+  .recordSub{margin-top:5px;color:var(--muted);font-size:12px;line-height:1.6}
+  .recordClose{width:40px;height:40px;padding:0;border:1px solid #3a4959;border-radius:10px;background:#17202b;color:var(--text);font-size:24px;line-height:1;cursor:pointer}
+  .recordBody{padding:16px 18px 18px}
+  .recordDayTabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .recordDayTab{height:34px;padding:0 12px;border:1px solid #334151;border-radius:999px;background:#131d28;color:#b9cde1;cursor:pointer;font-size:12px;font-weight:700}
+  .recordDayTab.active{background:#153c62;border-color:#2d78b7;color:#fff}
+  .recordSummaryGrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:14px}
+  .recordSummaryCard{padding:12px;border:1px solid var(--line);border-radius:12px;background:#0d141d}
+  .recordSummaryCard .k{color:var(--muted);font-size:11px}
+  .recordSummaryCard .v{margin-top:4px;font-size:18px;font-weight:850;line-height:1.25;word-break:break-word}
+  .recordSummaryCard .s{margin-top:4px;color:var(--muted);font-size:11px;line-height:1.5}
+  .recordInfoBar{display:grid;grid-template-columns:1.3fr 1fr;gap:12px;margin-bottom:14px}
+  .recordInfoBox{padding:12px;border:1px solid var(--line);border-radius:12px;background:#0d141d}
+  .recordInfoBox .title{font-size:12px;font-weight:800;color:#dce9f8;margin-bottom:7px}
+  .recordInfoList{display:grid;gap:5px;color:#b7c9dc;font-size:12px;line-height:1.55}
+  .recordAssets{display:grid;gap:10px}
+  .recordAssetItem{padding:12px;border:1px solid #2c3845;border-radius:12px;background:#0c131b}
+  .recordAssetTop{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .recordAssetName{font-size:16px;font-weight:850;line-height:1.25}
+  .recordAssetDesc{margin-top:3px;color:var(--muted);font-size:12px;line-height:1.55}
+  .recordAssetBadge{flex:0 0 auto;padding:5px 9px;border-radius:999px;background:#132130;border:1px solid #2e465f;color:#cfe1f4;font-size:11px;font-weight:800}
+  .recordAssetMetrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:10px}
+  .recordMiniMetric{padding:10px;border-radius:10px;background:#101821;border:1px solid rgba(255,255,255,.04)}
+  .recordMiniMetric .k{color:#90a4b8;font-size:11px}
+  .recordMiniMetric .v{margin-top:3px;font-size:14px;font-weight:800;line-height:1.35;word-break:break-word}
+  .recordModalActions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+  .recordModalActions .ghost,.recordModalActions .primary{height:40px}
+
+  @media (max-width:760px){
+    .historyPanel{padding:14px}
+    .historyHead{gap:12px}
+    .historyTitle{font-size:16px}
+    .historySub{font-size:12px}
+    .historyActions{width:100%;display:grid;grid-template-columns:1fr;gap:10px}
+    .historyDateField{min-width:0}
+    .historyActionBtns{display:grid;grid-template-columns:1fr auto;gap:8px}
+    .historyActionBtns .primary,.historyActionBtns .ghost{width:100%;height:44px}
+    .historyMetaRow{align-items:flex-start;gap:10px}
+    .historyRangeGroup{gap:8px}
+    .historyYearSelect{height:36px;min-width:94px;font-size:14px}
+    .historyMapInner{min-width:720px}
+    .historyStats{grid-template-columns:1fr 1fr;gap:10px}
+    .recordDialog{
+      width:min(100vw - 18px,980px);
+      max-height:calc(100dvh - 20px);
+      border-radius:16px;
+      scrollbar-width:none;-ms-overflow-style:none;
+      -webkit-overflow-scrolling:touch;overscroll-behavior:contain
+    }
+    .recordDialog::-webkit-scrollbar{width:0!important;height:0!important;display:none!important}
+    .recordHead{padding:14px 14px 10px}
+    .recordTitle{font-size:18px}
+    .recordBody{padding:14px}
+    .recordSummaryGrid{grid-template-columns:1fr 1fr;gap:9px}
+    .recordSummaryGrid .recordSummaryCard:nth-child(3){grid-column:1/-1}
+    .recordInfoBar{grid-template-columns:1fr;gap:10px}
+    .recordAssetMetrics{grid-template-columns:1fr 1fr;gap:8px}
+    .recordModalActions{flex-direction:column}
+    .recordModalActions .ghost,.recordModalActions .primary{width:100%}
+  }
+
+
+
+  /* v76：按年份清空记录的强确认弹窗 */
+  .clearYearModal{display:none}
+  .clearYearModal[aria-hidden="false"]{display:block}
+  .clearYearBackdrop{position:fixed;inset:0;z-index:2147483400;background:rgba(0,0,0,.68)}
+  .clearYearDialog{
+    position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2147483401;
+    width:min(500px,calc(100vw - 28px));padding:18px;
+    border:1px solid #4b3338;border-radius:17px;background:#11171f;color:var(--text);
+    box-shadow:0 24px 70px rgba(0,0,0,.62)
+  }
+  .clearYearHead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .clearYearTitle{font-size:19px;font-weight:850;line-height:1.25}
+  .clearYearClose{
+    flex:0 0 auto;width:38px;height:38px;padding:0;border:1px solid #3a4959;border-radius:10px;
+    background:#17202b;color:var(--text);font-size:22px;line-height:1;cursor:pointer
+  }
+  .clearYearWarning{
+    margin-top:12px;padding:12px 13px;border:1px solid #5b3337;border-radius:11px;
+    background:#21171a;color:#ffc2bd;font-size:13px;line-height:1.65
+  }
+  .clearYearPhraseLabel{margin-top:14px;color:#aebfd1;font-size:12px;line-height:1.5}
+  .clearYearPhrase{
+    margin-top:7px;padding:10px 11px;border:1px solid #34404d;border-radius:10px;
+    background:#0b1118;color:#edf4ff;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:12px;line-height:1.5;user-select:all;-webkit-user-select:all;word-break:break-all
+  }
+  .clearYearInput{
+    width:100%;height:46px;margin-top:10px;padding:0 12px;border:1px solid #3a4653;border-radius:10px;
+    background:#090e14;color:#edf4ff;outline:none;font-size:14px
+  }
+  .clearYearInput:focus{border-color:#9b4e52;box-shadow:0 0 0 3px rgba(255,123,114,.09)}
+  .clearYearHint{min-height:18px;margin-top:7px;color:#8ea0b5;font-size:11px;line-height:1.5}
+  .clearYearHint.ready{color:#ffaaa5}
+  .clearYearActions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}
+  .clearYearActions button{height:43px}
+  .clearYearConfirm{
+    border:1px solid #7d3e43;border-radius:9px;background:#3a1d21;color:#ffd5d1;font-weight:800;cursor:pointer
+  }
+  .clearYearConfirm:disabled{opacity:.35;cursor:not-allowed;filter:saturate(.35)}
+  .clearYearConfirm:not(:disabled):hover{background:#4a2227;border-color:#a84f56}
+  body.clearYearOpen{overflow:hidden!important;overscroll-behavior:none}
+  @media(max-width:760px){
+    .clearYearDialog{width:calc(100vw - 20px);padding:16px;border-radius:16px}
+    .clearYearTitle{font-size:17px}
+    .clearYearWarning{font-size:12px}
+    .clearYearPhrase{font-size:11px}
+    .clearYearInput{height:48px;font-size:16px}
+    .clearYearActions{grid-template-columns:1fr;gap:8px}
+    .clearYearActions button{height:46px;width:100%}
+  }
+
 </style>
 </head>
 <body>
@@ -2749,6 +2949,56 @@
     <div class="card"><div class="k">HKD 相关交易汇率</div><div class="v" id="cardHkd">—</div><div class="s" id="cardHkdSub">填写 HKD 实际外币金额后计算。</div></div>
   </div>
 
+  
+
+  <div class="panel historyPanel" id="historyPanel">
+    <div class="historyHead">
+      <div>
+        <div class="historyTitle">本地投资记录热力图</div>
+        <div class="historySub">每次点击“保存当前配置”，系统都会按真实保存日期自动记录到对应方格；年份选择只用于查看历史。点击任意绿色方格即可查看当时保存下来的资产配置。</div>
+      </div>
+      <div class="historyActions">
+        <div class="historyActionBtns">
+          <button id="saveRecordBtn" class="primary" type="button">保存当前配置</button>
+          <button id="clearHistoryBtn" class="ghost dangerGhost" type="button">清空记录</button>
+        </div>
+      </div>
+    </div>
+    <div class="historyMetaRow">
+      <div class="historyRangeGroup">
+        <select id="historyYearSelect" class="historyYearSelect" aria-label="选择投资记录年份" title="选择年份"></select>
+        <div id="historyRange" class="historyRange">1月1日 — 12月31日</div>
+      </div>
+      <div class="historyLegend" aria-label="热力图图例">
+        <span>Less</span>
+        <div class="historyLegendScale" aria-hidden="true">
+          <span class="legendBox" style="background:#111b26"></span>
+          <span class="legendBox" style="background:#0e4429"></span>
+          <span class="legendBox" style="background:#006d32"></span>
+          <span class="legendBox" style="background:#26a641"></span>
+          <span class="legendBox" style="background:#39d353"></span>
+        </div>
+        <span>More</span>
+      </div>
+    </div>
+    <div class="historyMapWrap">
+      <div class="historyMapInner">
+        <div id="historyMonthRow" class="historyMonthRow"></div>
+        <div class="historyGridStage">
+          <div class="historyWeekLabels" aria-hidden="true">
+            <span class="historyWeekLabel mon">Mon</span>
+            <span class="historyWeekLabel wed">Wed</span>
+            <span class="historyWeekLabel fri">Fri</span>
+          </div>
+          <div id="historyGrid" class="historyGrid" role="grid" aria-label="本地投资记录热力图"></div>
+        </div>
+      </div>
+    </div>
+    <div id="historyEmpty" class="historyEmpty" hidden>还没有本地投资记录。先选一个日期，然后点“保存当前配置”，下面就会出现可以点击查看的方格记录。</div>
+    <div id="historyStats" class="historyStats"></div>
+  </div>
+
+
   <div class="panel footerPanel">
     <div>
       <div class="toggle">目标比例独立输入：修改某一资产时不会自动更改其他资产；总比例可暂时不等于 100%。</div>
@@ -2771,6 +3021,54 @@
 </div>
 
 
+
+
+
+
+
+
+<div id="clearYearModal" class="clearYearModal" aria-hidden="true">
+  <div class="clearYearBackdrop" data-clear-year-close="1"></div>
+  <section class="clearYearDialog" role="dialog" aria-modal="true" aria-labelledby="clearYearTitle">
+    <div class="clearYearHead">
+      <div>
+        <div id="clearYearTitle" class="clearYearTitle">清空本年度记录</div>
+      </div>
+      <button id="clearYearCloseBtn" class="clearYearClose" type="button" aria-label="关闭">×</button>
+    </div>
+    <div id="clearYearWarning" class="clearYearWarning"></div>
+    <div class="clearYearPhraseLabel">要继续，请完整输入下面这句话：</div>
+    <div class="clearYearPhrase">delect all the data in this year</div>
+    <input id="clearYearConfirmInput" class="clearYearInput" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" aria-label="输入清空确认短语" />
+    <div id="clearYearHint" class="clearYearHint">只有完全一致时，清空按钮才会解锁。</div>
+    <div class="clearYearActions">
+      <button id="clearYearCancelBtn" class="ghost" type="button">取消</button>
+      <button id="clearYearConfirmBtn" class="clearYearConfirm" type="button" disabled>清空本年度记录</button>
+    </div>
+  </section>
+</div>
+
+
+<div id="recordModal" class="recordModal" aria-hidden="true">
+  <div class="recordBackdrop" data-record-close="1"></div>
+  <section class="recordDialog" role="dialog" aria-modal="true" aria-labelledby="recordModalTitle">
+    <div class="recordHead">
+      <div>
+        <div id="recordModalTitle" class="recordTitle">投资记录</div>
+        <div id="recordModalSub" class="recordSub">点击不同时间可查看同一天的多个快照。</div>
+      </div>
+      <button id="recordCloseBtn" class="recordClose" type="button" aria-label="关闭">×</button>
+    </div>
+    <div class="recordBody">
+      <div id="recordDayTabs" class="recordDayTabs"></div>
+      <div id="recordModalBody"></div>
+      <div class="recordModalActions">
+        <button id="restoreRecordBtn" class="primary" type="button">一键恢复配置</button>
+        <button id="deleteRecordBtn" class="ghost dangerGhost" type="button">删除当前记录</button>
+      </div>
+    </div>
+  </section>
+</div>
 
 
 <div id="receiptModal" class="receiptModal" aria-hidden="true">
@@ -2974,6 +3272,696 @@ function evalArithmetic(raw){
 function displayNumber(n){
   if(!Number.isFinite(Number(n))) return "";
   return String(Math.round(Number(n)*100000000)/100000000);
+}
+
+
+
+
+const RECORD_HISTORY_KEY = "investmentAllocatorHistoryV1";
+let heatmapSelectedYear = new Date().getFullYear();
+const HISTORY_YEAR_LOOKBACK = 20;
+let recordHistory = [];
+let activeRecordDateKey = "";
+let activeRecordId = "";
+const CLEAR_YEAR_CONFIRM_PHRASE = "delect all the data in this year";
+
+function todayDateKey(){
+  return isoDateKey(new Date());
+}
+function isoDateKey(date){
+  const y=date.getFullYear();
+  const m=String(date.getMonth()+1).padStart(2,"0");
+  const d=String(date.getDate()).padStart(2,"0");
+  return `${y}-${m}-${d}`;
+}
+function parseDateKey(dateKey){
+  const m=String(dateKey||"").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(!m) return null;
+  return new Date(Number(m[1]), Number(m[2])-1, Number(m[3]));
+}
+function fmtDate(dateKey){
+  const d=parseDateKey(dateKey);
+  if(!d) return dateKey||"—";
+  return d.toLocaleDateString("zh-CN",{year:"numeric",month:"short",day:"numeric"});
+}
+function fmtDateTime(ts){
+  const d=new Date(Number(ts)||Date.now());
+  return d.toLocaleString("zh-CN",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false});
+}
+function savedAtDateKey(ts){
+  const d=new Date(Number(ts));
+  return Number.isFinite(d.getTime()) ? isoDateKey(d) : "";
+}
+function loadRecordHistory(){
+  try{
+    const raw=localStorage.getItem(RECORD_HISTORY_KEY);
+    if(!raw) return;
+    const parsed=JSON.parse(raw);
+    if(!Array.isArray(parsed)) return;
+    let migrated=false;
+    recordHistory=parsed.filter(x=>x && typeof x==="object" && x.id && x.dateKey && Array.isArray(x.rows)).map(item=>{
+      // v6 起，日志日期以真实保存时间 savedAt 为唯一来源。
+      // 旧版允许日期框残留，可能出现“保存时间 9/15、记录日期却是 3/22”的错位；
+      // 对没有 dateSource 标记的旧记录，在第一次载入时自动纠正到真实保存日期。
+      if(!item.dateSource && Number(item.savedAt)>0){
+        const actualKey=savedAtDateKey(item.savedAt);
+        if(actualKey && actualKey!==item.dateKey){
+          item.legacyDateKey=item.dateKey;
+          item.dateKey=actualKey;
+          migrated=true;
+        }
+        item.dateSource="savedAt-migrated";
+        migrated=true;
+      }
+      return item;
+    }).sort((a,b)=>(Number(b.savedAt)||0)-(Number(a.savedAt)||0));
+    if(migrated) saveRecordHistory();
+  }catch(_){ recordHistory=[]; }
+}
+function saveRecordHistory(){
+  try{ localStorage.setItem(RECORD_HISTORY_KEY, JSON.stringify(recordHistory)); }catch(_){ }
+}
+function groupHistoryByDate(){
+  const map={};
+  recordHistory.forEach(item=>{
+    if(!map[item.dateKey]) map[item.dateKey]=[];
+    map[item.dateKey].push(item);
+  });
+  Object.values(map).forEach(list=>list.sort((a,b)=>(Number(b.savedAt)||0)-(Number(a.savedAt)||0)));
+  return map;
+}
+function recordYearFromDateKey(dateKey){
+  const d=parseDateKey(dateKey);
+  return d?d.getFullYear():null;
+}
+
+function recordsInHistoryYear(year){
+  const y=Number(year);
+  return recordHistory.filter(item=>recordYearFromDateKey(item.dateKey)===y);
+}
+function updateClearYearConfirmState(){
+  const input=el("clearYearConfirmInput");
+  const confirmBtn=el("clearYearConfirmBtn");
+  const hint=el("clearYearHint");
+  if(!input || !confirmBtn) return;
+  const ready=String(input.value||"").trim()===CLEAR_YEAR_CONFIRM_PHRASE;
+  confirmBtn.disabled=!ready;
+  if(hint){
+    hint.textContent=ready?"确认短语正确。现在可以清空当前年份的记录。":"只有完全一致时，清空按钮才会解锁。";
+    hint.classList.toggle("ready",ready);
+  }
+}
+function openClearYearModal(){
+  const year=Number(heatmapSelectedYear)||new Date().getFullYear();
+  const records=recordsInHistoryYear(year);
+  if(!records.length){
+    alert(`${year} 年目前没有记录可清空。`);
+    return;
+  }
+  const warning=el("clearYearWarning");
+  const title=el("clearYearTitle");
+  const confirmBtn=el("clearYearConfirmBtn");
+  const input=el("clearYearConfirmInput");
+  if(title) title.textContent=`清空 ${year} 年全部记录`;
+  if(warning) warning.innerHTML=`将永久删除 <b>${year} 年</b> 的 <b>${records.length}</b> 条投资配置记录。其他年份的数据不会受到影响，此操作不可撤销。`;
+  if(confirmBtn) confirmBtn.textContent=`清空 ${year} 年全部记录`;
+  if(input) input.value="";
+  updateClearYearConfirmState();
+  el("clearYearModal")?.setAttribute("aria-hidden","false");
+  document.body.classList.add("clearYearOpen");
+  setTimeout(()=>{ try{ input?.focus({preventScroll:true}); }catch(_){ input?.focus(); } },60);
+}
+function closeClearYearModal(){
+  el("clearYearModal")?.setAttribute("aria-hidden","true");
+  document.body.classList.remove("clearYearOpen");
+  const input=el("clearYearConfirmInput");
+  if(input) input.value="";
+  updateClearYearConfirmState();
+}
+function confirmClearHistoryYear(){
+  const input=el("clearYearConfirmInput");
+  if(String(input?.value||"").trim()!==CLEAR_YEAR_CONFIRM_PHRASE) return;
+  const year=Number(heatmapSelectedYear)||new Date().getFullYear();
+  const before=recordHistory.length;
+  recordHistory=recordHistory.filter(item=>recordYearFromDateKey(item.dateKey)!==year);
+  if(recordHistory.length===before){ closeClearYearModal(); return; }
+  saveRecordHistory();
+  if(activeRecordDateKey && recordYearFromDateKey(activeRecordDateKey)===year) closeRecordModal();
+  activeRecordDateKey="";
+  activeRecordId="";
+  clearHeatmapPointerHover();
+  closeClearYearModal();
+  renderRecordHeatmap();
+}
+function availableHistoryYears(){
+  const currentYear=new Date().getFullYear();
+  const years=new Set();
+  for(let y=currentYear;y>=currentYear-HISTORY_YEAR_LOOKBACK;y--) years.add(y);
+  recordHistory.forEach(item=>{
+    const y=recordYearFromDateKey(item.dateKey);
+    if(Number.isInteger(y)) years.add(y);
+  });
+  years.add(heatmapSelectedYear);
+  return [...years].sort((a,b)=>b-a);
+}
+function renderHistoryYearSelect(){
+  const select=el("historyYearSelect");
+  if(!select) return;
+  const years=availableHistoryYears();
+  select.innerHTML=years.map(y=>`<option value="${y}" ${y===heatmapSelectedYear?"selected":""}>${y} 年</option>`).join("");
+}
+function getCurrentSnapshot(){
+  const principalCny=principalCnyValue();
+  const rows=state.rows.map(r=>{
+    const pct=Number(r.pct)||0;
+    const target=principalCny===null?null:principalCny*pct/100;
+    const actual=Number(r.actualRmb)||0;
+    const payAmount=Number(r.payAmount)||0;
+    const payCcy=r.payCcy||"CNY";
+    const receiveCcy=r.ccy||"CNY";
+    const fxAmount=Number(r.fxAmount)||0;
+    const pairSame=payCcy===receiveCcy;
+    const referenceRate=pairSame?1:(refRateFor(r)||0);
+    const impliedRate=(fxAmount>0 && payAmount>0)?payAmount/fxAmount:(pairSame?1:0);
+    const reverseRate=(fxAmount>0 && payAmount>0)?fxAmount/payAmount:(pairSame?1:0);
+    const allocDiff=target===null?null:actual-target;
+    const allocPct=(target!==null && Math.abs(target)>1e-9)?(allocDiff/target*100):null;
+    const payToCny=rateInfoFor(r,payCcy,true).rate||0;
+    const fxDiff=(!pairSame && fxAmount>0 && referenceRate>0 && payToCny>0) ? (payAmount-(fxAmount*referenceRate))*payToCny : null;
+    return {
+      id:r.id,
+      name:r.name,
+      productKey:r.productKey,
+      desc:r.desc,
+      purpose:r.purpose,
+      ccy:receiveCcy,
+      payCcy,
+      pct,
+      target,
+      actualRmb:actual,
+      payAmount,
+      fxAmount,
+      pairSame,
+      referenceRate,
+      impliedRate,
+      reverseRate,
+      allocDiff,
+      allocPct,
+      fxDiff,
+      rowRateMode:r.rowRateMode||"top"
+    };
+  });
+
+  const totalPct=rows.reduce((s,r)=>s+(Number(r.pct)||0),0);
+  const totalTarget=principalCny===null?null:rows.reduce((s,r)=>s+(Number(r.target)||0),0);
+  const totalActual=rows.reduce((s,r)=>s+(Number(r.actualRmb)||0),0);
+  const allocDiff=principalCny===null?null:totalActual-principalCny;
+  let totalFxDiff=0, fxDiffCount=0;
+  const pairAgg={};
+  rows.forEach(r=>{
+    if(r.fxDiff!==null){ totalFxDiff += Number(r.fxDiff)||0; fxDiffCount++; }
+    if(r.pairSame || !(r.payAmount>0) || !(r.fxAmount>0)) return;
+    const key=`${r.payCcy}->${r.ccy}`;
+    if(!pairAgg[key]) pairAgg[key]={payCcy:r.payCcy,recvCcy:r.ccy,pay:0,fx:0,refPay:0,refFx:0};
+    pairAgg[key].pay += r.payAmount;
+    pairAgg[key].fx += r.fxAmount;
+    if(r.referenceRate>0){
+      pairAgg[key].refPay += r.fxAmount*r.referenceRate;
+      pairAgg[key].refFx += r.fxAmount;
+    }
+  });
+  const pairEntries=Object.values(pairAgg);
+  const rateText=pairEntries.map(a=>{
+    const actualAvg=a.pay/a.fx;
+    const refAvg=a.refFx>0 ? a.refPay/a.refFx : 0;
+    return `1 ${a.recvCcy} = ${num(actualAvg,6)} ${a.payCcy}${refAvg?` / 参考 ${num(refAvg,6)}`:""}`;
+  });
+  function currencyCard(currency){
+    const related=pairEntries.filter(a=>a.recvCcy===currency || a.payCcy===currency);
+    if(!related.length) return {value:"—", sub:`填写包含 ${currency} 的交易后计算。`};
+    if(related.length===1){
+      const a=related[0], avg=a.pay/a.fx, ref=a.refFx>0?a.refPay/a.refFx:0;
+      return {value:num(avg,6), sub:`1 ${a.recvCcy} = ${num(avg,6)} ${a.payCcy}` + (ref?`；参考 ${num(ref,6)} ${a.payCcy}`:"")};
+    }
+    return {value:`${related.length} 组`, sub:related.map(a=>`1 ${a.recvCcy} = ${num(a.pay/a.fx,4)} ${a.payCcy}`).join("；")};
+  }
+  return {
+    stateSnapshot:JSON.parse(JSON.stringify(state)),
+    principal:Number(state.principal)||0,
+    principalCcy:state.principalCcy||"CNY",
+    principalCny,
+    referenceRates:{
+      usdRate:state.usdRate||"",
+      hkdRate:state.hkdRate||"",
+      usdtRate:state.usdtRate||"",
+      pairBase:state.topPairBase||"USD",
+      pairQuote:state.topPairQuote||"HKD",
+      pairRate:topPairRate(state.topPairQuote||"HKD", state.topPairBase||"USD").rate || 0
+    },
+    totals:{
+      totalPct,
+      totalTarget,
+      totalActual,
+      allocDiff,
+      totalFxDiff,
+      fxDiffCount,
+      rateText,
+      usdCard:currencyCard("USD"),
+      hkdCard:currencyCard("HKD")
+    },
+    rows
+  };
+}
+function buildRestoredRow(item){
+  const catalog=etfByKey[item.productKey]||{};
+  return {
+    id:item.id || String(item.productKey||catalog.key||Date.now()),
+    productKey:item.productKey || catalog.key || "",
+    name:item.name || catalog.name || item.productKey || "资产",
+    desc:item.desc || catalog.desc || "",
+    ccy:item.ccy || catalog.ccy || "CNY",
+    purpose:item.purpose || catalog.purpose || "",
+    pct:Number(item.pct)||0,
+    actualRmb:(item.actualRmb===null || item.actualRmb===undefined || item.actualRmb==="") ? null : Number(item.actualRmb)||0,
+    payAmount:(item.payAmount===null || item.payAmount===undefined || item.payAmount==="") ? null : Number(item.payAmount)||0,
+    payCcy:item.payCcy || "CNY",
+    fxAmount:(item.fxAmount===null || item.fxAmount===undefined || item.fxAmount==="") ? null : Number(item.fxAmount)||0,
+    rmbManual:true,
+    fxManual:item.fxAmount!==null && item.fxAmount!==undefined && item.fxAmount!=="",
+    rowRate:(item.referenceRate && item.referenceRate!==1) ? Number(item.referenceRate) : null,
+    rowRateMode:(item.payCcy||"CNY")===(item.ccy||"CNY") ? "fixed" : (item.rowRateMode || "top"),
+    unitPrice:(item.unitPrice===null || item.unitPrice===undefined || item.unitPrice==="") ? null : Number(item.unitPrice)||0,
+    priceCcy:item.priceCcy || item.ccy || catalog.ccy || "CNY",
+    shares:(item.shares===null || item.shares===undefined || item.shares==="") ? null : Math.max(0, Math.floor(Number(item.shares)||0)),
+    sharesManual:item.shares!==null && item.shares!==undefined && item.shares!=="",
+    autoFromFx:false,
+    approxRates:{},
+    detailsExpanded:false,
+    diffFlipped:false
+  };
+}
+function restoreRecordToCurrent(){
+  if(!activeRecordId) return;
+  const record=recordHistory.find(x=>x.id===activeRecordId);
+  if(!record) return;
+  if(!window.confirm(`确定用 ${fmtDate(record.dateKey)} ${fmtDateTime(record.savedAt)} 这条记录覆盖当前页面配置吗？`)) return;
+
+  const restoredRows=(Array.isArray(record.rows)?record.rows:[]).map(buildRestoredRow);
+  const existingById=Object.fromEntries((state.rows||[]).map(r=>[r.id,r]));
+  state={
+    principal:Number(record.principal)||0,
+    principalCcy:record.principalCcy||"CNY",
+    usdRate:(record.referenceRates&&record.referenceRates.usdRate)!==undefined ? record.referenceRates.usdRate : "",
+    hkdRate:(record.referenceRates&&record.referenceRates.hkdRate)!==undefined ? record.referenceRates.hkdRate : "",
+    usdtRate:(record.referenceRates&&record.referenceRates.usdtRate)!==undefined ? record.referenceRates.usdtRate : "",
+    usdHkdRate:"",
+    usdUsdtRate:"",
+    hkdUsdtRate:"",
+    topPairBase:(record.referenceRates&&record.referenceRates.pairBase)||"USD",
+    topPairQuote:(record.referenceRates&&record.referenceRates.pairQuote)||"HKD",
+    usdPairQuote:"HKD",
+    usdHkdDirection:"USD_HKD",
+    autoGold:false,
+    pairRateVersion:1,
+    referenceRateLocks:{},
+    rows: restoredRows.length ? restoredRows : makeRows()
+  };
+
+  const pairBase=state.topPairBase||"USD";
+  const pairQuote=state.topPairQuote||"HKD";
+  const pairRate=Number(record.referenceRates&&record.referenceRates.pairRate)||0;
+  if(pairRate>0) setTopPairRate(pairQuote,pairBase,pairRate);
+
+  normalizeTopPairSelection();
+  if(el("principal")) el("principal").value=state.principal||"";
+  if(el("principalCcy")) el("principalCcy").value=state.principalCcy||"CNY";
+  if(el("usdRate")) el("usdRate").value=state.usdRate??"";
+  if(el("hkdRate")) el("hkdRate").value=state.hkdRate??"";
+  if(el("usdtRate")) el("usdtRate").value=state.usdtRate??"";
+  if(el("pairBaseCcy")) el("pairBaseCcy").value=state.topPairBase||"USD";
+  if(el("pairQuoteCcy")) el("pairQuoteCcy").value=state.topPairQuote||"HKD";
+  updateUsdHkdControl();
+  updatePrincipalCurrencyUi();
+  updateReferenceLockUi();
+  closeRecordModal();
+  render();
+}
+
+function saveCurrentRecord(){
+  const now=Date.now();
+  const dateKey=savedAtDateKey(now) || todayDateKey();
+  const recordDate=parseDateKey(dateKey);
+  if(recordDate) heatmapSelectedYear=recordDate.getFullYear();
+  const snapshot=getCurrentSnapshot();
+  const record={
+    id:`rec_${now}_${Math.random().toString(36).slice(2,8)}`,
+    dateKey,
+    savedAt:now,
+    dateSource:"savedAt",
+    snapshotVersion:2,
+    ...snapshot
+  };
+  recordHistory.unshift(record);
+  recordHistory.sort((a,b)=>(Number(b.savedAt)||0)-(Number(a.savedAt)||0));
+  saveRecordHistory();
+  activeRecordDateKey="";
+  activeRecordId="";
+  clearHeatmapPointerHover();
+  // 保存只把当天方格变绿；白边仍然只在 hover / 手指划过时出现。
+  renderRecordHeatmap();
+}
+function deleteActiveRecord(){
+  if(!activeRecordId) return;
+  const record=recordHistory.find(x=>x.id===activeRecordId);
+  if(!record) return;
+  if(!window.confirm(`确定删除 ${fmtDate(record.dateKey)} 的这条记录吗？`)) return;
+  recordHistory=recordHistory.filter(x=>x.id!==activeRecordId);
+  saveRecordHistory();
+  const sameDay=recordHistory.filter(x=>x.dateKey===record.dateKey).sort((a,b)=>(Number(b.savedAt)||0)-(Number(a.savedAt)||0));
+  renderRecordHeatmap();
+  if(sameDay.length){
+    openRecordModal(record.dateKey, sameDay[0].id);
+  }else{
+    closeRecordModal();
+  }
+}
+function openRecordModal(dateKey, recordId=""){
+  activeRecordDateKey=dateKey||"";
+  activeRecordId=recordId||"";
+  // 白边只代表“当前点击选中”。打开记录时立即刷新热力图，给当前格加白边。
+  renderRecordHeatmap();
+  renderRecordModal();
+  el("recordModal")?.setAttribute("aria-hidden","false");
+  document.body.classList.add("recordOpen");
+}
+function closeRecordModal(){
+  el("recordModal")?.setAttribute("aria-hidden","true");
+  document.body.classList.remove("recordOpen");
+  activeRecordDateKey="";
+  activeRecordId="";
+  // 关闭浮层后清掉选中态；有记录的格子仍保持绿色，但不再有白边。
+  renderRecordHeatmap();
+}
+function restoreRecordState(record){
+  if(!record) return;
+  let restored=null;
+  if(record.stateSnapshot && Array.isArray(record.stateSnapshot.rows)){
+    try{ restored=normalizeState(JSON.parse(JSON.stringify(record.stateSnapshot))); }catch(_){ restored=null; }
+  }
+
+  // 兼容升级前已经保存的历史记录：尽可能从快照卡片数据还原。
+  if(!restored){
+    const rates=record.referenceRates||{};
+    const rawRows=Array.isArray(record.rows)?record.rows:[];
+    const rows=rawRows.map((r,i)=>({
+      id:r.id||`restored_${i}`,
+      productKey:r.productKey||r.name||`RESTORED_${i}`,
+      name:r.name||r.productKey||`资产 ${i+1}`,
+      desc:r.desc||"",
+      purpose:r.purpose||"",
+      ccy:r.ccy||"CNY",
+      pct:Number(r.pct)||0,
+      actualRmb:r.actualRmb??null,
+      payAmount:r.payAmount??null,
+      payCcy:r.payCcy||"CNY",
+      fxAmount:r.fxAmount??null,
+      rmbManual:true,
+      fxManual:r.fxAmount!==null && r.fxAmount!==undefined,
+      rowRate:(r.rowRateMode==="current" && Number(r.referenceRate)>0)?Number(r.referenceRate):null,
+      rowRateMode:r.pairSame?"fixed":(r.rowRateMode||"top"),
+      unitPrice:null,
+      priceCcy:r.ccy||"CNY",
+      shares:null,
+      sharesManual:false,
+      autoFromFx:false,
+      approxRates:{},
+      detailsExpanded:false
+    }));
+    restored={
+      principal:Number(record.principal)||0,
+      principalCcy:record.principalCcy||"CNY",
+      usdRate:rates.usdRate??"",
+      hkdRate:rates.hkdRate??"",
+      usdtRate:rates.usdtRate??"",
+      usdHkdRate:"",usdUsdtRate:"",hkdUsdtRate:"",
+      topPairBase:rates.pairBase||"USD",
+      topPairQuote:rates.pairQuote||"HKD",
+      usdPairQuote:"HKD",usdHkdDirection:"USD_HKD",autoGold:false,pairRateVersion:1,
+      referenceRateLocks:{},
+      rows:rows.length?rows:makeRows()
+    };
+    // 若旧记录保存的是顶部 USD↔HKD / USD↔USDT / HKD↔USDT，尽量写回对应储存位。
+    const pr=Number(rates.pairRate)||0, a=restored.topPairBase, b=restored.topPairQuote;
+    if(pr>0){
+      if(a==="USD" && b==="HKD") restored.usdHkdRate=pr;
+      else if(a==="HKD" && b==="USD") restored.usdHkdRate=1/pr;
+      else if(a==="USD" && b==="USDT") restored.usdUsdtRate=pr;
+      else if(a==="USDT" && b==="USD") restored.usdUsdtRate=1/pr;
+      else if(a==="HKD" && b==="USDT") restored.hkdUsdtRate=pr;
+      else if(a==="USDT" && b==="HKD") restored.hkdUsdtRate=1/pr;
+    }
+    restored=normalizeState(restored)||restored;
+  }
+
+  if(!restored) return;
+  state=restored;
+  state.autoGold=false;
+  el("principal").value=state.principal||"";
+  el("principalCcy").value=state.principalCcy||"CNY";
+  el("usdRate").value=state.usdRate??"";
+  el("hkdRate").value=state.hkdRate??"";
+  if(el("usdtRate")) el("usdtRate").value=state.usdtRate??"";
+  if(el("pairBaseCcy")) el("pairBaseCcy").value=state.topPairBase||"USD";
+  if(el("pairQuoteCcy")) el("pairQuoteCcy").value=state.topPairQuote||"HKD";
+  updateUsdHkdControl();
+  updatePrincipalCurrencyUi();
+  updateReferenceLockUi();
+  ratioEditBase=null;
+  closeRecordModal();
+  render();
+  bindCalcInputs();
+  window.scrollTo({top:0,behavior:"auto"});
+}
+function restoreActiveRecord(){
+  const record=recordHistory.find(x=>x.id===activeRecordId);
+  if(!record) return;
+  restoreRecordState(record);
+}
+function renderRecordModal(){
+  const byDate=groupHistoryByDate();
+  const list=(byDate[activeRecordDateKey]||[]).slice().sort((a,b)=>(Number(b.savedAt)||0)-(Number(a.savedAt)||0));
+  const titleEl=el("recordModalTitle");
+  const subEl=el("recordModalSub");
+  const tabsEl=el("recordDayTabs");
+  const bodyEl=el("recordModalBody");
+  if(!list.length){
+    if(titleEl) titleEl.textContent="投资记录";
+    if(subEl) subEl.textContent="当前日期没有保存记录。";
+    if(tabsEl) tabsEl.innerHTML="";
+    if(bodyEl) bodyEl.innerHTML='<div class="historyEmpty" style="margin-top:0">当前日期没有可查看的记录。</div>';
+    return;
+  }
+  let record=list.find(x=>x.id===activeRecordId) || list[0];
+  activeRecordId=record.id;
+  if(titleEl) titleEl.textContent=`${fmtDate(record.dateKey)} · 资产配置记录`;
+  if(subEl) subEl.textContent=`共 ${list.length} 条快照，点击下面时间可切换查看同一天的不同记录。`;
+  if(tabsEl){
+    tabsEl.innerHTML=list.map(item=>`<button type="button" class="recordDayTab ${item.id===record.id?"active":""}" data-record-id="${item.id}">${new Date(item.savedAt).toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false})}</button>`).join("");
+    tabsEl.querySelectorAll(".recordDayTab").forEach(btn=>btn.onclick=()=>{activeRecordId=btn.dataset.recordId||""; renderRecordModal();});
+  }
+  const totals=record.totals||{};
+  const rates=record.referenceRates||{};
+  const rows=(record.rows||[]).slice();
+  const rateLines=[];
+  if(rates.usdRate!=="" && rates.usdRate!==null && rates.usdRate!==undefined) rateLines.push(`USD/CNY：1 USD = ${rates.usdRate} CNY`);
+  if(rates.hkdRate!=="" && rates.hkdRate!==null && rates.hkdRate!==undefined) rateLines.push(`HKD/CNY：1 HKD = ${rates.hkdRate} CNY`);
+  if(rates.usdtRate!=="" && rates.usdtRate!==null && rates.usdtRate!==undefined) rateLines.push(`USDT/CNY：1 USDT = ${rates.usdtRate} CNY`);
+  if(rates.pairRate>0) rateLines.push(`${rates.pairBase||"USD"}/${rates.pairQuote||"HKD"}：1 ${rates.pairBase||"USD"} = ${num(rates.pairRate,6)} ${rates.pairQuote||"HKD"}`);
+  const sortedRows=rows.sort((a,b)=>(Number(b.actualRmb)||0)-(Number(a.actualRmb)||0));
+  bodyEl.innerHTML=`
+    <div class="recordSummaryGrid">
+      <div class="recordSummaryCard"><div class="k">保存时间</div><div class="v">${fmtDateTime(record.savedAt)}</div><div class="s">记录日期：${fmtDate(record.dateKey)}</div></div>
+      <div class="recordSummaryCard"><div class="k">可投资本金</div><div class="v">${record.principalCcy||"CNY"} ${Number(record.principal||0).toLocaleString("zh-CN",{minimumFractionDigits:2,maximumFractionDigits:2})}</div><div class="s">折算 CNY：${record.principalCny===null?"—":money(record.principalCny)}</div></div>
+      <div class="recordSummaryCard"><div class="k">实际交易总额（CNY）</div><div class="v">${money(Number(totals.totalActual)||0)}</div><div class="s">总目标比例：${Number(totals.totalPct||0).toFixed(2)}%</div></div>
+      <div class="recordSummaryCard"><div class="k">目标配置差额</div><div class="v ${totals.allocDiff===null?"":""} ${totals.allocDiff===null?"":""}">${totals.allocDiff===null?"—":money(totals.allocDiff)}</div><div class="s">实际总额 − 本金</div></div>
+      <div class="recordSummaryCard"><div class="k">换汇成本差额</div><div class="v">${Number(totals.fxDiffCount||0)?money(totals.totalFxDiff):"—"}</div><div class="s">仅统计已填参考汇率的外币交易</div></div>
+    </div>
+    <div class="recordInfoBar">
+      <div class="recordInfoBox">
+        <div class="title">当时的参考汇率</div>
+        <div class="recordInfoList">${rateLines.length?rateLines.map(x=>`<div>${x}</div>`).join(""):'<div>当时未保存额外参考汇率。</div>'}</div>
+      </div>
+      <div class="recordInfoBox">
+        <div class="title">当时的汇总卡片</div>
+        <div class="recordInfoList">
+          <div>USD 相关交易汇率：${(totals.usdCard&&totals.usdCard.value)||"—"}</div>
+          <div>${(totals.usdCard&&totals.usdCard.sub)||"填写 USD 实际外币金额后计算。"}</div>
+          <div style="margin-top:6px">HKD 相关交易汇率：${(totals.hkdCard&&totals.hkdCard.value)||"—"}</div>
+          <div>${(totals.hkdCard&&totals.hkdCard.sub)||"填写 HKD 实际外币金额后计算。"}</div>
+        </div>
+      </div>
+    </div>
+    <div class="recordAssets">
+      ${sortedRows.map(r=>`
+        <div class="recordAssetItem">
+          <div class="recordAssetTop">
+            <div>
+              <div class="recordAssetName">${r.name} <span style="color:#8ea0b5;font-size:12px;font-weight:700">${r.productKey||""}</span></div>
+              <div class="recordAssetDesc">${r.desc||""}</div>
+            </div>
+            <div class="recordAssetBadge">${Number(r.pct||0).toFixed(2)}%</div>
+          </div>
+          <div class="recordAssetMetrics">
+            <div class="recordMiniMetric"><div class="k">目标金额</div><div class="v">${r.target===null?"—":money(r.target)}</div></div>
+            <div class="recordMiniMetric"><div class="k">实际人民币</div><div class="v">${money(Number(r.actualRmb)||0)}</div></div>
+            <div class="recordMiniMetric"><div class="k">配置差额</div><div class="v">${r.allocDiff===null?"—":`${r.allocDiff>=0?"+":""}${money(r.allocDiff)}`}</div></div>
+            <div class="recordMiniMetric"><div class="k">配置差额%</div><div class="v">${r.allocPct===null?"—":`${r.allocPct>=0?"+":""}${r.allocPct.toFixed(2)}%`}</div></div>
+            <div class="recordMiniMetric"><div class="k">支付金额</div><div class="v">${r.payAmount?`${Number(r.payAmount).toLocaleString("zh-CN",{minimumFractionDigits:2,maximumFractionDigits:2})} ${r.payCcy}`:"—"}</div></div>
+            <div class="recordMiniMetric"><div class="k">换汇后金额</div><div class="v">${r.fxAmount?`${Number(r.fxAmount).toLocaleString("zh-CN",{minimumFractionDigits:2,maximumFractionDigits:2})} ${r.ccy}`:(r.pairSame?`— (${r.ccy})`:"—")}</div></div>
+            <div class="recordMiniMetric"><div class="k">交易汇率</div><div class="v">${r.pairSame?`1 ${r.ccy} = 1.0000 ${r.payCcy}`:(r.impliedRate?`1 ${r.ccy} = ${num(r.impliedRate,4)} ${r.payCcy}`:"—")}</div></div>
+            <div class="recordMiniMetric"><div class="k">换汇差额</div><div class="v">${r.fxDiff===null?"—":money(r.fxDiff)}</div></div>
+          </div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+let heatmapTouchHoverCell=null;
+function clearHeatmapPointerHover(){
+  if(heatmapTouchHoverCell){
+    heatmapTouchHoverCell.classList.remove("isPointerHover");
+    heatmapTouchHoverCell=null;
+  }
+}
+function setHeatmapPointerHoverFromPoint(clientX,clientY){
+  const node=document.elementFromPoint(clientX,clientY);
+  const cell=node?.closest?.(".historyCell.hasRecord");
+  if(cell===heatmapTouchHoverCell) return;
+  clearHeatmapPointerHover();
+  if(cell){
+    cell.classList.add("isPointerHover");
+    heatmapTouchHoverCell=cell;
+  }
+}
+function bindHeatmapGestureHover(){
+  const grid=el("historyGrid");
+  if(!grid || grid.dataset.gestureHoverBound==="1") return;
+  grid.dataset.gestureHoverBound="1";
+
+  // 手机/平板没有真正的 hover：手指在热力图上划过有记录的绿色格子时，
+  // 让白边跟随当前经过的格子，但不阻止页面本身的滚动。
+  grid.addEventListener("touchstart",event=>{
+    const touch=event.touches?.[0];
+    if(touch) setHeatmapPointerHoverFromPoint(touch.clientX,touch.clientY);
+  },{passive:true});
+  grid.addEventListener("touchmove",event=>{
+    const touch=event.touches?.[0];
+    if(touch) setHeatmapPointerHoverFromPoint(touch.clientX,touch.clientY);
+  },{passive:true});
+  grid.addEventListener("touchend",clearHeatmapPointerHover,{passive:true});
+  grid.addEventListener("touchcancel",clearHeatmapPointerHover,{passive:true});
+
+  grid.addEventListener("pointerleave",event=>{
+    if(event.pointerType!=="mouse") clearHeatmapPointerHover();
+  });
+}
+
+function renderRecordHeatmap(){
+  const grid=el("historyGrid");
+  const monthRow=el("historyMonthRow");
+  const stats=el("historyStats");
+  const emptyEl=el("historyEmpty");
+  const rangeEl=el("historyRange");
+  if(!grid || !monthRow || !stats || !emptyEl) return;
+  bindHeatmapGestureHover();
+  renderHistoryYearSelect();
+
+  const byDate=groupHistoryByDate();
+  const today=new Date(); today.setHours(0,0,0,0);
+  const year=Number(heatmapSelectedYear)||today.getFullYear();
+  const yearStart=new Date(year,0,1); yearStart.setHours(0,0,0,0);
+  const yearEnd=new Date(year,11,31); yearEnd.setHours(0,0,0,0);
+
+  // 每个年份固定从 1 月 1 日到 12 月 31 日；左右只补齐完整星期列。
+  const gridStart=new Date(yearStart);
+  gridStart.setDate(gridStart.getDate()-gridStart.getDay());
+  const gridEnd=new Date(yearEnd);
+  gridEnd.setDate(gridEnd.getDate()+(6-gridEnd.getDay()));
+
+  const cells=[];
+  const monthLabels=[];
+  let weekIndex=-1;
+  let seenMonth=-1;
+  for(let d=new Date(gridStart); d<=gridEnd; d.setDate(d.getDate()+1)){
+    if(d.getDay()===0) weekIndex++;
+    const copy=new Date(d);
+    const dateKey=isoDateKey(copy);
+    const inSelectedYear=copy>=yearStart && copy<=yearEnd;
+    const isFuture=inSelectedYear && copy>today;
+    const records=inSelectedYear ? (byDate[dateKey]||[]) : [];
+    cells.push({dateKey, inSelectedYear, isFuture, records, weekIndex, dayOfWeek:copy.getDay()});
+
+    // 月份标题只标当前所选年份的 1—12 月，不让补齐的上一年/下一年日期参与。
+    if(inSelectedYear && copy.getMonth()!==seenMonth){
+      seenMonth=copy.getMonth();
+      monthLabels.push({weekIndex, label:copy.toLocaleString("en-US",{month:"short"})});
+    }
+  }
+
+  const yearCounts=cells.filter(c=>c.inSelectedYear).map(c=>c.records.length).filter(Boolean);
+  const maxCount=Math.max(1,...yearCounts,1);
+  function levelFor(count){
+    if(!count) return 0;
+    const ratio=count/maxCount;
+    if(maxCount===1) return 4;
+    if(ratio<=0.25) return 1;
+    if(ratio<=0.5) return 2;
+    if(ratio<=0.75) return 3;
+    return 4;
+  }
+
+  grid.innerHTML=cells.map(cell=>{
+    const count=cell.records.length;
+    const level=levelFor(count);
+    const cls=["historyCell",cell.inSelectedYear?"inRange":"outRange",`level-${level}`];
+    if(count) cls.push("hasRecord");
+    if(cell.isFuture) cls.push("futureDate");
+    if(cell.dateKey===activeRecordDateKey && count) cls.push("isPicked");
+    const title=!cell.inSelectedYear
+      ? ""
+      : cell.isFuture
+        ? `${cell.dateKey} · 尚未到达`
+        : count ? `${cell.dateKey} · ${count} 条记录` : cell.dateKey;
+    const disabled=(!cell.inSelectedYear || cell.isFuture)?' disabled aria-hidden="true"':'';
+    return `<button type="button" class="${cls.join(" ")}" style="grid-column:${cell.weekIndex+1};grid-row:${cell.dayOfWeek+1}" data-date-key="${cell.dateKey}" title="${title}" aria-label="${title}"${disabled}></button>`;
+  }).join("");
+
+  grid.querySelectorAll(".historyCell.hasRecord:not(:disabled)").forEach(btn=>{
+    btn.onclick=()=>{
+      const dateKey=btn.dataset.dateKey||"";
+      const list=byDate[dateKey]||[];
+      if(list.length) openRecordModal(dateKey,list[0].id);
+    };
+  });
+
+  monthRow.innerHTML=monthLabels.map(item=>`<span class="historyMonthLabel" style="left:${item.weekIndex*18}px">${item.label}</span>`).join("");
+
+  const yearRecords=recordHistory.filter(item=>recordYearFromDateKey(item.dateKey)===year);
+  const yearDayMap={};
+  yearRecords.forEach(r=>{ yearDayMap[r.dateKey]=(yearDayMap[r.dateKey]||0)+1; });
+  const activeDays=Object.keys(yearDayMap).length;
+  const peakCount=Object.values(yearDayMap).reduce((m,v)=>Math.max(m,v),0);
+  const latest=yearRecords.slice().sort((a,b)=>(Number(b.savedAt)||0)-(Number(a.savedAt)||0))[0]||null;
+
+  emptyEl.hidden=yearRecords.length>0;
+  if(!emptyEl.hidden) emptyEl.textContent=`${year} 年还没有本地投资记录。选择一个日期并保存当前配置后，对应日期会出现绿色方格。`;
+  stats.innerHTML=`
+    <div class="historyStat"><div class="k">${year} 年记录数</div><div class="v">${yearRecords.length}</div><div class="s">1 月 1 日至 12 月 31 日的配置快照</div></div>
+    <div class="historyStat"><div class="k">${year} 年活跃日期</div><div class="v">${activeDays}</div><div class="s">该年份里有记录的日期数</div></div>
+    <div class="historyStat"><div class="k">单日峰值</div><div class="v">${peakCount||0}</div><div class="s">该年份同一天保存的最多快照数</div></div>
+    <div class="historyStat"><div class="k">该年最近一次保存</div><div class="v">${latest?fmtDate(latest.dateKey):"—"}</div><div class="s">${latest?fmtDateTime(latest.savedAt):"该年份还没有记录"}</div></div>
+  `;
+  if(rangeEl) rangeEl.textContent=`1月1日 — 12月31日`;
 }
 
 
@@ -3879,6 +4867,7 @@ function render(){
   bindRowReorder();
   updateTotals();
   save();
+  renderRecordHeatmap();
 }
 function rerenderKeepTyping(e, apply){
   const target=e.target;
@@ -5000,6 +5989,7 @@ function clearAll(){
   updateReferenceLockUi();
 }
 load();
+loadRecordHistory();
 state.autoGold=false;
 el("principal").value=state.principal||"";
 el("principalCcy").value=state.principalCcy||"CNY";
@@ -5026,6 +6016,38 @@ el("receiptModal").addEventListener("click",e=>{if(e.target?.dataset?.receiptClo
 el("receiptAgainBtn").onclick=runReceiptPrint;
 el("receiptSaveBtn").onclick=saveReceiptImage;
 document.addEventListener("keydown",e=>{if(e.key==="Escape" && el("receiptModal")?.getAttribute("aria-hidden")==="false") closeReceipt();});
+
+if(el("historyYearSelect")) el("historyYearSelect").addEventListener("change",e=>{
+  const y=Number(e.target.value);
+  if(Number.isInteger(y)){
+    heatmapSelectedYear=y;
+    activeRecordDateKey="";
+    activeRecordId="";
+    clearHeatmapPointerHover();
+    renderRecordHeatmap();
+  }
+});
+if(el("saveRecordBtn")) el("saveRecordBtn").onclick=saveCurrentRecord;
+if(el("clearHistoryBtn")) el("clearHistoryBtn").onclick=openClearYearModal;
+if(el("clearYearCloseBtn")) el("clearYearCloseBtn").onclick=closeClearYearModal;
+if(el("clearYearCancelBtn")) el("clearYearCancelBtn").onclick=closeClearYearModal;
+if(el("clearYearConfirmBtn")) el("clearYearConfirmBtn").onclick=confirmClearHistoryYear;
+if(el("clearYearConfirmInput")){
+  el("clearYearConfirmInput").addEventListener("input",updateClearYearConfirmState);
+  el("clearYearConfirmInput").addEventListener("keydown",e=>{
+    if(e.key==="Enter" && !el("clearYearConfirmBtn")?.disabled) confirmClearHistoryYear();
+  });
+}
+document.querySelectorAll("[data-clear-year-close='1']").forEach(x=>x.addEventListener("click",closeClearYearModal));
+if(el("recordCloseBtn")) el("recordCloseBtn").onclick=closeRecordModal;
+if(el("restoreRecordBtn")) el("restoreRecordBtn").onclick=restoreActiveRecord;
+if(el("deleteRecordBtn")) el("deleteRecordBtn").onclick=deleteActiveRecord;
+document.querySelectorAll("[data-record-close='1']").forEach(x=>x.addEventListener("click",closeRecordModal));
+document.addEventListener("keydown",e=>{
+  if(e.key!=="Escape") return;
+  if(el("clearYearModal")?.getAttribute("aria-hidden")==="false"){ closeClearYearModal(); return; }
+  if(el("recordModal")?.getAttribute("aria-hidden")==="false") closeRecordModal();
+});
 
 el("principal").oninput=e=>{const n=plainNumber(e.target.value); if(n===null)return; state.principal=n; render();};
 el("principalCcy").onchange=e=>{state.principalCcy=e.target.value; render();};
@@ -5227,7 +6249,7 @@ if ("serviceWorker" in navigator) {
 </script>
 
 <script src="./asset-pie-motion-model.js?v=lock-depth-31"></script>
-<script src="./asset-pie-view.js?v=live-sync-tap-fix-35"></script>
+<script src="./asset-pie-view.js?v=history-persist-36"></script>
 
 <script>if(new URLSearchParams(location.search).get('rotationProbe')==='1'){const s=document.createElement('script');s.src='./rotation-probe.js?v=1';document.body.append(s);}</script>
 </body>

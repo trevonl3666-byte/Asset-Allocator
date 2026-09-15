@@ -381,6 +381,8 @@
       .assetPieViewBtn[aria-pressed="true"]{color:#2d9cff}
       .assetPieViewBtn svg{display:block;width:20px;height:20px;fill:currentColor;stroke:currentColor;stroke-width:1.25;stroke-linejoin:round}
       body.assetPieMode #assetPieStage + .tableWrap{display:none!important}
+      /* v42: 饼状图视角继续保留下方同一套本地投资记录热力图；不复制数据、不另建第二套记录。 */
+      body.assetPieMode #historyPanel{display:block!important;visibility:visible!important;opacity:1!important}
 
       #assetPieStage{margin:0;border:1px solid #2a3949;border-radius:0 0 22px 22px;background:radial-gradient(circle at 52% 34%,rgba(23,40,54,.44),rgba(7,13,19,.96) 67%),#071018;overflow:hidden;box-shadow:0 18px 44px rgba(0,0,0,.3)}
       #assetPieStage[hidden]{display:block!important;position:fixed!important;left:-200vw!important;top:0!important;width:calc(100vw - 10px)!important;visibility:hidden!important;pointer-events:none!important;contain:strict!important}

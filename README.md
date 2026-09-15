@@ -29,3 +29,9 @@
 将本目录内全部文件和文件夹上传到 GitHub 仓库根目录即可。GitHub Pages 需要从该目录的 `index.html` 发布。
 
 首次部署或覆盖旧版本后，Service Worker 会升级到新缓存；若手机桌面 PWA 仍显示旧界面，完全关闭后重新打开一次。
+
+
+## v8
+- 清空投资记录改为按当前选择年份删除。
+- 删除前必须输入精确确认短语 `delect all the data in this year`。
+- 其他年份的本地记录不会被删除。
