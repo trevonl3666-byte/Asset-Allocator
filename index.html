@@ -455,6 +455,11 @@
   .assetSortPctInput:focus,.assetSortAmountInput:focus{border-color:#4b86c5;box-shadow:0 0 0 3px rgba(88,166,255,.08)}
   .assetSortAmountInput:disabled{opacity:.48;cursor:not-allowed}
   .assetSortPctUnit{color:#a8bad0;font-size:13px;font-weight:750;white-space:nowrap}
+  .assetSortValueWrap{display:flex;flex-direction:column;align-items:flex-end;gap:4px;min-width:0;flex:0 0 auto}
+  .assetSortBackcalc{font-size:10.5px;line-height:1.25;color:var(--muted);white-space:nowrap;text-align:right}
+  .assetSortBackcalc .good{color:var(--good)}
+  .assetSortBackcalc .bad{color:var(--bad)}
+  .assetSortItem{min-height:62px}
   .assetDetailsToggleWrap{display:flex;align-items:center;justify-content:center;width:100%;min-height:24px}
   .assetDetailsToggle{width:26px;height:20px;padding:0;border:0;border-radius:0;background:transparent;color:#dce9f8;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:none}
   .assetDetailsToggle:hover,.assetDetailsToggle:active{background:transparent;border-color:transparent}
@@ -4590,11 +4595,34 @@ function rebalanceAfterEdit(changedId){
   }
 }
 
+function currentTradeRateOf(r){
+  const pay=Number(r.payAmount)||0;
+  const fx=Number(r.fxAmount)||0;
+  const payCcy=r.payCcy||"CNY";
+  const recvCcy=r.ccy||"CNY";
+  if(payCcy===recvCcy) return 1;
+  return (pay>0 && fx>0) ? pay/fx : 0;
+}
+function currentTradeCnyRateOf(r){
+  const tradeRate=currentTradeRateOf(r);
+  if(!(tradeRate>0)) return 0;
+  const payCcy=r.payCcy||"CNY";
+  const payToCny=rateInfoFor(r,payCcy,true).rate||0;
+  return payToCny>0 ? tradeRate*payToCny : 0;
+}
 function unitPriceCnyValue(r){
   const price=Number(r.unitPrice)||0;
   if(!(price>0)) return 0;
   const ccy=r.priceCcy||r.ccy||"CNY";
   if(ccy==="CNY") return price;
+
+  // 已经形成真实交易汇率时，单价/股数反推优先使用当前交易汇率，
+  // 不再被粗略估算或参考汇率重新带偏。
+  if(ccy===(r.ccy||ccy)){
+    const liveCnyRate=currentTradeCnyRateOf(r);
+    if(liveCnyRate>0) return price*liveCnyRate;
+  }
+
   const info=rateInfoFor(r,ccy,true);
   return info.rate>0 ? price*info.rate : 0;
 }
@@ -4611,6 +4639,12 @@ function syncSharePlan(r){
     r.sharesManual=false;
     return;
   }
+
+  // 在改动单价/股数之前先记住这笔交易当前已经形成的真实交易汇率。
+  // 例如 5,500 CNY / 707 USD = 7.7793 CNY/USD。
+  const previousReceiveCcy=r.ccy||r.priceCcy||"CNY";
+  const liveTradeRate=currentTradeRateOf(r);
+
   if(r.sharesManual){
     r.shares=Math.max(0,Math.floor(Number(r.shares)||0));
     const principal=principalCnyValue();
@@ -4625,9 +4659,7 @@ function syncSharePlan(r){
   const shares=Math.max(0,Math.floor(Number(r.shares)||0));
   r.ccy=r.priceCcy||r.ccy;
 
-  // 用户手动填写“换汇后金额”后，必须以手动金额优先。
-  // 不能在 render() / syncSharePlan() 时又被“单股金额 × 股数”覆盖，
-  // 否则右侧“计算交易汇率”会继续使用旧金额。
+  // 用户明确手动填写了“换汇后金额”时，不让单价 × 股数覆盖它。
   if(r.fxManual){
     r.autoFromFx=false;
     return;
@@ -4636,10 +4668,13 @@ function syncSharePlan(r){
   r.fxAmount=price*shares;
   r.fxManual=false;
 
-  // 手动支付金额拥有最高优先级。即使“单股金额 × 股数”可以自动得到换汇后金额，
-  // 也绝不能把用户刚输入的实际支付金额覆盖回目标金额或估算汇率金额。
-  // 此时保留两边真实输入，让交易汇率直接由 支付金额 ÷ 换汇后金额 实时反推。
+  // 如果用户此前手动输入过支付金额，并且这笔交易已经有实际交易汇率，
+  // 那么调整单价或股数后，支付金额按“当前交易汇率”同比变化。
+  // 这样不会跳回目标金额，也不会重新套用粗略/参考汇率。
   if(r.rmbManual){
+    if(liveTradeRate>0 && previousReceiveCcy===r.ccy && r.fxAmount>0){
+      r.payAmount=r.fxAmount*liveTradeRate;
+    }
     r.autoFromFx=false;
     updateRmbEquivalent(r);
     return;
@@ -5104,6 +5139,46 @@ function bindRowReorder(){
 
 let assetSortSession=null;
 let assetSortEditMode="pct";
+let assetSortReference=null;
+
+function captureAssetSortReference(){
+  const principal=principalCnyValue();
+  assetSortReference={
+    principal,
+    rows:Object.fromEntries(state.rows.map(r=>[r.id,{
+      pct:Number(r.pct)||0,
+      amount:principal!==null ? principal*(Number(r.pct)||0)/100 : null
+    }]))
+  };
+}
+function signedPct(v,d=2){
+  const n=Number(v)||0;
+  return `${n>=0?"+":""}${n.toFixed(d)}%`;
+}
+function signedMoney(v){
+  const n=Number(v)||0;
+  return `${n>=0?"+":"−"}¥${Math.abs(n).toLocaleString("zh-CN",{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+}
+function assetSortBackcalcHtml(r,amountMode){
+  const principal=principalCnyValue();
+  const ref=assetSortReference?.rows?.[r.id];
+  if(principal===null || !(principal>0) || !ref) return '';
+  const currentPct=Number(r.pct)||0;
+  const currentAmount=principal*currentPct/100;
+  if(amountMode){
+    const diffPct=currentPct-(Number(ref.pct)||0);
+    return `反推比例 ${currentPct.toFixed(2)}% <span class="${diffClass(diffPct)}">${signedPct(diffPct)}</span>`;
+  }
+  const baseAmount=Number(ref.amount)||0;
+  const diffAmount=currentAmount-baseAmount;
+  return `反推金额 ${money(currentAmount)} <span class="${diffClass(diffAmount)}">${signedMoney(diffAmount)}</span>`;
+}
+function updateAssetSortBackcalcForRow(id){
+  const item=el("assetSortList")?.querySelector(`.assetSortItem[data-id="${id}"]`);
+  const out=item?.querySelector('.assetSortBackcalc');
+  const r=state.rows.find(row=>row.id===id);
+  if(out && r) out.innerHTML=assetSortBackcalcHtml(r,assetSortEditMode==="amount");
+}
 
 function updateAssetSortModeUi(){
   const btn=el("assetSortModeBtn");
@@ -5146,10 +5221,13 @@ function buildAssetSortList(){
     const disabled=amountMode && !amountReady ? "disabled" : "";
     const placeholder=amountMode && !amountReady ? 'placeholder="需本金汇率"' : "";
     item.innerHTML=`<span class="assetSortName">${r.name}</span>
-      <label class="assetSortPctControl" aria-label="${r.name} 当前${amountMode?"目标金额":"比例"}">
-        <input class="${inputClass}" data-id="${r.id}" type="text" inputmode="decimal" value="${value}" ${disabled} ${placeholder} aria-label="${r.name} ${amountMode?"目标金额 CNY":"比例"}" />
-        <span class="assetSortPctUnit">${unit}</span>
-      </label>`;
+      <div class="assetSortValueWrap">
+        <label class="assetSortPctControl" aria-label="${r.name} 当前${amountMode?"目标金额":"比例"}">
+          <input class="${inputClass}" data-id="${r.id}" type="text" inputmode="decimal" value="${value}" ${disabled} ${placeholder} aria-label="${r.name} ${amountMode?"目标金额 CNY":"比例"}" />
+          <span class="assetSortPctUnit">${unit}</span>
+        </label>
+        <div class="assetSortBackcalc">${assetSortBackcalcHtml(r,amountMode)}</div>
+      </div>`;
     list.appendChild(item);
   });
   bindAssetSortItems();
@@ -5347,6 +5425,7 @@ function bindAssetSortItems(){
       }
       ratioEditBase=null;
       render();
+      updateAssetSortBackcalcForRow(r.id);
 
       // 主资产列表会重绘，但排序弹窗保持原地；恢复正在输入的原始文本。
       inputEl.value=raw;
@@ -5357,6 +5436,7 @@ function bindAssetSortItems(){
 function openAssetSortModal(){
   const modal=el("assetSortModal");
   if(!modal) return;
+  captureAssetSortReference();
   buildAssetSortList();
   modal.setAttribute("aria-hidden","false");
   document.body.classList.add("assetSortOpen");
@@ -5372,6 +5452,7 @@ function closeAssetSortModal(){
   modal.setAttribute("aria-hidden","true");
   document.body.classList.remove("assetSortOpen");
   assetSortSession=null;
+  assetSortReference=null;
   clearAssetSortVisuals();
   const opener=el("openAssetSortBtn");
   if(opener) try{opener.focus({preventScroll:true});}catch(_){opener.focus();}
@@ -5727,7 +5808,8 @@ function bindRowEvents(){
       const r=state.rows.find(r=>r.id===e.target.dataset.id);
       r.unitPrice=String(raw).trim()===""?null:n;
       r.priceCcy=r.priceCcy||r.ccy;
-      r.sharesManual=false;
+      // 已经手动填写过股数时，改单价保留当前股数；
+      // 未手动填写股数时仍按目标金额自动估算可买股数。
       // 重新修改单股金额时，恢复“单价 × 股数”自动生成换汇后金额。
       r.fxManual=false;
       if(n>0){
