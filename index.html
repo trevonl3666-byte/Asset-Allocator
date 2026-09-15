@@ -2615,8 +2615,10 @@
   /* v70：本地投资记录热力图 */
   .historyPanel{margin-top:14px;padding:16px 18px}
   .historyHead{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .historyTitleRow{display:flex;align-items:center;gap:8px;min-height:24px}
   .historyTitle{font-size:18px;font-weight:850;line-height:1.25}
-  .historySub{margin-top:5px;color:var(--muted);font-size:13px;line-height:1.65;max-width:760px}
+  .historyTitleRow .hintWrap{flex:0 0 auto}
+  .historyTitleRow .hintIcon{width:20px;height:20px;font-size:12px}
   .historyActions{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}
   .historyDateField{display:flex;flex-direction:column;gap:7px;min-width:170px}
   .historyDateField label{margin:0;font-size:13px;color:var(--muted)}
@@ -2728,7 +2730,8 @@
     .historyPanel{padding:14px}
     .historyHead{gap:12px}
     .historyTitle{font-size:16px}
-    .historySub{font-size:12px}
+    .historyTitleRow{gap:7px}
+    .historyTitleRow .hintIcon{width:22px;height:22px;font-size:12px}
     .historyActions{width:100%;display:grid;grid-template-columns:1fr;gap:10px}
     .historyDateField{min-width:0}
     .historyActionBtns{display:grid;grid-template-columns:1fr auto;gap:8px}
@@ -2808,6 +2811,21 @@
     .clearYearInput{height:48px;font-size:16px}
     .clearYearActions{grid-template-columns:1fr;gap:8px}
     .clearYearActions button{height:46px;width:100%}
+  }
+
+
+  /* v11：单价 × 股数执行参考，与目标金额做差额提示 */
+  .tradePlanReference{
+    display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px;
+    font-size:11px;line-height:1.45;color:var(--muted)
+  }
+  .tradePlanReference .tradePlanLabel{color:#9fb2c7}
+  .tradePlanReference .tradePlanValue{color:#dce9f8;font-weight:750}
+  .tradePlanReference .tradePlanDiff{font-weight:850;white-space:nowrap}
+  .tradePlanReference .tradePlanDiff.good{color:var(--good)}
+  .tradePlanReference .tradePlanDiff.bad{color:var(--bad)}
+  @media (max-width:760px){
+    .tradePlanReference{margin-top:7px;font-size:10.5px;gap:5px}
   }
 
 </style>
@@ -2973,9 +2991,16 @@
 
   <div class="panel historyPanel" id="historyPanel">
     <div class="historyHead">
-      <div>
-        <div class="historyTitle">本地投资记录热力图</div>
-        <div class="historySub">每次点击“保存当前配置”，系统都会按真实保存日期自动记录到对应方格；年份选择只用于查看历史。点击任意绿色方格即可查看当时保存下来的资产配置。</div>
+      <div class="historyTitleRow">
+        <div class="historyTitle">热力图</div>
+        <span class="hintWrap" tabindex="0" aria-label="查看热力图说明">
+          <span class="hintIcon">i</span>
+          <span class="hintBubble">
+            每次点击“保存当前配置”，系统都会按真实保存日期自动记录到对应方格。<br>
+            年份选择只用于查看历史，不影响记录写入日期。<br>
+            绿色方格表示当天有保存记录；划过会显示白色描边，点击即可查看当时保存下来的资产配置。
+          </span>
+        </span>
       </div>
       <div class="historyActions">
         <div class="historyActionBtns">
@@ -3010,7 +3035,7 @@
             <span class="historyWeekLabel wed">Wed</span>
             <span class="historyWeekLabel fri">Fri</span>
           </div>
-          <div id="historyGrid" class="historyGrid" role="grid" aria-label="本地投资记录热力图"></div>
+          <div id="historyGrid" class="historyGrid" role="grid" aria-label="投资记录热力图"></div>
         </div>
       </div>
     </div>
@@ -4640,22 +4665,23 @@ function syncSharePlan(r){
     return;
   }
 
-  // 在改动单价/股数之前先记住这笔交易当前已经形成的真实交易汇率。
-  // 例如 5,500 CNY / 707 USD = 7.7793 CNY/USD。
+  // v11：目标比例/目标金额与实际执行（单价 × 股数）彻底解耦。
+  // 已经存在股数时，无论目标比例如何变化，都保持当前股数不变。
+  // 只有第一次填入单价且尚无股数时，才按当时目标金额估算一次最大整数股数。
+  const hasExistingShares=r.shares!==null && r.shares!==undefined && String(r.shares)!=="";
+
+  // 在改动单价/股数之前先记住当前已经形成的真实交易汇率。
+  // 后续单价或股数改变时，实际支付金额优先沿用这个交易汇率同比变化。
   const previousReceiveCcy=r.ccy||r.priceCcy||"CNY";
   const liveTradeRate=currentTradeRateOf(r);
 
-  if(r.sharesManual){
+  if(hasExistingShares){
     r.shares=Math.max(0,Math.floor(Number(r.shares)||0));
-    const principal=principalCnyValue();
-    const unitCny=unitPriceCnyValue(r);
-    if(principal!==null && principal>0 && unitCny>0){
-      r.pct=(r.shares*unitCny/principal)*100;
-    }
   }else{
     const maxShares=maxSharesForTarget(r);
     r.shares=maxShares===null?null:maxShares;
   }
+
   const shares=Math.max(0,Math.floor(Number(r.shares)||0));
   r.ccy=r.priceCcy||r.ccy;
 
@@ -4668,13 +4694,20 @@ function syncSharePlan(r){
   r.fxAmount=price*shares;
   r.fxManual=false;
 
-  // 如果用户此前手动输入过支付金额，并且这笔交易已经有实际交易汇率，
-  // 那么调整单价或股数后，支付金额按“当前交易汇率”同比变化。
-  // 这样不会跳回目标金额，也不会重新套用粗略/参考汇率。
+  // 只要此前已经形成有效的实际交易汇率，就优先保持该交易汇率。
+  // 因此改“单价”或“股数”时，支付金额随实际执行金额同比变化；
+  // 改“目标比例”时，因为单价和股数都没变，实际交易金额也完全不变。
+  if(liveTradeRate>0 && previousReceiveCcy===r.ccy && r.fxAmount>0){
+    r.payAmount=r.fxAmount*liveTradeRate;
+    r.rmbManual=true;
+    r.autoFromFx=false;
+    updateRmbEquivalent(r);
+    return;
+  }
+
+  // 没有形成实际交易汇率时：若支付金额已由用户手动确定，就保持它；
+  // 否则才使用当前可用的参考/估算汇率生成初始支付金额。
   if(r.rmbManual){
-    if(liveTradeRate>0 && previousReceiveCcy===r.ccy && r.fxAmount>0){
-      r.payAmount=r.fxAmount*liveTradeRate;
-    }
     r.autoFromFx=false;
     updateRmbEquivalent(r);
     return;
@@ -4717,6 +4750,33 @@ function ensureAutoValues(r){
   updateRmbEquivalent(r);
 }
 function diffClass(v){ return Math.abs(v)<0.005 ? "good" : (v>0 ? "bad" : "good"); }
+function sharePlanCnyValue(r){
+  const price=Number(r.unitPrice)||0;
+  const shares=Math.max(0,Math.floor(Number(r.shares)||0));
+  if(!(price>0) || !(shares>0)) return null;
+  const nativeAmount=price*shares;
+  const priceCcy=r.priceCcy||r.ccy||"CNY";
+  if(priceCcy==="CNY") return nativeAmount;
+
+  // 优先使用当前这笔交易真实形成的汇率；没有真实汇率时才回退到参考/估算汇率。
+  if(priceCcy===(r.ccy||priceCcy)){
+    const liveCnyRate=currentTradeCnyRateOf(r);
+    if(liveCnyRate>0) return nativeAmount*liveCnyRate;
+  }
+  const info=rateInfoFor(r,priceCcy,true);
+  return info.rate>0 ? nativeAmount*info.rate : null;
+}
+function tradePlanReferenceHtml(r,target){
+  if(target===null) return "";
+  const planCny=sharePlanCnyValue(r);
+  if(planCny===null) return "";
+  const diff=planCny-target;
+  return `<div class="tradePlanReference" title="按当前单股金额 × 股数折算出的执行金额，与当前目标金额比较">
+    <span class="tradePlanLabel">单价 × 股数参考</span>
+    <span class="tradePlanValue">${money(planCny)}</span>
+    <span class="tradePlanDiff ${diffClass(diff)}">${signedMoney(diff)}</span>
+  </div>`;
+}
 function render(){
   updatePrincipalCurrencyUi();
   updateReferenceLockUi();
@@ -4774,7 +4834,7 @@ function render(){
                 <span class="unitLabel">单股金额</span>
                 <input class="field calcInput unitPriceInput" data-id="${r.id}" type="text" inputmode="decimal" autocomplete="off"
                   value="${r.unitPrice??""}" placeholder="可选" />
-                <div class="sharesFieldWrap" title="按目标金额可买的最大整数股数；手动修改后会反推目标金额与比例">
+                <div class="sharesFieldWrap" title="首次按目标金额估算最大整数股数；之后修改目标比例不会改变股数。改单价或股数时按当前交易汇率更新实际执行金额">
                   <span class="sharesTimes" aria-hidden="true">×</span>
                   <input class="sharesInput" data-id="${r.id}" type="text" inputmode="numeric" autocomplete="off"
                     value="${r.shares??""}" placeholder="股数" aria-label="股数" />
@@ -4835,6 +4895,7 @@ function render(){
           ${!pairSame?`<button class="mini fxCalcBtn" data-id="${r.id}">按参考汇率</button>`:""}
           ${autoRateNote(r)?`<span class="warn">${autoRateNote(r)}</span>`:""}
         </div>
+        ${tradePlanReferenceHtml(r,target)}
       </td>
       <td>
         <div class="mobileFieldHead">交易汇率 / 参考汇率（可选）</div>
@@ -5808,9 +5869,9 @@ function bindRowEvents(){
       const r=state.rows.find(r=>r.id===e.target.dataset.id);
       r.unitPrice=String(raw).trim()===""?null:n;
       r.priceCcy=r.priceCcy||r.ccy;
-      // 已经手动填写过股数时，改单价保留当前股数；
-      // 未手动填写股数时仍按目标金额自动估算可买股数。
-      // 重新修改单股金额时，恢复“单价 × 股数”自动生成换汇后金额。
+      // v11：改单价始终保留当前股数；只有尚未形成股数时才按目标金额估算一次。
+      // 已有真实交易汇率时，实际支付金额按当前交易汇率随“单价 × 股数”同步变化。
+      // 目标比例本身不会再反向改写单价、股数或实际执行金额。
       r.fxManual=false;
       if(n>0){
         r.ccy=r.priceCcy;
@@ -5852,7 +5913,6 @@ function bindRowEvents(){
     r.fxManual=false;
     r.rowRate=null;
     r.rowRateMode=(r.payCcy||"CNY")===r.ccy?"fixed":"top";
-    r.sharesManual=false;
     syncSharePlan(r);
     render();
   });

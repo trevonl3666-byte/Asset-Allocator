@@ -40,3 +40,9 @@
 - Manual actual payment input now has priority over unit-price/share auto calculations, so entering a CNY payment such as 5500 is preserved and the live implied FX rate is calculated from payment / received amount.
 - Asset order modal now includes a compact switch beside Done for editing either target percentage or target CNY amount; amount edits are converted back to target percentage in real time.
 
+
+
+## v11 target/execution decoupling
+- Editing target percentage changes target amount only; an existing unit price and share count remain unchanged.
+- Unit price/share edits keep the current live trade rate when available and update actual transaction amounts from that rate.
+- The actual transaction area now shows a unit-price × shares reference amount and its signed difference from the current target, using the same red/green rule as allocation difference.
