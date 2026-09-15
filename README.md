@@ -46,3 +46,8 @@
 - Editing target percentage changes target amount only; an existing unit price and share count remain unchanged.
 - Unit price/share edits keep the current live trade rate when available and update actual transaction amounts from that rate.
 - The actual transaction area now shows a unit-price × shares reference amount and its signed difference from the current target, using the same red/green rule as allocation difference.
+
+
+## v14
+- 手动修改“实际交易与换汇”的支付金额后，按该笔实际 CNY ÷ 可投资本金实时反推当前资产目标比例。
+- 单价、股数、换汇后金额继续保持执行侧独立；交易汇率由当前支付金额与换汇后金额实时计算。

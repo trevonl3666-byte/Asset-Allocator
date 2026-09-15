@@ -4717,6 +4717,15 @@ function syncSharePlan(r){
   if(shares>0) syncPaymentFromFx(r);
 }
 function targetOf(r){ const base=principalCnyValue(); return base===null?null:base*(Number(r.pct)||0)/100; }
+function syncTargetRatioFromActualRmb(r){
+  const base=principalCnyValue();
+  const actual=Number(r.actualRmb);
+  if(base===null || !(base>0) || !Number.isFinite(actual)) return;
+  // v14：用户手动编辑“实际交易金额”时，把该笔实际 CNY 视为新的配置基准，
+  // 立即反推目标比例。这个联动只由 actualInput 的手动输入触发；
+  // 改本金、目标比例、单价、股数、参考汇率都不会主动调用这里。
+  r.pct=pctRound((actual/base)*100);
+}
 function ensureAutoValues(r){
   const target = targetOf(r);
   r.payCcy=r.payCcy||"CNY";
@@ -5735,6 +5744,8 @@ function bindRowEvents(){
       r.rmbManual=true;
       r.autoFromFx=false; // 用户手动填写后，不再被单股价格/换汇金额覆盖
       updateRmbEquivalent(r);
+      // 手动修改实际交易金额时，实时按“实际 CNY ÷ 可投资本金”反推目标比例。
+      syncTargetRatioFromActualRmb(r);
     });
   });
   document.querySelectorAll(".payCcyInput").forEach(x=>x.onchange=e=>{
