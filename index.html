@@ -2629,6 +2629,7 @@
   .historyDateInput:focus{border-color:#4b86c5;box-shadow:0 0 0 3px rgba(88,166,255,.08)}
   .historyActionBtns{display:flex;gap:8px;flex-wrap:wrap}
   .historyActionBtns .ghost,.historyActionBtns .primary{height:42px}
+  .historyBackupBtn{padding-left:12px;padding-right:12px}
   .historyMetaRow{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:14px}
   .historyRangeGroup{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
   .historyYearSelect{
@@ -2734,7 +2735,7 @@
     .historyTitleRow .hintIcon{width:22px;height:22px;font-size:12px}
     .historyActions{width:100%;display:grid;grid-template-columns:1fr;gap:10px}
     .historyDateField{min-width:0}
-    .historyActionBtns{display:grid;grid-template-columns:1fr auto;gap:8px}
+    .historyActionBtns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
     .historyActionBtns .primary,.historyActionBtns .ghost{width:100%;height:44px}
     .historyMetaRow{align-items:flex-start;gap:10px}
     .historyRangeGroup{gap:8px}
@@ -2997,15 +2998,19 @@
           <span class="hintIcon">i</span>
           <span class="hintBubble">
             每次点击“保存当前配置”，系统都会按真实保存日期自动记录到对应方格。<br>
-            年份选择只用于查看历史，不影响记录写入日期。<br>
-            绿色方格表示当天有保存记录；划过会显示白色描边，点击即可查看当时保存下来的资产配置。
+            绿色深浅按当天保存记录中的最高“实际交易总额（CNY）”计算，并以当前年份最高金额为基准自动分为 4 档；以后出现更高投入时，该年份所有绿色深浅会自动重新计算。<br>
+            年份选择只用于查看历史，不影响记录写入日期。划过绿色方格会显示白色描边，点击即可查看当时保存下来的资产配置。<br>
+            记录同时保存到 IndexedDB 与 localStorage；仍建议定期使用“备份”导出 JSON，避免清除网站数据、换机或重装浏览器造成丢失。
           </span>
         </span>
       </div>
       <div class="historyActions">
         <div class="historyActionBtns">
           <button id="saveRecordBtn" class="primary" type="button">保存当前配置</button>
+          <button id="exportHistoryBtn" class="ghost historyBackupBtn" type="button">备份</button>
+          <button id="importHistoryBtn" class="ghost historyBackupBtn" type="button">导入</button>
           <button id="clearHistoryBtn" class="ghost dangerGhost" type="button">清空记录</button>
+          <input id="importHistoryFile" type="file" accept="application/json,.json" hidden />
         </div>
       </div>
     </div>
@@ -3329,6 +3334,14 @@ function displayNumber(n){
 
 
 const RECORD_HISTORY_KEY = "investmentAllocatorHistoryV1";
+const RECORD_HISTORY_UPDATED_KEY = "investmentAllocatorHistoryUpdatedAtV1";
+const HISTORY_DB_NAME = "AssetAllocatorHistoryDB";
+const HISTORY_DB_VERSION = 1;
+const HISTORY_DB_STORE = "historySnapshots";
+const HISTORY_DB_RECORD_KEY = "history";
+let historyLocalUpdatedAt = Number(localStorage.getItem(RECORD_HISTORY_UPDATED_KEY)) || 0;
+let historyDbPromise = null;
+let historyPersistenceRequested = false;
 let heatmapSelectedYear = new Date().getFullYear();
 const HISTORY_YEAR_LOOKBACK = 20;
 let recordHistory = [];
@@ -3363,6 +3376,118 @@ function savedAtDateKey(ts){
   const d=new Date(Number(ts));
   return Number.isFinite(d.getTime()) ? isoDateKey(d) : "";
 }
+function cloneHistoryRecords(records){
+  try{return JSON.parse(JSON.stringify(records||[]));}catch(_){return [];}
+}
+function openHistoryDb(){
+  if(historyDbPromise) return historyDbPromise;
+  historyDbPromise=new Promise(resolve=>{
+    if(!("indexedDB" in window)){ resolve(null); return; }
+    try{
+      const req=indexedDB.open(HISTORY_DB_NAME,HISTORY_DB_VERSION);
+      req.onupgradeneeded=()=>{
+        const db=req.result;
+        if(!db.objectStoreNames.contains(HISTORY_DB_STORE)) db.createObjectStore(HISTORY_DB_STORE,{keyPath:"key"});
+      };
+      req.onsuccess=()=>resolve(req.result);
+      req.onerror=()=>resolve(null);
+      req.onblocked=()=>resolve(null);
+    }catch(_){ resolve(null); }
+  });
+  return historyDbPromise;
+}
+async function readHistoryEnvelopeFromDb(){
+  const db=await openHistoryDb();
+  if(!db) return null;
+  return new Promise(resolve=>{
+    try{
+      const tx=db.transaction(HISTORY_DB_STORE,"readonly");
+      const req=tx.objectStore(HISTORY_DB_STORE).get(HISTORY_DB_RECORD_KEY);
+      req.onsuccess=()=>resolve(req.result||null);
+      req.onerror=()=>resolve(null);
+    }catch(_){ resolve(null); }
+  });
+}
+async function writeHistoryEnvelopeToDb(records,updatedAt){
+  const db=await openHistoryDb();
+  if(!db) return false;
+  return new Promise(resolve=>{
+    try{
+      const tx=db.transaction(HISTORY_DB_STORE,"readwrite");
+      tx.objectStore(HISTORY_DB_STORE).put({key:HISTORY_DB_RECORD_KEY,updatedAt:Number(updatedAt)||Date.now(),records:cloneHistoryRecords(records)});
+      tx.oncomplete=()=>resolve(true);
+      tx.onerror=()=>resolve(false);
+      tx.onabort=()=>resolve(false);
+    }catch(_){ resolve(false); }
+  });
+}
+async function requestPersistentHistoryStorage(){
+  if(historyPersistenceRequested) return;
+  historyPersistenceRequested=true;
+  try{
+    if(navigator.storage?.persisted && await navigator.storage.persisted()) return;
+    if(navigator.storage?.persist) await navigator.storage.persist();
+  }catch(_){ }
+}
+async function initDurableHistoryStorage(){
+  try{
+    const envelope=await readHistoryEnvelopeFromDb();
+    const dbUpdated=Number(envelope?.updatedAt)||0;
+    const dbRecords=Array.isArray(envelope?.records)?envelope.records:null;
+    if(dbRecords && dbUpdated>historyLocalUpdatedAt){
+      recordHistory=dbRecords.filter(x=>x&&typeof x==="object"&&x.id&&x.dateKey&&Array.isArray(x.rows)).sort((a,b)=>(Number(b.savedAt)||0)-(Number(a.savedAt)||0));
+      historyLocalUpdatedAt=dbUpdated;
+      try{
+        localStorage.setItem(RECORD_HISTORY_KEY,JSON.stringify(recordHistory));
+        localStorage.setItem(RECORD_HISTORY_UPDATED_KEY,String(historyLocalUpdatedAt));
+      }catch(_){ }
+      renderRecordHeatmap();
+    }else if(recordHistory.length || historyLocalUpdatedAt){
+      await writeHistoryEnvelopeToDb(recordHistory,historyLocalUpdatedAt||Date.now());
+    }
+  }catch(_){ }
+}
+function exportHistoryBackup(){
+  const payload={
+    schema:"asset-allocator-history",
+    version:1,
+    exportedAt:new Date().toISOString(),
+    records:cloneHistoryRecords(recordHistory)
+  };
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  const stamp=new Date().toISOString().replace(/[:.]/g,"-").slice(0,19);
+  a.href=url;
+  a.download=`asset-allocator-history-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+  requestPersistentHistoryStorage();
+}
+async function importHistoryBackupFile(file){
+  if(!file) return;
+  try{
+    const raw=await file.text();
+    const parsed=JSON.parse(raw);
+    const imported=Array.isArray(parsed)?parsed:(Array.isArray(parsed?.records)?parsed.records:null);
+    if(!imported) throw new Error("invalid");
+    const clean=imported.filter(x=>x&&typeof x==="object"&&x.id&&x.dateKey&&Array.isArray(x.rows));
+    if(!clean.length){ alert("备份文件里没有可导入的投资记录。"); return; }
+    if(!window.confirm(`检测到 ${clean.length} 条记录。是否与当前本地记录合并？相同 ID 的记录将以导入文件为准。`)) return;
+    const map=new Map(recordHistory.map(x=>[x.id,x]));
+    clean.forEach(x=>map.set(x.id,x));
+    recordHistory=[...map.values()].sort((a,b)=>(Number(b.savedAt)||0)-(Number(a.savedAt)||0));
+    saveRecordHistory();
+    requestPersistentHistoryStorage();
+    renderRecordHeatmap();
+    alert(`已导入 ${clean.length} 条记录。`);
+  }catch(_){
+    alert("导入失败：请选择由本应用导出的 JSON 备份文件。");
+  }
+}
+
 function loadRecordHistory(){
   try{
     const raw=localStorage.getItem(RECORD_HISTORY_KEY);
@@ -3390,7 +3515,13 @@ function loadRecordHistory(){
   }catch(_){ recordHistory=[]; }
 }
 function saveRecordHistory(){
-  try{ localStorage.setItem(RECORD_HISTORY_KEY, JSON.stringify(recordHistory)); }catch(_){ }
+  const updatedAt=Date.now();
+  historyLocalUpdatedAt=updatedAt;
+  try{
+    localStorage.setItem(RECORD_HISTORY_KEY,JSON.stringify(recordHistory));
+    localStorage.setItem(RECORD_HISTORY_UPDATED_KEY,String(updatedAt));
+  }catch(_){ }
+  writeHistoryEnvelopeToDb(recordHistory,updatedAt).catch(()=>{});
 }
 function groupHistoryByDate(){
   const map={};
@@ -3675,6 +3806,7 @@ function saveCurrentRecord(){
   recordHistory.unshift(record);
   recordHistory.sort((a,b)=>(Number(b.savedAt)||0)-(Number(a.savedAt)||0));
   saveRecordHistory();
+  requestPersistentHistoryStorage();
   activeRecordDateKey="";
   activeRecordId="";
   clearHeatmapPointerHover();
@@ -3917,6 +4049,24 @@ function bindHeatmapGestureHover(){
   });
 }
 
+function recordInvestedAmountCny(record){
+  const total=Number(record?.totals?.totalActual);
+  if(Number.isFinite(total)) return Math.max(0,total);
+  if(Array.isArray(record?.rows)){
+    return Math.max(0,record.rows.reduce((sum,row)=>sum+(Number(row?.actualRmb)||0),0));
+  }
+  return 0;
+}
+function dayInvestedAmountCny(records){
+  if(!Array.isArray(records)||!records.length) return 0;
+  // 同一天可能保存多次配置快照。热力图不把快照重复相加，
+  // 而是取当天记录过的最高实际交易总额，避免重复保存导致颜色虚高。
+  return records.reduce((maxValue,record)=>Math.max(maxValue,recordInvestedAmountCny(record)),0);
+}
+function heatmapMoney(n){
+  return "¥"+(Number(n)||0).toLocaleString("zh-CN",{minimumFractionDigits:0,maximumFractionDigits:2});
+}
+
 function renderRecordHeatmap(){
   const grid=el("historyGrid");
   const monthRow=el("historyMonthRow");
@@ -3959,21 +4109,22 @@ function renderRecordHeatmap(){
     }
   }
 
-  const yearCounts=cells.filter(c=>c.inSelectedYear).map(c=>c.records.length).filter(Boolean);
-  const maxCount=Math.max(1,...yearCounts,1);
-  function levelFor(count){
-    if(!count) return 0;
-    const ratio=count/maxCount;
-    if(maxCount===1) return 4;
+  const yearAmountCells=cells.filter(c=>c.inSelectedYear&&c.records.length).map(c=>dayInvestedAmountCny(c.records));
+  const maxYearAmount=Math.max(0,...yearAmountCells,0);
+  function levelForAmount(amount,hasRecord){
+    if(!hasRecord) return 0;
+    if(!(maxYearAmount>0)) return 1;
+    const ratio=Math.max(0,Number(amount)||0)/maxYearAmount;
     if(ratio<=0.25) return 1;
-    if(ratio<=0.5) return 2;
+    if(ratio<=0.50) return 2;
     if(ratio<=0.75) return 3;
     return 4;
   }
 
   grid.innerHTML=cells.map(cell=>{
     const count=cell.records.length;
-    const level=levelFor(count);
+    const amount=dayInvestedAmountCny(cell.records);
+    const level=levelForAmount(amount,count>0);
     const cls=["historyCell",cell.inSelectedYear?"inRange":"outRange",`level-${level}`];
     if(count) cls.push("hasRecord");
     if(cell.isFuture) cls.push("futureDate");
@@ -3982,9 +4133,9 @@ function renderRecordHeatmap(){
       ? ""
       : cell.isFuture
         ? `${cell.dateKey} · 尚未到达`
-        : count ? `${cell.dateKey} · ${count} 条记录` : cell.dateKey;
+        : count ? `${cell.dateKey} · 当日最高投入 ${heatmapMoney(amount)} · ${count} 条记录` : cell.dateKey;
     const disabled=(!cell.inSelectedYear || cell.isFuture)?' disabled aria-hidden="true"':'';
-    return `<button type="button" class="${cls.join(" ")}" style="grid-column:${cell.weekIndex+1};grid-row:${cell.dayOfWeek+1}" data-date-key="${cell.dateKey}" title="${title}" aria-label="${title}"${disabled}></button>`;
+    return `<button type="button" class="${cls.join(" ")}" style="grid-column:${cell.weekIndex+1};grid-row:${cell.dayOfWeek+1}" data-date-key="${cell.dateKey}" data-amount="${amount}" title="${title}" aria-label="${title}"${disabled}></button>`;
   }).join("");
 
   grid.querySelectorAll(".historyCell.hasRecord:not(:disabled)").forEach(btn=>{
@@ -4001,15 +4152,16 @@ function renderRecordHeatmap(){
   const yearDayMap={};
   yearRecords.forEach(r=>{ yearDayMap[r.dateKey]=(yearDayMap[r.dateKey]||0)+1; });
   const activeDays=Object.keys(yearDayMap).length;
-  const peakCount=Object.values(yearDayMap).reduce((m,v)=>Math.max(m,v),0);
   const latest=yearRecords.slice().sort((a,b)=>(Number(b.savedAt)||0)-(Number(a.savedAt)||0))[0]||null;
+  const amountByDay=Object.entries(groupHistoryByDate()).filter(([dateKey])=>recordYearFromDateKey(dateKey)===year).map(([dateKey,records])=>({dateKey,amount:dayInvestedAmountCny(records)}));
+  const peakAmountDay=amountByDay.sort((a,b)=>b.amount-a.amount)[0]||null;
 
   emptyEl.hidden=yearRecords.length>0;
-  if(!emptyEl.hidden) emptyEl.textContent=`${year} 年还没有本地投资记录。选择一个日期并保存当前配置后，对应日期会出现绿色方格。`;
+  if(!emptyEl.hidden) emptyEl.textContent=`${year} 年还没有本地投资记录。保存当前配置后，对应日期会出现绿色方格。`;
   stats.innerHTML=`
     <div class="historyStat"><div class="k">${year} 年记录数</div><div class="v">${yearRecords.length}</div><div class="s">1 月 1 日至 12 月 31 日的配置快照</div></div>
     <div class="historyStat"><div class="k">${year} 年活跃日期</div><div class="v">${activeDays}</div><div class="s">该年份里有记录的日期数</div></div>
-    <div class="historyStat"><div class="k">单日峰值</div><div class="v">${peakCount||0}</div><div class="s">该年份同一天保存的最多快照数</div></div>
+    <div class="historyStat"><div class="k">年度最高投入</div><div class="v">${peakAmountDay?heatmapMoney(peakAmountDay.amount):"—"}</div><div class="s">${peakAmountDay?`${fmtDate(peakAmountDay.dateKey)} · 作为最亮绿色基准`:"该年份还没有记录"}</div></div>
     <div class="historyStat"><div class="k">该年最近一次保存</div><div class="v">${latest?fmtDate(latest.dateKey):"—"}</div><div class="s">${latest?fmtDateTime(latest.savedAt):"该年份还没有记录"}</div></div>
   `;
   if(rangeEl) rangeEl.textContent=`1月1日 — 12月31日`;
@@ -6216,6 +6368,7 @@ function clearAll(){
 }
 load();
 loadRecordHistory();
+initDurableHistoryStorage();
 state.autoGold=false;
 el("principal").value=state.principal||"";
 el("principalCcy").value=state.principalCcy||"CNY";
@@ -6254,6 +6407,13 @@ if(el("historyYearSelect")) el("historyYearSelect").addEventListener("change",e=
   }
 });
 if(el("saveRecordBtn")) el("saveRecordBtn").onclick=saveCurrentRecord;
+if(el("exportHistoryBtn")) el("exportHistoryBtn").onclick=exportHistoryBackup;
+if(el("importHistoryBtn")) el("importHistoryBtn").onclick=()=>el("importHistoryFile")?.click();
+if(el("importHistoryFile")) el("importHistoryFile").addEventListener("change",async e=>{
+  const file=e.target.files?.[0];
+  e.target.value="";
+  if(file) await importHistoryBackupFile(file);
+});
 if(el("clearHistoryBtn")) el("clearHistoryBtn").onclick=openClearYearModal;
 if(el("clearYearCloseBtn")) el("clearYearCloseBtn").onclick=closeClearYearModal;
 if(el("clearYearCancelBtn")) el("clearYearCancelBtn").onclick=closeClearYearModal;

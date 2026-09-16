@@ -1,4 +1,4 @@
-const CACHE_NAME = "asset-allocator-v45-actual-rmb-backfills-target-ratio-20260915";
+const CACHE_NAME = "asset-allocator-v46-history-amount-indexeddb-20260916";
 const APP_SHELL = [
   "./",
   "./index.html",
