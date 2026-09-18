@@ -2998,7 +2998,7 @@
           <span class="hintIcon">i</span>
           <span class="hintBubble">
             每次点击“保存当前配置”，系统都会按真实保存日期自动记录到对应方格。<br>
-            绿色深浅按当天保存记录中的最高“实际交易总额（CNY）”计算，并以当前年份最高金额为基准自动分为 4 档；以后出现更高投入时，该年份所有绿色深浅会自动重新计算。<br>
+            绿色深浅按当天保存记录中的最高“实际交易总额（CNY）”计算。数据较少时，按当年不同金额的排名动态铺到 4 档；当该年达到至少 12 个活跃日期且至少 8 个不同金额后，自动改用 Q1 / Q2 / Q3 四分位分档。相同金额保持同色，新增记录后会自动重新计算。<br>
             年份选择只用于查看历史，不影响记录写入日期。划过绿色方格会显示白色描边，点击即可查看当时保存下来的资产配置。<br>
             记录同时保存到 IndexedDB 与 localStorage；仍建议定期使用“备份”导出 JSON，避免清除网站数据、换机或重装浏览器造成丢失。
           </span>
@@ -4109,17 +4109,61 @@ function renderRecordHeatmap(){
     }
   }
 
-  const yearAmountCells=cells.filter(c=>c.inSelectedYear&&c.records.length).map(c=>dayInvestedAmountCny(c.records));
+  const yearAmountCells=cells
+    .filter(c=>c.inSelectedYear&&c.records.length)
+    .map(c=>Math.max(0,Number(dayInvestedAmountCny(c.records))||0));
   const maxYearAmount=Math.max(0,...yearAmountCells,0);
+
+  // v17：两阶段金额分档。
+  // 1) 数据较少时：按“不同金额”的排名动态铺到 4 档，避免少量大额把小额全部压进最低档。
+  // 2) 当至少有 12 个活跃日期，且至少有 8 个不同金额时：自动切换到 Q1/Q2/Q3 四分位分档。
+  // 每个活跃日期只贡献一个样本（当天最高投入），相同金额始终保持同色。
+  const roundedYearAmounts=yearAmountCells.map(v=>Math.round(v*100)/100);
+  const uniqueYearAmounts=[...new Set(roundedYearAmounts)].sort((a,b)=>a-b);
+  const activeAmountDays=roundedYearAmounts.length;
+  const useQuartiles=activeAmountDays>=12 && uniqueYearAmounts.length>=8;
+
+  function quantile(sorted,p){
+    if(!sorted.length) return 0;
+    if(sorted.length===1) return sorted[0];
+    const pos=(sorted.length-1)*p;
+    const lo=Math.floor(pos), hi=Math.ceil(pos);
+    if(lo===hi) return sorted[lo];
+    const t=pos-lo;
+    return sorted[lo]*(1-t)+sorted[hi]*t;
+  }
+
+  const sortedAmounts=roundedYearAmounts.slice().sort((a,b)=>a-b);
+  const q1=useQuartiles?quantile(sortedAmounts,.25):0;
+  const q2=useQuartiles?quantile(sortedAmounts,.50):0;
+  const q3=useQuartiles?quantile(sortedAmounts,.75):0;
+
   function levelForAmount(amount,hasRecord){
     if(!hasRecord) return 0;
-    if(!(maxYearAmount>0)) return 1;
-    const ratio=Math.max(0,Number(amount)||0)/maxYearAmount;
-    if(ratio<=0.25) return 1;
-    if(ratio<=0.50) return 2;
-    if(ratio<=0.75) return 3;
-    return 4;
+    const value=Math.round(Math.max(0,Number(amount)||0)*100)/100;
+
+    if(useQuartiles){
+      if(value<=q1) return 1;
+      if(value<=q2) return 2;
+      if(value<=q3) return 3;
+      return 4;
+    }
+
+    const n=uniqueYearAmounts.length;
+    if(n<=1) return 4;
+    let index=uniqueYearAmounts.indexOf(value);
+    if(index<0){
+      index=uniqueYearAmounts.findIndex(v=>v>=value);
+      if(index<0) index=n-1;
+    }
+    // 少量数据阶段：最小金额映射到 1，最大金额映射到 4，中间按排名均匀分布。
+    return Math.max(1,Math.min(4,Math.round((index/(n-1))*3)+1));
   }
+
+  const heatmapBandNote=useQuartiles
+    ? `四分位分档 · Q1 ${heatmapMoney(q1)} / Q2 ${heatmapMoney(q2)} / Q3 ${heatmapMoney(q3)}`
+    : `动态排名分档 · ${activeAmountDays} 个活跃日期 / ${uniqueYearAmounts.length} 个不同金额`;
+
 
   grid.innerHTML=cells.map(cell=>{
     const count=cell.records.length;
@@ -4161,7 +4205,7 @@ function renderRecordHeatmap(){
   stats.innerHTML=`
     <div class="historyStat"><div class="k">${year} 年记录数</div><div class="v">${yearRecords.length}</div><div class="s">1 月 1 日至 12 月 31 日的配置快照</div></div>
     <div class="historyStat"><div class="k">${year} 年活跃日期</div><div class="v">${activeDays}</div><div class="s">该年份里有记录的日期数</div></div>
-    <div class="historyStat"><div class="k">年度最高投入</div><div class="v">${peakAmountDay?heatmapMoney(peakAmountDay.amount):"—"}</div><div class="s">${peakAmountDay?`${fmtDate(peakAmountDay.dateKey)} · 作为最亮绿色基准`:"该年份还没有记录"}</div></div>
+    <div class="historyStat"><div class="k">年度最高投入</div><div class="v">${peakAmountDay?heatmapMoney(peakAmountDay.amount):"—"}</div><div class="s">${peakAmountDay?`${fmtDate(peakAmountDay.dateKey)} · ${heatmapBandNote}`:"该年份还没有记录"}</div></div>
     <div class="historyStat"><div class="k">该年最近一次保存</div><div class="v">${latest?fmtDate(latest.dateKey):"—"}</div><div class="s">${latest?fmtDateTime(latest.savedAt):"该年份还没有记录"}</div></div>
   `;
   if(rangeEl) rangeEl.textContent=`1月1日 — 12月31日`;

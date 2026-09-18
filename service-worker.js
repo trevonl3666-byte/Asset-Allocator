@@ -1,4 +1,4 @@
-const CACHE_NAME = "asset-allocator-v46-history-amount-indexeddb-20260916";
+const CACHE_NAME = "asset-allocator-v17-quartile-heatmap-20260918";
 const APP_SHELL = [
   "./",
   "./index.html",
